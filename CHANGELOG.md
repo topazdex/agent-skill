@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.0.0] — 2026-05-21
+
 ### Changed
 
 - `bestQuote` / `topRoutes` now collapse every candidate (direct v2, direct v3, all 2-hop variants through WBNB/USDT/USDC/BTCB, and mixed v2/v3 paths) into a single `Multicall3.aggregate3` RPC round-trip with `allowFailure: true`. Replaces the prior bounded-concurrency sequential dispatch (~200 RPC calls per quote). Target latency: <500ms on a private RPC. Public API surface unchanged; the `concurrency` option is now a deprecated no-op.
@@ -36,6 +39,7 @@ Version semantics for this skill:
 - `enumerateCandidates` and `decodeCandidates` exports on `quotes.ts` so unit tests can verify plan construction and result-distribution without going through the live RPC.
 - `isStale(tx, maxAgeSeconds=30, now?)` exported from `txBuilders` — returns `true` when the underlying quote is older than `maxAgeSeconds` OR the tx's `deadline` has passed. Saves frontends from reinventing the math on top of `quotedAt`/`deadline`. Documented in `developers/frontend-integration.md`.
 - 24 new unit tests across `src/read/quotes.test.ts` (multicall3 plan + decode), `src/lib/txBuilders.test.ts` (isStale boundary cases + v3 native-BNB-out multicall/unwrap assertions for both single-hop and path swaps). Total: 95 tests.
+
 
 ## [1.0.0] — 2026-05-21
 
@@ -77,5 +81,6 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/topazdex/agent-skill/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/topazdex/agent-skill/releases/tag/v1.0.0
