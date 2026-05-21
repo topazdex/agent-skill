@@ -46,7 +46,7 @@ import {
 
 For production apps, prefer importing from package exports once this repository is published as an npm package. Until then, use these files as reference implementations or vendor them into your app.
 
-> **Bundler note:** `scripts/src/lib/abis.ts` loads ABI JSON from `references/abis/*.json` via `fs.readFileSync` at import time. This package is therefore Node-only as written. If you intend to ship it to the browser, either inline the ABIs (e.g. import the JSON directly via your bundler) or copy the files into your build's runtime asset path.
+> **Bundler note:** `scripts/src/lib/abis.ts` imports each ABI via static JSON imports with `with { type: "json" }`, so the module is statically resolvable by any modern bundler (vite, esbuild, webpack, rollup) and works in both Node and the browser. No FS access at runtime. If your bundler is older and doesn't understand JSON import attributes, upgrade to a version that targets TypeScript ≥ 5.3 (or transpile with tsx / esbuild before bundling).
 
 ## Core contract addresses
 

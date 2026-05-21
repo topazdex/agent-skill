@@ -25,6 +25,10 @@ Version semantics for this skill:
 
 - `aggregate3` now takes an optional `{ retries, retryBackoffMs, exec }` options bag. Default policy: up to 2 attempts total with a 250ms backoff. Reverts inside the batch still surface as `success: false` per call; only outer RPC errors (provider 502, ECONNRESET, etc.) trigger the retry. The `exec` injection point lets unit tests drive the retry path deterministically without mocking ethers Contracts. 7 new tests in `src/lib/multicall.test.ts`. Total: 103 tests.
 
+### Changed — bundler-safe ABI loading
+
+- `scripts/src/lib/abis.ts` no longer uses `fs.readFileSync`. Each ABI is now loaded via a static `import … with { type: "json" }` (TypeScript 5.3+ import-attributes syntax). The module is statically resolvable by any modern bundler (vite, esbuild, webpack, rollup) and works in browser + edge runtimes; no FS access at runtime. ABI values are typed as `JsonFragment[]` (from `ethers`), so `new Interface(ABIS.Router)` and `new Contract(addr, ABIS.Router, provider)` typecheck without casts. The internal `loadAbi(name)` helper is gone — replaced by 21 named imports + a single `extract(json)` shape-normalizer. `developers/DEVELOPERS.md` bundler note updated to reflect the new behavior.
+
 ### Added
 
 - `references/abis/Multicall3.json` and `ABIS.Multicall3` — minimal ABI covering `aggregate3` + `tryAggregate`.
