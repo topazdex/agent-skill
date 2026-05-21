@@ -12,6 +12,10 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- `developers/error-cookbook.md` — canonical mapping from every revert message Topaz can produce (v2 Router, v3 SwapRouter / CLPool, NonfungiblePositionManager, Voter, VotingEscrow, gauges, ERC20, plus generic RPC patterns) to a user-friendly UI string + concrete remediation step. Each entry cites its source surface and a recommended diagnostic. The closing "Diagnostic pattern" section mirrors `evals/07-explain-revert.md` so the eval and the developer-facing doc stay in lockstep. Linked from `SKILL.md` navigation, `developers/DEVELOPERS.md`, and the priority-3 polish TODO in `README.md`.
+
 
 ## [2.0.0] — 2026-05-21
 

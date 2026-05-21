@@ -127,6 +127,10 @@ Use on-chain reads for current ownership and live state:
 
 See `developers/user-positions.md` and `developers/subgraph-recipes.md`.
 
+## Handling reverts
+
+`developers/error-cookbook.md` maps every revert message Topaz can produce (v2 Router, v3 SwapRouter / CLPool, NonfungiblePositionManager, Voter, VotingEscrow, gauges, ERC20) to a user-friendly string and a concrete next step. Wire your error-handling layer through it so users see "Price moved too fast — try a higher slippage" instead of `INSUFFICIENT_OUTPUT_AMOUNT`. The diagnostic-pattern section at the bottom mirrors the workflow in `evals/07-explain-revert.md`.
+
 ## Safety and UX checklist
 
 - Always quote before building a write transaction.

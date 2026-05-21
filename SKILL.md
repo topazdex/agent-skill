@@ -102,6 +102,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Build quote widgets | `developers/quote-widget.md` |
 | Build wallet-ready swap calldata | `developers/swap-calldata.md` |
 | Build pool/position/gauge dashboards | `developers/user-positions.md`, `developers/gauges-and-apr.md` |
+| Map a revert to a user-friendly UI string | `developers/error-cookbook.md` |
 | On-chain reads for live stats | `references/analytics-onchain.md` |
 | Compute gauge / fee / voting APRs | `references/apr-calculations.md` |
 | Epoch boundaries, voting window, distribute() | `references/epoch-timing.md` |

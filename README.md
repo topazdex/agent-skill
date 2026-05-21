@@ -280,7 +280,7 @@ Agent-facing operator layer (read + write):
 
 Developer/builder layer (added on this branch):
 
-- [x] `developers/` with builder-facing recipes (`DEVELOPERS.md`, `quote-widget.md`, `swap-calldata.md`, `user-positions.md`, `subgraph-recipes.md`, `gauges-and-apr.md`, `frontend-integration.md`).
+- [x] `developers/` with builder-facing recipes (`DEVELOPERS.md`, `quote-widget.md`, `swap-calldata.md`, `user-positions.md`, `subgraph-recipes.md`, `gauges-and-apr.md`, `frontend-integration.md`, `error-cookbook.md`).
 - [x] Public import surface via `scripts/src/index.ts` (re-exports `ADDR`, `TOKENS`, `ABIS`, `provider`, `bestQuote`, `topRoutes`, `buildBestSwapTx`, `buildV{2,3}SwapTx`, `buildV{2,3}{Route,Path}SwapTx`, `buildFromExecRoute`, `getPoolV{2,3}`, claimable/locks/votes/positions/apr/subgraph helpers, epoch math, tick math).
 - [x] Wallet-ready calldata builders in `scripts/src/lib/txBuilders.ts` returning `{ to, data, value, expectedOut, amountOutMin, route, quotedAt, deadline, approval? }`.
 - [x] `bestQuote` enumerates direct v2/v3 + 2-hop combinations across WBNB/USDT/USDC/BTCB and selects the highest output. Now parallelized with bounded concurrency (default 10) — live WBNB→TOPAZ best-route quote runs in ~2s end-to-end on a public RPC.
@@ -393,4 +393,4 @@ With 1.A–1.F complete and the `SKILL.md` broadcast/labeling rule patched, the 
 - [ ] `sdk/` folder is a single README pointing at `scripts/`. Either flesh it into a real publishable package (`@topazdex/sdk`, `tsup` build, types-only deps) or fold its README into `developers/DEVELOPERS.md` and delete the directory.
 - [x] `developers/frontend-integration.md` BNB-vs-WBNB section updated now that v3 native-BNB-out is shipped.
 - [ ] Verify `developers/subgraph-recipes.md`'s "Goldsky rejects mixing column filters with `or`" claim against the live deployment; the comment reads like it was written from a remembered failure rather than tested.
-- [ ] Add an error-cookbook page under `developers/` (intended filename: `error-cookbook.md`) mapping common revert messages (`Router: INSUFFICIENT_OUTPUT_AMOUNT`, `SPL`, `TLU`, etc.) to user-friendly UI strings.
+- [x] `developers/error-cookbook.md` — every revert across v2 Router, v3 SwapRouter / CLPool, NonfungiblePositionManager, Voter, VotingEscrow, gauges, ERC20, plus generic patterns (empty revert data, nonce / gas) — each entry has source pointer, UI string, and a next step. Wired from `SKILL.md` nav, `developers/DEVELOPERS.md`, and the priority-1 `evals/07-explain-revert.md` diagnostic.
