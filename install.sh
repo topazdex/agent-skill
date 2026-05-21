@@ -30,33 +30,51 @@ set -euo pipefail
 
 REPO="${REPO:-https://github.com/topazdex/agent-skill.git}"
 
-# Auto-detect destination based on which agent's skill directory already exists.
-# Order is alphabetical to avoid favoring any one runtime. Explicit arg or DEST env
-# always wins.
-detect_dest() {
-  if [ -d "$HOME/.claude/skills" ]; then
-    echo "$HOME/.claude/skills/topaz"; return
-  fi
-  if [ -d "$HOME/.config/opencode/skills" ]; then
-    echo "$HOME/.config/opencode/skills/topaz"; return
-  fi
-  if [ -d "$HOME/.hermes/skills" ]; then
-    echo "$HOME/.hermes/skills/defi/topaz"; return
-  fi
-  # No agent skill directory found — fall back to a generic location and tell
-  # the user to point their agent at it explicitly.
-  echo "$HOME/.local/share/topaz-skill"
-}
-
-DEST="${1:-${DEST:-$(detect_dest)}}"
-
-# Expand ~ in DEST if a user passed it quoted.
-DEST="${DEST/#\~/$HOME}"
-
 say() { printf '\033[1;34m[topaz-skill]\033[0m %s\n' "$*"; }
 ok()  { printf '\033[1;32m[topaz-skill]\033[0m %s\n' "$*"; }
 warn(){ printf '\033[1;33m[topaz-skill]\033[0m %s\n' "$*" >&2; }
 err() { printf '\033[1;31m[topaz-skill]\033[0m %s\n' "$*" >&2; }
+
+# Auto-detect destination based on which agent's skill directory already exists.
+# Order is alphabetical to avoid favoring any one runtime. Explicit arg or DEST env
+# always wins.
+#
+# Writes both DEST and DEST_REASON as globals (no subshell — needed so we can
+# echo the reason back to the user further down).
+detect_dest() {
+  if [ -d "$HOME/.claude/skills" ]; then
+    DEST="$HOME/.claude/skills/topaz"
+    DEST_REASON="auto-detected ~/.claude/skills/"
+    return
+  fi
+  if [ -d "$HOME/.config/opencode/skills" ]; then
+    DEST="$HOME/.config/opencode/skills/topaz"
+    DEST_REASON="auto-detected ~/.config/opencode/skills/"
+    return
+  fi
+  if [ -d "$HOME/.hermes/skills" ]; then
+    DEST="$HOME/.hermes/skills/defi/topaz"
+    DEST_REASON="auto-detected ~/.hermes/skills/"
+    return
+  fi
+  # No agent skill directory found — fall back to a generic location.
+  DEST="$HOME/.local/share/topaz-skill"
+  DEST_REASON="fallback (no recognized agent skill dir found)"
+}
+
+if [ $# -gt 0 ]; then
+  DEST="$1"
+  DEST_REASON="explicit (positional arg)"
+elif [ -n "${DEST:-}" ]; then
+  DEST_REASON="explicit (DEST env)"
+else
+  detect_dest
+fi
+
+# Expand ~ in DEST if a user passed it quoted.
+DEST="${DEST/#\~/$HOME}"
+
+say "destination: $DEST  (${DEST_REASON})"
 
 command -v git >/dev/null 2>&1 || { err "git is required but not found"; exit 1; }
 
@@ -95,4 +113,23 @@ fi
 VERSION="$(grep -E '^version:' SKILL.md | head -1 | awk '{print $2}' || true)"
 ok "Topaz agent skill installed at: $DEST"
 [ -n "$VERSION" ] && ok "version: $VERSION"
-ok "next: tell your agent to load skills from $DEST (e.g. Claude Code reads ~/.claude/skills/* automatically; other agents may need an explicit config entry pointing at this path)."
+
+case "$DEST" in
+  "$HOME/.claude/skills/topaz")
+    ok "next: Claude Code reads ~/.claude/skills/* automatically — no further config needed."
+    ;;
+  "$HOME/.config/opencode/skills/topaz")
+    ok "next: point OpenCode at $DEST (see your OpenCode skill loader docs)."
+    ;;
+  "$HOME/.hermes/skills/defi/topaz")
+    ok "next: load via Hermes — the skill is at $DEST."
+    ;;
+  "$HOME/.local/share/topaz-skill")
+    warn "no recognized agent skill directory exists on this host, so the skill landed at $DEST."
+    warn "either symlink/move it into your agent's skill directory, or configure your agent to read from $DEST."
+    warn "common targets: ~/.claude/skills/topaz, ~/.config/opencode/skills/topaz, ~/.hermes/skills/defi/topaz."
+    ;;
+  *)
+    ok "next: configure your agent to load skills from $DEST."
+    ;;
+esac

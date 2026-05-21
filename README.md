@@ -45,10 +45,17 @@ If your agent has no notion of skills at all, just clone the repo somewhere and 
 
 ### One-line install
 
-`install.sh` runs the clone + dependency install + validator for you. Default destination is `~/.claude/skills/topaz`, but override it with an argument:
+`install.sh` runs the clone + dependency install + validator for you. With no arguments it **auto-detects** an existing agent skills directory on the host and installs there. Detection order (alphabetical, no runtime favored):
+
+1. `~/.claude/skills/` exists → installs to `~/.claude/skills/topaz`
+2. `~/.config/opencode/skills/` exists → installs to `~/.config/opencode/skills/topaz`
+3. `~/.hermes/skills/` exists → installs to `~/.hermes/skills/defi/topaz`
+4. None of the above → falls back to `~/.local/share/topaz-skill` and prints a notice asking you to point your agent at that path
+
+The installer prints its chosen destination and the reason (e.g. `auto-detected ~/.claude/skills/` or `fallback (no recognized agent skill dir found)`) before cloning, so the path is never a surprise.
 
 ```bash
-# default destination
+# auto-detect destination
 curl -fsSL https://raw.githubusercontent.com/topazdex/agent-skill/main/install.sh | bash
 
 # pick your own

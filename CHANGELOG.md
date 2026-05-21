@@ -12,6 +12,12 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed — frontend QA (agents-page review)
+
+- **Installer default-path documentation no longer claims `~/.claude/skills/topaz` as an unconditional default.** Both the website-setup spec (`.claude/topaz-agent-skill-website-setup-generic.md`) and the repo README now describe the installer's actual behavior: auto-detect among `~/.claude/skills`, `~/.config/opencode/skills`, `~/.hermes/skills` in alphabetical order; fall back to `~/.local/share/topaz-skill` if none exist. Surfaced from a QA review of `https://topazdex.com/agents` that found the page copy diverged from the runtime behavior.
+- **Installer prints the chosen destination + reason before cloning.** `install.sh` now reports `destination: <path>  (reason)` upfront, where the reason is one of `explicit (positional arg)`, `explicit (DEST env)`, `auto-detected <dir>`, or `fallback (no recognized agent skill dir found)`. The post-install "next:" message branches on the chosen path (Claude Code, OpenCode, Hermes, fallback, or custom) so users get a runtime-specific configuration hint instead of a generic one.
+- **`scripts/package.json` now pins `packageManager: yarn@4.9.2`** so Corepack-enabled environments install with Yarn 4 instead of falling back to a globally installed Yarn 1 (the QA caught a clean-room install using Yarn 1.22.22 because the field was missing). `yarn install --immutable`, `yarn validate`, `yarn build`, `yarn test` all verified green under the pinned version against the existing `yarn.lock` (metadata v8).
+
 ### Fixed
 
 - **Gauge-lookup confusion that caused agents to report "no gauge" for pairs that actually have multiple live gauges.** Surfaced from a real WBNB/BTCB report: that pair has both a v2-volatile gauge (`0x14c93dDb…87eb`) and a v3 ts=50 gauge (`0xa9F8A05F…3737`), but an agent missed both — checking only one pool variant, and (separately) guessing that the Voter exposes a `gaugeForPool(address)` function. It doesn't — Topaz uses `Voter.gauges(address)` (selector `0xb9a09fd5`). The `gaugeForPool` name belongs to Velodrome/Aerodrome forks; calling it on the deployed Topaz Voter reverts with empty data, which is easy to misread as "no gauge". Fixes:
