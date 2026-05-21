@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { Interface, getAddress, ZeroAddress } from "ethers";
-import { slip, normalizeAndValidate } from "./txBuilders.js";
+import { slip, normalizeAndValidate, isStale } from "./txBuilders.js";
 import { ADDR } from "../config/addresses.js";
 import { TOKENS } from "../config/tokens.js";
 import { ABIS } from "./abis.js";
@@ -268,5 +268,97 @@ describe("buildBestSwapTx — calldata shape (mocked quoters)", () => {
       }),
     ).rejects.toThrow(/tokenIn and tokenOut must differ/);
     expect(mockBestQuote).not.toHaveBeenCalled();
+  });
+});
+
+describe("isStale", () => {
+  const t0 = 1_000_000;
+
+  it("treats a freshly built tx as not stale", () => {
+    // #given
+    const tx = { quotedAt: t0, deadline: t0 + 1200 };
+
+    // #when checking immediately
+    const result = isStale(tx, 30, t0);
+
+    // #then
+    expect(result).toBe(false);
+  });
+
+  it("treats a tx aged exactly maxAgeSeconds as not stale (boundary)", () => {
+    // #given a 30-second window
+    const tx = { quotedAt: t0, deadline: t0 + 1200 };
+
+    // #when exactly at the boundary
+    const result = isStale(tx, 30, t0 + 30);
+
+    // #then it is not stale (strict greater-than)
+    expect(result).toBe(false);
+  });
+
+  it("treats a tx older than maxAgeSeconds as stale", () => {
+    // #given
+    const tx = { quotedAt: t0, deadline: t0 + 1200 };
+
+    // #when checked 31 seconds later with default 30s window
+    const result = isStale(tx, 30, t0 + 31);
+
+    // #then
+    expect(result).toBe(true);
+  });
+
+  it("respects a custom maxAgeSeconds", () => {
+    // #given a 60-second window
+    const tx = { quotedAt: t0, deadline: t0 + 1200 };
+
+    // #when 45 seconds in
+    const result = isStale(tx, 60, t0 + 45);
+
+    // #then still fresh under the wider window
+    expect(result).toBe(false);
+  });
+
+  it("treats a tx whose deadline has passed as stale even if the quote is fresh", () => {
+    // #given a tx whose quote is brand-new but deadline already expired
+    const tx = { quotedAt: t0 + 10, deadline: t0 + 5 };
+
+    // #when checked at t0+15 (only 5s after quotedAt, but past deadline)
+    const result = isStale(tx, 30, t0 + 15);
+
+    // #then
+    expect(result).toBe(true);
+  });
+
+  it("treats a tx whose deadline equals now as stale (strict)", () => {
+    // #given
+    const tx = { quotedAt: t0, deadline: t0 + 100 };
+
+    // #when checked exactly at the deadline
+    const result = isStale(tx, 30, t0 + 100);
+
+    // #then deadline is passed-by-equality (deadline <= now is stale)
+    expect(result).toBe(true);
+  });
+
+  it("clamps negative maxAgeSeconds to 0", () => {
+    // #given a freshly built tx
+    const tx = { quotedAt: t0, deadline: t0 + 1200 };
+
+    // #when checked with a nonsense negative window
+    const result = isStale(tx, -5, t0);
+
+    // #then the window is clamped to 0 — same-second is still fresh
+    expect(result).toBe(false);
+  });
+
+  it("returns true on any age when maxAgeSeconds=0 and any time has passed", () => {
+    // #given
+    const tx = { quotedAt: t0, deadline: t0 + 1200 };
+
+    // #when checked 1 second after quotedAt
+    const result = isStale(tx, 0, t0 + 1);
+
+    // #then
+    expect(result).toBe(true);
   });
 });

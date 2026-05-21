@@ -26,6 +26,31 @@ export interface ApprovalRequirement {
   amount: bigint;
 }
 
+/**
+ * Returns true when a built swap transaction is too old to broadcast safely.
+ *
+ * Two failure modes are checked:
+ *   1. The underlying quote is stale: `now - tx.quotedAt > maxAgeSeconds`.
+ *   2. The transaction's own deadline has already passed: `tx.deadline <= now`.
+ *
+ * Default `maxAgeSeconds` of 30 reflects a typical block time + frontend roundtrip
+ * budget; bump it on high-latency chains or lower it for retail UIs that show
+ * live pricing.
+ *
+ * `now` is overrideable for testing. In production, leave it unset and the helper
+ * uses the wall clock.
+ */
+export function isStale(
+  tx: Pick<BuiltSwapTx, "quotedAt" | "deadline">,
+  maxAgeSeconds = 30,
+  now: number = nowSec(),
+): boolean {
+  const maxAge = Math.max(0, maxAgeSeconds);
+  const tooOld = now - tx.quotedAt > maxAge;
+  const pastDeadline = tx.deadline <= now;
+  return tooOld || pastDeadline;
+}
+
 export interface BuiltSwapTx {
   to: string;
   data: string;

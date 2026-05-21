@@ -21,7 +21,8 @@ Version semantics for this skill:
 - `references/abis/Multicall3.json` and `ABIS.Multicall3` — minimal ABI covering `aggregate3` + `tryAggregate`.
 - `scripts/src/lib/multicall.ts` — thin `aggregate3` wrapper + `decodeIfSuccess` helper. Reusable by future read-path batching (gauges, positions, claimable streams).
 - `enumerateCandidates` and `decodeCandidates` exports on `quotes.ts` so unit tests can verify plan construction and result-distribution without going through the live RPC.
-- 11 new unit tests in `src/read/quotes.test.ts` covering plan counts, mixed-route gating, hop deduplication, selector encoding, result decoding, failure filtering, malformed-data handling, and length-mismatch error. Total: 82 tests.
+- `isStale(tx, maxAgeSeconds=30, now?)` exported from `txBuilders` — returns `true` when the underlying quote is older than `maxAgeSeconds` OR the tx's `deadline` has passed. Saves frontends from reinventing the math on top of `quotedAt`/`deadline`. Documented in `developers/frontend-integration.md`.
+- 19 new unit tests across `src/read/quotes.test.ts` (multicall3: plan counts, mixed-route gating, hop deduplication, selector encoding, result decoding, failure filtering, malformed-data handling, length-mismatch) and `src/lib/txBuilders.test.ts` (isStale boundary, deadline-passed, custom window, negative-clamp). Total: 90 tests.
 
 ## [1.0.0] — 2026-05-21
 

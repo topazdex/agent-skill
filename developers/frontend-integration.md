@@ -62,6 +62,19 @@ Refresh quotes frequently and invalidate old calldata:
 - immediately after input amount or slippage changes
 - immediately after the user changes wallet/chain
 
+Use the `isStale(tx, maxAgeSeconds?)` helper exported from `@topazdex/agent-skill` (or `scripts/src/lib/txBuilders.ts`) instead of reinventing the math. It returns `true` when either the underlying quote is older than `maxAgeSeconds` (default 30) or the tx's `deadline` has passed:
+
+```ts
+import { buildBestSwapTx, isStale } from "./scripts/src";
+
+const tx = await buildBestSwapTx({ tokenIn, tokenOut, amountIn, recipient });
+
+// before showing the "Sign" button:
+if (isStale(tx)) {
+  // rebuild calldata, then re-render
+}
+```
+
 ## Error handling
 
 Common errors to map into user-friendly messages:
