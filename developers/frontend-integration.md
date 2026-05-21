@@ -40,8 +40,7 @@ Topaz routes internally use WBNB. The wallet-facing convention used by the build
 - with the default `useBnb: true`, the builder will set `value = amountIn` and route through the payable swap method (v2 `swapExactETHForTokens` or v3 `exactInputSingle` with `msg.value`); no ERC20 approval is required
 - pass `useBnb: false` (still with `ADDR.WBNB` as `tokenIn`) to spend **already-held WBNB** as an ERC20 — the builder uses `swapExactTokensForTokens` / `exactInputSingle` non-payable and emits an `approval` requirement
 - on v2 with `tokenOut === ADDR.WBNB` and `useBnb: true`, the builder routes through `swapExactTokensForETH` and the user receives native BNB
-
-> **v3 BNB-out is not implemented in the builders today.** Receiving native BNB from a v3 swap requires `SwapRouter.multicall([exactInputSingle(recipient=Router, ...), unwrapWETH9(amountMin, recipient=user)])` and lives outside the current `buildV3SwapTx` calldata. If your UX promises native BNB out of a v3 route, either (a) wrap the two calls yourself against the SwapRouter ABI, or (b) route via v2 if a v2 pool exists for the pair, or (c) accept WBNB out and unwrap with a follow-up `WBNB.withdraw(amount)` call. Track this gap before shipping.
+- on v3 with `tokenOut === ADDR.WBNB` and `useBnb: true` (default), `buildV3SwapTx` / `buildV3PathSwapTx` emit `SwapRouter.multicall([exactInputSingle|exactInput(recipient=Router, amountOutMinimum=0), unwrapWETH9(amountOutMin, recipient=user)])`. The unwrap step enforces slippage at the boundary, so the inner swap can defer the floor check. Pass `useBnb: false` if you specifically want WBNB output rather than native BNB.
 
 ## Approvals
 

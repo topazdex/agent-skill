@@ -160,10 +160,11 @@ vi.mock("./erc20.js", () => ({
 const quotes = await import("../read/quotes.js");
 const pools = await import("../read/pools.js");
 const erc20 = await import("./erc20.js");
-const { buildBestSwapTx } = await import("./txBuilders.js");
+const { buildBestSwapTx, buildV3SwapTx, buildV3PathSwapTx } = await import("./txBuilders.js");
 
 const mockBestQuote = vi.mocked(quotes.bestQuote);
 const mockQuoteV3Single = vi.mocked(quotes.quoteV3Single);
+const mockQuoteV3Path = vi.mocked(quotes.quoteV3Path);
 const mockFindV3Pool = vi.mocked(pools.findV3Pool);
 const mockAllowance = vi.mocked(erc20.allowance);
 
@@ -268,6 +269,162 @@ describe("buildBestSwapTx — calldata shape (mocked quoters)", () => {
       }),
     ).rejects.toThrow(/tokenIn and tokenOut must differ/);
     expect(mockBestQuote).not.toHaveBeenCalled();
+  });
+});
+
+describe("buildV3SwapTx — native-BNB-out", () => {
+  // Standard v3 swap-and-unwrap pattern: the SwapRouter is the recipient of
+  // exactInputSingle (so it keeps the WBNB), then a follow-up unwrapWETH9 call
+  // in the same multicall sends native BNB to the user. amountOutMin is enforced
+  // at the unwrap boundary, not in the inner exactInputSingle.
+  const amountIn = 100n * 10n ** 18n;
+  const expectedOut = 99n * 10n ** 17n; // 9.9 WBNB worth
+
+  it("wraps exactInputSingle + unwrapWETH9 in a multicall when tokenOut is WBNB and useBnb is true (default)", async () => {
+    // #given a TOPAZ → WBNB swap with the default useBnb behavior
+    mockFindV3Pool.mockResolvedValue("0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+    mockQuoteV3Single.mockResolvedValue(expectedOut);
+
+    // #when
+    const built = await buildV3SwapTx({
+      tokenIn: TOPAZ,
+      tokenOut: WBNB,
+      amountIn,
+      tickSpacing: 200,
+      recipient,
+      slippageBps: 100n,
+    });
+
+    // #then the outer call is multicall, value is 0 (no native-BNB-in)
+    expect(built.to).toBe(ADDR.SwapRouter);
+    expect(built.value).toBe(0n);
+    expect(built.amountOutMin).toBe(slip(expectedOut, 100n));
+    expect(built.route).toMatch(/unwrap to BNB/);
+
+    const iface = new Interface(ABIS.SwapRouter);
+    const outer = iface.parseTransaction({ data: built.data, value: built.value });
+    expect(outer?.name).toBe("multicall");
+
+    // and the inner calls are exactInputSingle(recipient=Router, amountOutMinimum=0)
+    // followed by unwrapWETH9(amountMinimum=amountOutMin, recipient=user)
+    const calls = outer?.args[0] as string[];
+    expect(calls).toHaveLength(2);
+    const innerInput = iface.parseTransaction({ data: calls[0], value: 0n });
+    expect(innerInput?.name).toBe("exactInputSingle");
+    expect(innerInput?.args[0].recipient).toBe(ADDR.SwapRouter);
+    expect(innerInput?.args[0].amountOutMinimum).toBe(0n);
+    const innerUnwrap = iface.parseTransaction({ data: calls[1], value: 0n });
+    expect(innerUnwrap?.name).toBe("unwrapWETH9");
+    expect(innerUnwrap?.args[0]).toBe(built.amountOutMin);
+    expect(innerUnwrap?.args[1]).toBe(recipient);
+  });
+
+  it("falls back to plain exactInputSingle when useBnb is false (user explicitly wants WBNB)", async () => {
+    // #given useBnb explicitly disabled
+    mockFindV3Pool.mockResolvedValue("0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb");
+    mockQuoteV3Single.mockResolvedValue(expectedOut);
+
+    // #when
+    const built = await buildV3SwapTx({
+      tokenIn: TOPAZ,
+      tokenOut: WBNB,
+      amountIn,
+      tickSpacing: 200,
+      recipient,
+      useBnb: false,
+    });
+
+    // #then no multicall wrapper, recipient is the user directly
+    const iface = new Interface(ABIS.SwapRouter);
+    const outer = iface.parseTransaction({ data: built.data, value: built.value });
+    expect(outer?.name).toBe("exactInputSingle");
+    expect(outer?.args[0].recipient).toBe(recipient);
+    expect(outer?.args[0].amountOutMinimum).toBe(built.amountOutMin);
+    expect(built.route).not.toMatch(/unwrap/);
+  });
+
+  it("still propagates approval for the input token (unwrap doesn't change input approval)", async () => {
+    // #given
+    mockFindV3Pool.mockResolvedValue("0xcccccccccccccccccccccccccccccccccccccccc");
+    mockQuoteV3Single.mockResolvedValue(expectedOut);
+    mockAllowance.mockResolvedValue(0n);
+
+    // #when
+    const built = await buildV3SwapTx({
+      tokenIn: TOPAZ,
+      tokenOut: WBNB,
+      amountIn,
+      tickSpacing: 200,
+      recipient,
+      payer: recipient,
+    });
+
+    // #then approval still required for TOPAZ
+    expect(built.approval).toEqual({
+      token: TOPAZ,
+      spender: ADDR.SwapRouter,
+      amount: amountIn,
+    });
+  });
+});
+
+describe("buildV3PathSwapTx — native-BNB-out", () => {
+  const amountIn = 100n * 10n ** 18n;
+  const expectedOut = 1n * 10n ** 18n;
+
+  it("wraps exactInput + unwrapWETH9 in a multicall when the path ends in WBNB", async () => {
+    // #given a TOPAZ → USDT → WBNB v3 path
+    mockQuoteV3Path.mockResolvedValue(expectedOut);
+
+    // #when
+    const built = await buildV3PathSwapTx({
+      tokens: [TOPAZ, USDT, WBNB],
+      spacings: [1, 200],
+      amountIn,
+      recipient,
+      slippageBps: 150n,
+    });
+
+    // #then
+    expect(built.to).toBe(ADDR.SwapRouter);
+    expect(built.value).toBe(0n);
+    expect(built.amountOutMin).toBe(slip(expectedOut, 150n));
+    expect(built.route).toMatch(/unwrap to BNB/);
+
+    const iface = new Interface(ABIS.SwapRouter);
+    const outer = iface.parseTransaction({ data: built.data, value: built.value });
+    expect(outer?.name).toBe("multicall");
+    const calls = outer?.args[0] as string[];
+    expect(calls).toHaveLength(2);
+    const innerInput = iface.parseTransaction({ data: calls[0], value: 0n });
+    expect(innerInput?.name).toBe("exactInput");
+    expect(innerInput?.args[0].recipient).toBe(ADDR.SwapRouter);
+    expect(innerInput?.args[0].amountOutMinimum).toBe(0n);
+    const innerUnwrap = iface.parseTransaction({ data: calls[1], value: 0n });
+    expect(innerUnwrap?.name).toBe("unwrapWETH9");
+    expect(innerUnwrap?.args[0]).toBe(built.amountOutMin);
+  });
+
+  it("falls back to plain exactInput when useBnb is false", async () => {
+    // #given a path that ends in WBNB but the caller wants WBNB output, not native
+    mockQuoteV3Path.mockResolvedValue(expectedOut);
+
+    // #when
+    const built = await buildV3PathSwapTx({
+      tokens: [TOPAZ, USDT, WBNB],
+      spacings: [1, 200],
+      amountIn,
+      recipient,
+      useBnb: false,
+    });
+
+    // #then
+    const iface = new Interface(ABIS.SwapRouter);
+    const outer = iface.parseTransaction({ data: built.data, value: built.value });
+    expect(outer?.name).toBe("exactInput");
+    expect(outer?.args[0].recipient).toBe(recipient);
+    expect(outer?.args[0].amountOutMinimum).toBe(built.amountOutMin);
+    expect(built.route).not.toMatch(/unwrap/);
   });
 });
 

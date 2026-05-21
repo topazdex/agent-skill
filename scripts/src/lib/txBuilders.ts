@@ -305,6 +305,40 @@ export async function buildV3SwapTx(args: BuildV3SwapTxArgs): Promise<BuiltSwapT
   const amountOutMin = slip(expectedOut, v.slippageBps);
   const router = new Interface(ABIS.SwapRouter);
   const nativeIn = v.useBnb && isWbnb(v.tokenIn);
+  const nativeOut = v.useBnb && isWbnb(v.tokenOut!);
+
+  const sharedTail = {
+    value: nativeIn ? amountIn : 0n,
+    expectedOut,
+    amountOutMin,
+    quotedAt: nowSec(),
+    deadline: v.deadline,
+    approval: await approvalFor(v.tokenIn, ADDR.SwapRouter, amountIn, nativeIn, v.payer),
+  };
+
+  // Native-BNB-out: route the swap into the SwapRouter itself, then unwrap WETH9
+  // to the user. Slippage check is enforced by unwrapWETH9's amountMinimum, so
+  // the inner exactInputSingle uses amountOutMinimum=0 (the unwrap call is the
+  // final boundary that the funds must clear).
+  if (nativeOut) {
+    const inner = router.encodeFunctionData("exactInputSingle", [{
+      tokenIn: v.tokenIn,
+      tokenOut: v.tokenOut!,
+      tickSpacing: args.tickSpacing,
+      recipient: ADDR.SwapRouter,
+      deadline: v.deadline,
+      amountIn,
+      amountOutMinimum: 0n,
+      sqrtPriceLimitX96: args.sqrtPriceLimitX96 ?? 0n,
+    }]);
+    const unwrap = router.encodeFunctionData("unwrapWETH9", [amountOutMin, v.recipient]);
+    return {
+      to: ADDR.SwapRouter,
+      data: router.encodeFunctionData("multicall", [[inner, unwrap]]),
+      route: `v3 direct ts=${args.tickSpacing} → unwrap to BNB`,
+      ...sharedTail,
+    };
+  }
 
   return {
     to: ADDR.SwapRouter,
@@ -318,13 +352,8 @@ export async function buildV3SwapTx(args: BuildV3SwapTxArgs): Promise<BuiltSwapT
       amountOutMinimum: amountOutMin,
       sqrtPriceLimitX96: args.sqrtPriceLimitX96 ?? 0n,
     }]),
-    value: nativeIn ? amountIn : 0n,
-    expectedOut,
-    amountOutMin,
     route: `v3 direct ts=${args.tickSpacing}`,
-    quotedAt: nowSec(),
-    deadline: v.deadline,
-    approval: await approvalFor(v.tokenIn, ADDR.SwapRouter, amountIn, nativeIn, v.payer),
+    ...sharedTail,
   };
 }
 
@@ -352,6 +381,33 @@ export async function buildV3PathSwapTx(args: BuildV3PathSwapTxArgs): Promise<Bu
   const amountOutMin = slip(expectedOut, v.slippageBps);
   const router = new Interface(ABIS.SwapRouter);
   const nativeIn = v.useBnb && isWbnb(v.tokenIn);
+  const nativeOut = v.useBnb && isWbnb(v.tokenOut!);
+
+  const sharedTail = {
+    value: nativeIn ? amountIn : 0n,
+    expectedOut,
+    amountOutMin,
+    quotedAt: nowSec(),
+    deadline: v.deadline,
+    approval: await approvalFor(v.tokenIn, ADDR.SwapRouter, amountIn, nativeIn, v.payer),
+  };
+
+  if (nativeOut) {
+    const inner = router.encodeFunctionData("exactInput", [{
+      path,
+      recipient: ADDR.SwapRouter,
+      deadline: v.deadline,
+      amountIn,
+      amountOutMinimum: 0n,
+    }]);
+    const unwrap = router.encodeFunctionData("unwrapWETH9", [amountOutMin, v.recipient]);
+    return {
+      to: ADDR.SwapRouter,
+      data: router.encodeFunctionData("multicall", [[inner, unwrap]]),
+      route: `${args.routeLabel ?? "v3 path"} → unwrap to BNB`,
+      ...sharedTail,
+    };
+  }
 
   return {
     to: ADDR.SwapRouter,
@@ -362,13 +418,8 @@ export async function buildV3PathSwapTx(args: BuildV3PathSwapTxArgs): Promise<Bu
       amountIn,
       amountOutMinimum: amountOutMin,
     }]),
-    value: nativeIn ? amountIn : 0n,
-    expectedOut,
-    amountOutMin,
     route: args.routeLabel ?? "v3 path",
-    quotedAt: nowSec(),
-    deadline: v.deadline,
-    approval: await approvalFor(v.tokenIn, ADDR.SwapRouter, amountIn, nativeIn, v.payer),
+    ...sharedTail,
   };
 }
 
