@@ -240,15 +240,15 @@ Tracks [`battle-tested-agent-skill-best-practices.md`](./battle-tested-agent-ski
 - [x] `normalizeAndValidate` rejects: self-swap, zero recipient, slippage > 10000, past deadline, malformed address.
 - [x] `buildBestSwapTx` calldata shape for a static `ExecRoute` (offline, by mocking quoters): correct selector, decoded args, `value` set when `useBnb && tokenIn === WBNB`, approval skipped when payer allowance ≥ amountIn.
 
-**C. Live smoke tests** (extend `src/cli/stats.ts smoke`):
+**C. Live smoke tests** (`yarn smoke` runs `src/cli/stats.ts smoke`; exits non-zero on any FAIL):
 
-- [ ] `provider.getCode(addr) !== "0x"` for every entry in `ADDR` (every important address has deployed bytecode).
-- [ ] `ERC20(TOPAZ).symbol() === "TOPAZ"` and `decimals() === 18`.
-- [ ] v2 subgraph: top pair has `reserveUSD > 0`.
-- [ ] v3 subgraph: top pool has `totalValueLockedUSD > 0`.
-- [ ] WBNB→TOPAZ `bestQuote` returns nonzero, route type is `v3-single` or `v3-path` (sanity).
-- [ ] `buildBestSwapTx({ WBNB→TOPAZ, recipient=dead })` returns `{ to: ADDR.SwapRouter, data: 0x..., value: amountIn, expectedOut > 0, amountOutMin > 0, quotedAt > 0, deadline > now }`.
-- [ ] `Voter.gauges(<known live pool>) !== ZeroAddress` and `Voter.isAlive(gauge) === true`.
+- [x] `provider.getCode(addr) !== "0x"` for every entry in `ADDR` (every important address has deployed bytecode).
+- [x] `ERC20(TOPAZ).symbol() === "TOPAZ"` and `decimals() === 18`.
+- [x] v2 subgraph: top pair has `reserveUSD > 0`.
+- [x] v3 subgraph: top pool has `totalValueLockedUSD > 0`.
+- [x] WBNB→TOPAZ `bestQuote` returns nonzero, route type is `v3-single` or `v3-path` (sanity).
+- [x] `buildBestSwapTx({ WBNB→TOPAZ, recipient=dead })` returns `{ to: ADDR.SwapRouter, data: 0x..., value: amountIn, expectedOut > 0, amountOutMin > 0, quotedAt > 0, deadline > now }`.
+- [x] `Voter.gauges(<top live pool by TVL>) !== ZeroAddress` and `Voter.isAlive(gauge) === true`.
 
 **D. Golden / regression tests**:
 

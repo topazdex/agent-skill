@@ -2,7 +2,9 @@
 // Read-only diagnostics. Does not require PRIVATE_KEY.
 
 import minimist from "minimist";
-import { formatUnits } from "ethers";
+import { formatUnits, Contract, ZeroAddress } from "ethers";
+import { ADDR } from "../config/addresses.js";
+import { ABIS } from "../lib/abis.js";
 import { getPool } from "../read/pools.js";
 import {
   getGaugeStateForPool,
@@ -14,12 +16,13 @@ import { getVote } from "../read/votes.js";
 import { getPosition, listOwnerPositions } from "../read/positions.js";
 import { claimableSummary } from "../read/claimable.js";
 import { poolApr, rebaseApr, votingApr } from "../read/apr.js";
-import { quoteHuman } from "../read/quotes.js";
+import { bestQuote, quoteHuman } from "../read/quotes.js";
 import { TOKENS, findToken } from "../config/tokens.js";
 import { getSymbol, getDecimals } from "../lib/erc20.js";
 import { topV2Pools, topV3Pools } from "../read/subgraphQueries.js";
 import { provider } from "../lib/client.js";
 import { fmtEpoch } from "../lib/epoch.js";
+import { buildBestSwapTx } from "../lib/txBuilders.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/stats.ts <command> [options]
@@ -162,36 +165,135 @@ async function cmdQuote(argv: any) {
 
 async function cmdSmoke() {
   const out: string[] = [];
+  let failed = 0;
   const ok = (label: string, val: unknown) => out.push(`[PASS] ${label}: ${val}`);
-  const fail = (label: string, err: unknown) =>
+  const fail = (label: string, err: unknown) => {
     out.push(`[FAIL] ${label}: ${(err as Error).message ?? err}`);
+    failed++;
+  };
+  const p = provider();
 
   try {
-    const block = await provider().getBlockNumber();
-    ok("RPC blockNumber", block);
+    ok("RPC blockNumber", await p.getBlockNumber());
   } catch (e) {
     fail("RPC blockNumber", e);
   }
 
+  // Every ADDR entry must have deployed bytecode at this block. Catches a stale config.
   try {
-    const pools = await topV3Pools(3);
-    ok("v3 subgraph", `top pool TVL=${pools[0]?.totalValueLockedUSD ?? "(none)"}`);
+    const entries = Object.entries(ADDR);
+    const codes = await Promise.all(entries.map(([, a]) => p.getCode(a)));
+    const missing = entries
+      .map(([name], i) => (codes[i] === "0x" ? name : null))
+      .filter((n): n is string => n !== null);
+    if (missing.length > 0) {
+      throw new Error(`no bytecode at: ${missing.join(", ")}`);
+    }
+    ok("ADDR bytecode", `${entries.length}/${entries.length} addresses have code`);
+  } catch (e) {
+    fail("ADDR bytecode", e);
+  }
+
+  try {
+    const [sym, dec] = await Promise.all([
+      getSymbol(TOKENS.TOPAZ.address),
+      getDecimals(TOKENS.TOPAZ.address),
+    ]);
+    if (sym !== "TOPAZ") throw new Error(`symbol=${sym}, expected TOPAZ`);
+    if (dec !== 18) throw new Error(`decimals=${dec}, expected 18`);
+    ok("TOPAZ symbol+decimals", `${sym} (${dec})`);
+  } catch (e) {
+    fail("TOPAZ symbol+decimals", e);
+  }
+
+  try {
+    const pools = await topV3Pools(5);
+    const tvl = Number(pools[0]?.totalValueLockedUSD ?? 0);
+    if (!(tvl > 0)) throw new Error(`top v3 pool TVL=${tvl}`);
+    ok("v3 subgraph", `top pool TVL=$${tvl.toFixed(2)}`);
   } catch (e) {
     fail("v3 subgraph", e);
   }
 
   try {
-    const pairs = await topV2Pools(3);
-    ok("v2 subgraph", `top pair TVL=${pairs[0]?.reserveUSD ?? "(none)"}`);
+    const pairs = await topV2Pools(5);
+    const tvl = Number(pairs[0]?.reserveUSD ?? 0);
+    if (!(tvl > 0)) throw new Error(`top v2 pair reserveUSD=${tvl}`);
+    ok("v2 subgraph", `top pair TVL=$${tvl.toFixed(2)}`);
   } catch (e) {
     fail("v2 subgraph", e);
   }
 
   try {
-    const sym = await getSymbol(TOKENS.TOPAZ.address);
-    ok("ERC20.symbol(TOPAZ)", sym);
+    const amountIn = 10n ** 17n; // 0.1 WBNB — small but live
+    const best = await bestQuote(
+      TOKENS.WBNB.address,
+      TOKENS.TOPAZ.address,
+      amountIn,
+      { allowMixed: false },
+    );
+    if (best.amountOut <= 0n) throw new Error("amountOut=0");
+    if (best.exec.type !== "v3-single" && best.exec.type !== "v3-path") {
+      throw new Error(`route type ${best.exec.type}, expected v3-single|v3-path`);
+    }
+    ok(
+      "bestQuote WBNB→TOPAZ (0.1)",
+      `${best.route} → ${formatUnits(best.amountOut, 18)} TOPAZ`,
+    );
   } catch (e) {
-    fail("ERC20.symbol(TOPAZ)", e);
+    fail("bestQuote WBNB→TOPAZ", e);
+  }
+
+  try {
+    const amountIn = 10n ** 17n;
+    const built = await buildBestSwapTx({
+      tokenIn: TOKENS.WBNB.address,
+      tokenOut: TOKENS.TOPAZ.address,
+      amountIn,
+      recipient: "0x000000000000000000000000000000000000dEaD",
+      slippageBps: 100n,
+    });
+    if (built.to !== ADDR.SwapRouter) {
+      throw new Error(`to=${built.to}, expected SwapRouter ${ADDR.SwapRouter}`);
+    }
+    if (!built.data.startsWith("0x") || built.data.length < 10) {
+      throw new Error(`bad data: ${built.data.slice(0, 32)}...`);
+    }
+    if (built.value !== amountIn) throw new Error(`value=${built.value}, expected amountIn ${amountIn}`);
+    if (built.expectedOut <= 0n) throw new Error("expectedOut <= 0");
+    if (built.amountOutMin <= 0n) throw new Error("amountOutMin <= 0");
+    if (built.quotedAt <= 0) throw new Error("quotedAt missing");
+    if (built.deadline <= Math.floor(Date.now() / 1000)) {
+      throw new Error("deadline not in the future");
+    }
+    ok(
+      "buildBestSwapTx WBNB→TOPAZ",
+      `route=${built.route} expectedOut=${formatUnits(built.expectedOut, 18)} TOPAZ amountOutMin=${formatUnits(built.amountOutMin, 18)}`,
+    );
+  } catch (e) {
+    fail("buildBestSwapTx WBNB→TOPAZ", e);
+  }
+
+  try {
+    const pools = await topV3Pools(5);
+    const voter = new Contract(ADDR.Voter, ABIS.Voter, p);
+    let live: { pool: string; gauge: string } | null = null;
+    for (const pool of pools) {
+      const gauge: string = await voter.gauges(pool.id);
+      if (gauge === ZeroAddress) continue;
+      const alive: boolean = await voter.isAlive(gauge);
+      if (alive) {
+        live = { pool: pool.id, gauge };
+        break;
+      }
+    }
+    if (!live) throw new Error("no live gauge across top 5 v3 pools by TVL");
+    ok(
+      "Voter.gauges live",
+      `pool=${live.pool.slice(0, 10)}… gauge=${live.gauge.slice(0, 10)}… isAlive=true`,
+    );
+  } catch (e) {
+    fail("Voter.gauges live", e);
   }
 
   try {
@@ -202,6 +304,10 @@ async function cmdSmoke() {
   }
 
   console.log(out.join("\n"));
+  if (failed > 0) {
+    console.error(`\n${failed} smoke check(s) failed`);
+    process.exit(1);
+  }
 }
 
 function serialize(value: unknown): unknown {
