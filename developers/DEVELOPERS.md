@@ -18,19 +18,20 @@ Topaz Dex runs on **BNB Chain mainnet (chain id 56)** and combines:
 ## Quickstart
 
 ```bash
-git clone https://github.com/topazdex/agent-skill.git
-cd agent-skill/scripts
+cd topaz-skill/scripts
 cp .env.example .env
 # edit .env and set BSC_RPC_URL; PRIVATE_KEY is only needed for broadcasting writes
-corepack yarn install
-corepack yarn smoke
+yarn install
+yarn smoke
 ```
 
 Read-only helpers work with only `BSC_RPC_URL`. Write executors require `PRIVATE_KEY`. Transaction builders do **not** require `PRIVATE_KEY` because they only construct calldata.
 
+The package targets Node ≥ 20. Yarn 4 (via Corepack) is used in this repo; run `corepack enable` once if you do not already have Yarn on `PATH`, then use `yarn ...` normally.
+
 ## Importable modules
 
-The scripts package now exposes a small public surface via `src/index.ts`:
+The scripts package exposes a small public surface via `src/index.ts`:
 
 ```ts
 import {
@@ -39,11 +40,13 @@ import {
   bestQuote,
   buildBestSwapTx,
   buildV3SwapTx,
-  getV3PoolInfo,
+  getPoolV3,
 } from "./src/index.js";
 ```
 
 For production apps, prefer importing from package exports once this repository is published as an npm package. Until then, use these files as reference implementations or vendor them into your app.
+
+> **Bundler note:** `scripts/src/lib/abis.ts` loads ABI JSON from `references/abis/*.json` via `fs.readFileSync` at import time. This package is therefore Node-only as written. If you intend to ship it to the browser, either inline the ABIs (e.g. import the JSON directly via your bundler) or copy the files into your build's runtime asset path.
 
 ## Core contract addresses
 

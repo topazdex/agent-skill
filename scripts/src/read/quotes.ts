@@ -1,4 +1,4 @@
-import { Contract, getAddress, parseUnits } from "ethers";
+import { Contract, ZeroAddress, getAddress, parseUnits } from "ethers";
 import { ABIS } from "../lib/abis.js";
 import { provider } from "../lib/client.js";
 import { ADDR, TICK_SPACINGS } from "../config/addresses.js";
@@ -13,7 +13,7 @@ const mixedQuoter = () =>
   new Contract(ADDR.MixedRouteQuoterV1, ABIS.MixedRouteQuoterV1, provider());
 
 export interface QuoteResult {
-  route: string; // human description
+  route: string;
   amountOut: bigint;
   detail: unknown;
 }
@@ -36,11 +36,15 @@ export async function quoteV2(
   stable: boolean
 ): Promise<bigint> {
   const pool = await findV2Pool(tokenIn, tokenOut, stable);
-  if (pool === "0x0000000000000000000000000000000000000000") return 0n;
-  const amounts: bigint[] = await router().getAmountsOut(amountIn, [
-    v2Route(tokenIn, tokenOut, stable),
-  ]);
-  return amounts[amounts.length - 1] ?? 0n;
+  if (pool === ZeroAddress) return 0n;
+  try {
+    const amounts: bigint[] = await router().getAmountsOut(amountIn, [
+      v2Route(tokenIn, tokenOut, stable),
+    ]);
+    return amounts[amounts.length - 1] ?? 0n;
+  } catch {
+    return 0n;
+  }
 }
 
 export async function quoteV2Route(
@@ -64,7 +68,7 @@ export async function quoteV3Single(
 ): Promise<bigint> {
   try {
     const pool = await findV3Pool(tokenIn, tokenOut, tickSpacing);
-    if (pool === "0x0000000000000000000000000000000000000000") return 0n;
+    if (pool === ZeroAddress) return 0n;
     const result = await quoter().quoteExactInputSingle.staticCall({
       tokenIn,
       tokenOut,
@@ -109,42 +113,78 @@ export type ExecRoute =
   | { type: "v2"; route: V2Route[] }
   | { type: "v3-single"; tokenIn: string; tokenOut: string; tickSpacing: number }
   | { type: "v3-path"; tokens: string[]; spacings: number[] }
-  | { type: "mixed"; tokens: string[]; hops: number[] }; // executed leg-by-leg
+  | { type: "mixed"; tokens: string[]; hops: number[] };
 
-/**
- * Find the best route for tokenIn -> tokenOut at the given amount.
- * Tries: direct v2 (volatile + stable), direct v3 at each tick spacing,
- * 2-hop via WBNB / USDT / USDC / BTCB (every v2/v3 combination).
- */
-export async function bestQuote(
+export interface BestQuoteOptions {
+  /**
+   * If false, mixed v2/v3 candidates are dropped before selecting the best
+   * route. Defaults to true. The mixed quoter (`MixedRouteQuoterV1`) returns
+   * accurate output for a leg-by-leg path, but there is no atomic mixed-route
+   * router on Topaz today, so wallet-facing builders should request
+   * `allowMixed: false` to avoid getting back a route they cannot execute in
+   * a single transaction.
+   */
+  allowMixed?: boolean;
+  /**
+   * Maximum number of candidate quotes to dispatch concurrently. Defaults to 10.
+   * Lower this if your RPC rate-limits you; raise it on a private RPC that can
+   * absorb the load.
+   */
+  concurrency?: number;
+}
+
+type CandidateTask = () => Promise<BestRoute | null>;
+
+async function mapWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  concurrency: number
+): Promise<T[]> {
+  const out: T[] = new Array(tasks.length);
+  let next = 0;
+  const limit = Math.max(1, Math.floor(concurrency));
+  const workers = Array.from({ length: Math.min(limit, tasks.length) }, async () => {
+    while (true) {
+      const i = next++;
+      if (i >= tasks.length) return;
+      out[i] = await tasks[i]();
+    }
+  });
+  await Promise.all(workers);
+  return out;
+}
+
+function buildCandidateTasks(
   tokenIn: string,
   tokenOut: string,
-  amountIn: bigint
-): Promise<BestRoute> {
-  const candidates: BestRoute[] = [];
+  amountIn: bigint,
+  allowMixed: boolean
+): CandidateTask[] {
+  const tasks: CandidateTask[] = [];
 
   // Direct v2
-  for (const stable of [false, true]) {
-    const out = await quoteV2(tokenIn, tokenOut, amountIn, stable);
-    if (out > 0n) {
-      candidates.push({
+  for (const stable of [false, true] as const) {
+    tasks.push(async () => {
+      const out = await quoteV2(tokenIn, tokenOut, amountIn, stable);
+      if (out === 0n) return null;
+      return {
         amountOut: out,
         route: `v2 ${stable ? "stable" : "volatile"} direct`,
         exec: { type: "v2", route: [v2Route(tokenIn, tokenOut, stable)] },
-      });
-    }
+      };
+    });
   }
 
   // Direct v3
   for (const ts of TICK_SPACINGS) {
-    const out = await quoteV3Single(tokenIn, tokenOut, amountIn, ts);
-    if (out > 0n) {
-      candidates.push({
+    tasks.push(async () => {
+      const out = await quoteV3Single(tokenIn, tokenOut, amountIn, ts);
+      if (out === 0n) return null;
+      return {
         amountOut: out,
         route: `v3 direct ts=${ts}`,
         exec: { type: "v3-single", tokenIn, tokenOut, tickSpacing: ts },
-      });
-    }
+      };
+    });
   }
 
   // 2-hop via common intermediaries
@@ -158,69 +198,122 @@ export async function bestQuote(
 
   for (const via of hops) {
     // v2-v2
-    for (const s1 of [false, true]) {
-      for (const s2 of [false, true]) {
-        const out = await quoteV2Route(amountIn, [
-          v2Route(tokenIn, via, s1),
-          v2Route(via, tokenOut, s2),
-        ]);
-        if (out > 0n) {
-          candidates.push({
+    for (const s1 of [false, true] as const) {
+      for (const s2 of [false, true] as const) {
+        tasks.push(async () => {
+          const out = await quoteV2Route(amountIn, [
+            v2Route(tokenIn, via, s1),
+            v2Route(via, tokenOut, s2),
+          ]);
+          if (out === 0n) return null;
+          return {
             amountOut: out,
             route: `v2 ${s1 ? "stable" : "volatile"} → ${s2 ? "stable" : "volatile"} via ${shortAddr(via)}`,
             exec: {
               type: "v2",
               route: [v2Route(tokenIn, via, s1), v2Route(via, tokenOut, s2)],
             },
-          });
-        }
+          };
+        });
       }
     }
     // v3-v3
     for (const ts1 of TICK_SPACINGS) {
       for (const ts2 of TICK_SPACINGS) {
-        const path = encodePath([tokenIn, via, tokenOut], [ts1, ts2]);
-        const out = await quoteV3Path(path, amountIn);
-        if (out > 0n) {
-          candidates.push({
+        tasks.push(async () => {
+          const path = encodePath([tokenIn, via, tokenOut], [ts1, ts2]);
+          const out = await quoteV3Path(path, amountIn);
+          if (out === 0n) return null;
+          return {
             amountOut: out,
             route: `v3 ts=${ts1} → ts=${ts2} via ${shortAddr(via)}`,
             exec: { type: "v3-path", tokens: [tokenIn, via, tokenOut], spacings: [ts1, ts2] },
-          });
-        }
+          };
+        });
       }
     }
+    if (!allowMixed) continue;
     // mixed (v3 then v2; v2 then v3)
     for (const ts of TICK_SPACINGS) {
       for (const v2Hop of [V2_VOLATILE, V2_STABLE]) {
-        const pathA = encodeMixedPath([tokenIn, via, tokenOut], [ts, v2Hop]);
-        const outA = await quoteMixed(pathA, amountIn);
-        if (outA > 0n) {
-          candidates.push({
-            amountOut: outA,
+        tasks.push(async () => {
+          const pathA = encodeMixedPath([tokenIn, via, tokenOut], [ts, v2Hop]);
+          const out = await quoteMixed(pathA, amountIn);
+          if (out === 0n) return null;
+          return {
+            amountOut: out,
             route: `mixed v3 ts=${ts} → v2 ${v2Hop === V2_STABLE ? "stable" : "volatile"} via ${shortAddr(via)}`,
             exec: { type: "mixed", tokens: [tokenIn, via, tokenOut], hops: [ts, v2Hop] },
-          });
-        }
-        const pathB = encodeMixedPath([tokenIn, via, tokenOut], [v2Hop, ts]);
-        const outB = await quoteMixed(pathB, amountIn);
-        if (outB > 0n) {
-          candidates.push({
-            amountOut: outB,
+          };
+        });
+        tasks.push(async () => {
+          const pathB = encodeMixedPath([tokenIn, via, tokenOut], [v2Hop, ts]);
+          const out = await quoteMixed(pathB, amountIn);
+          if (out === 0n) return null;
+          return {
+            amountOut: out,
             route: `mixed v2 ${v2Hop === V2_STABLE ? "stable" : "volatile"} → v3 ts=${ts} via ${shortAddr(via)}`,
             exec: { type: "mixed", tokens: [tokenIn, via, tokenOut], hops: [v2Hop, ts] },
-          });
-        }
+          };
+        });
       }
     }
   }
+  return tasks;
+}
 
-  if (candidates.length === 0) {
-    throw new Error("no viable route found");
+function assertQuoteInputs(tokenIn: string, tokenOut: string, amountIn: bigint): void {
+  if (tokenIn.toLowerCase() === tokenOut.toLowerCase()) {
+    throw new Error("tokenIn and tokenOut must differ");
   }
+  if (amountIn <= 0n) {
+    throw new Error("amountIn must be > 0");
+  }
+  // Throws on malformed input.
+  getAddress(tokenIn);
+  getAddress(tokenOut);
+}
 
+/**
+ * Find the best route for tokenIn -> tokenOut at the given amount.
+ * Tries: direct v2 (volatile + stable), direct v3 at each tick spacing,
+ * 2-hop via WBNB / USDT / USDC / BTCB (every v2/v3 combination).
+ *
+ * All candidate quotes are dispatched in parallel with bounded concurrency
+ * (see `opts.concurrency`, default 10). On public RPCs lower this to ~5 to
+ * avoid 429s.
+ */
+export async function bestQuote(
+  tokenIn: string,
+  tokenOut: string,
+  amountIn: bigint,
+  opts: BestQuoteOptions = {}
+): Promise<BestRoute> {
+  const sorted = await topRoutes(tokenIn, tokenOut, amountIn, opts);
+  const best = sorted[0];
+  if (!best) throw new Error("no viable route found");
+  return best;
+}
+
+/**
+ * Same enumeration as `bestQuote` but returns all candidates sorted by
+ * `amountOut` descending. Useful for UIs that display route alternatives or
+ * for tools that compare best-mixed vs. best-executable side by side.
+ */
+export async function topRoutes(
+  tokenIn: string,
+  tokenOut: string,
+  amountIn: bigint,
+  opts: BestQuoteOptions & { limit?: number } = {}
+): Promise<BestRoute[]> {
+  assertQuoteInputs(tokenIn, tokenOut, amountIn);
+  const allowMixed = opts.allowMixed ?? true;
+  const concurrency = opts.concurrency ?? 10;
+  const tasks = buildCandidateTasks(tokenIn, tokenOut, amountIn, allowMixed);
+  const results = await mapWithConcurrency(tasks, concurrency);
+  const candidates = results.filter((r): r is BestRoute => r !== null);
   candidates.sort((a, b) => (b.amountOut > a.amountOut ? 1 : b.amountOut < a.amountOut ? -1 : 0));
-  return candidates[0];
+  return opts.limit !== undefined ? candidates.slice(0, opts.limit) : candidates;
 }
 
 function shortAddr(a: string): string {
@@ -233,12 +326,13 @@ function shortAddr(a: string): string {
 export async function quoteHuman(
   tokenIn: string,
   tokenOut: string,
-  amountHuman: string
+  amountHuman: string,
+  opts: BestQuoteOptions = {}
 ): Promise<{ best: BestRoute; amountOutHuman: string; decimalsOut: number }> {
   const decIn = await getDecimals(tokenIn);
   const decOut = await getDecimals(tokenOut);
   const amountIn = parseUnits(amountHuman, decIn);
-  const best = await bestQuote(tokenIn, tokenOut, amountIn);
+  const best = await bestQuote(tokenIn, tokenOut, amountIn, opts);
   const amountOutHuman = (Number(best.amountOut) / 10 ** decOut).toString();
   return { best, amountOutHuman, decimalsOut: decOut };
 }

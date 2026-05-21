@@ -23,7 +23,7 @@ import {
   buildBestSwapTx,
   buildV2SwapTx,
   buildV3SwapTx,
-  getV3PoolInfo,
+  getPoolV3,
 } from "../scripts/src/index.js";
 ```
 

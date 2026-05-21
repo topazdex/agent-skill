@@ -52,8 +52,8 @@ Show both the expected output and minimum output. Do not hide slippage from the 
 - `v2 volatile direct`
 - `v2 stable direct`
 - `v3 direct ts=200`
-- `v3 ts=200 -> ts=100 via 0x...`
-- `mixed v3 ts=200 -> v2 volatile via 0x...`
+- `v3 ts=200 → ts=100 via 0x…` (note the Unicode arrow `→` and ellipsis emitted by `bestQuote`)
+- `mixed v3 ts=200 → v2 volatile via 0x…`
 
 For polished UI, map these to icons/badges:
 
@@ -64,12 +64,13 @@ For polished UI, map these to icons/badges:
 
 ## Important caveat: mixed execution
 
-The mixed quoter can return the best economic route, but not every mixed path is currently exposed as a single high-level write helper. If your UI supports mixed routes, either:
+The mixed quoter (`MixedRouteQuoterV1`) prices v2↔v3 paths accurately, but Topaz has no atomic mixed-route executor today. `bestQuote` returns mixed candidates by default so analytics consumers can see the true best price; pass `{ allowMixed: false }` when the quote will feed a wallet:
 
-1. build the exact mixed-route swap calldata against `MixedRouteQuoterV1` / compatible router support after confirming execution support, or
-2. restrict wallet execution to routes whose `exec.type` is `v2`, `v3-single`, or `v3-path`, and label mixed routes as quote-only until execution is implemented.
+```ts
+const quote = await bestQuote(tokenIn, tokenOut, amountIn, { allowMixed: false });
+```
 
-`buildBestSwapTx` intentionally rejects `exec.type === "mixed"` instead of silently broadcasting a leg-by-leg route with extra risk.
+`buildBestSwapTx` does this internally, so it will never return a mixed route. If you want to surface "best economic price (mixed)" alongside "best executable price", call `bestQuote` twice — once with each value of `allowMixed`.
 
 ## Thin-liquidity warnings
 

@@ -18,6 +18,8 @@ type BuiltSwapTx = {
   expectedOut: bigint;
   amountOutMin: bigint;
   route: string;
+  quotedAt: number;   // unix seconds; use for freshness checks
+  deadline: number;   // unix seconds passed to the router
   approval?: {
     token: string;
     spender: string;
@@ -25,6 +27,36 @@ type BuiltSwapTx = {
   };
 };
 ```
+
+Every builder validates inputs before quoting:
+
+- `tokenIn` / `tokenOut` / `recipient` must be valid (checksummable) addresses; malformed strings throw.
+- `tokenIn !== tokenOut`, `recipient !== ZeroAddress`, `amountIn > 0`.
+- `slippageBps` is clamped to `0..10000` (0%..100%). Anything else throws.
+- `deadline` must be strictly in the future.
+
+If any check fails the builder throws synchronously — no half-built calldata is returned.
+
+## Skipping redundant approvals
+
+Pass `payer` (the address that will sign and supply `tokenIn`) and the builder will read `allowance(tokenIn, payer, spender)` and **omit** the `approval` field when the existing allowance already covers `amountIn`. This saves the user a tx and a gas trip:
+
+```ts
+const tx = await buildBestSwapTx({
+  tokenIn: ADDR.WBNB,
+  tokenOut: ADDR.TOPAZ,
+  amountIn: "0.5",
+  recipient: userAddress,
+  payer: userAddress,       // <-- enables the allowance check
+  slippageBps: 100n,
+});
+
+if (tx.approval) {
+  // truly needed; have the wallet sign approve() first
+}
+```
+
+Omit `payer` entirely if you'd rather always emit the approval and let the wallet decide.
 
 ## Best-route swap
 
@@ -92,9 +124,9 @@ if (tx.approval) {
 
 Native BNB-in routes do not require ERC20 approval. ERC20-in routes do.
 
-## Why builders reject some routes
+## Why builders skip some routes
 
-`buildBestSwapTx` rejects quote-only mixed routes for now. That is deliberate: a builder should never convert a best quote into a different execution path without telling the user. If the best quote is mixed and your app cannot execute it atomically, re-quote with route constraints or show the best executable route separately.
+`buildBestSwapTx` quotes with `allowMixed: false` and therefore only ever picks a route whose `exec.type` is `v2`, `v3-single`, or `v3-path`. Mixed v2/v3 routes are returned by `bestQuote` (with `allowMixed: true`, the default) because the on-chain `MixedRouteQuoterV1` can price them accurately, but Topaz does not currently expose an atomic mixed-route executor, so a builder would otherwise have to broadcast leg-by-leg with extra MEV / partial-fill risk. If you want to inspect or display the raw best route — including mixed — call `bestQuote(...)` directly and only hand the result to `buildFromExecRoute(...)` after you confirm the leg you are willing to execute.
 
 ## Production checklist
 
