@@ -48,7 +48,12 @@ const stakedV2 = await myStakedV2Gauges(account);    // [0xGAUGE2, ...]
 if (stakedV2.length > 0) await voter.claimRewards(stakedV2);
 
 const stakedV3 = await myStakedV3Gauges(account);    // [{ gauge, tokenIds }, ...]
-for (const g of stakedV3) await clGaugeContract(g.gauge).getReward(account);
+for (const g of stakedV3) {
+  for (const tokenId of g.tokenIds) {
+    // CLGauge.getReward(address) is voter-only — loop per tokenId
+    await clGaugeContract(g.gauge)["getReward(uint256)"](tokenId);
+  }
+}
 
 // 2. Voting fees — only pools you voted for last epoch
 const votedPools = await myVotedPools(tokenId);
@@ -92,8 +97,8 @@ All four sections should now show ~0 (or very small amounts that accrued between
 
 A "claim everything" with 3 voted pools and 2 staked gauges is typically 4 transactions:
 
-1. v2 `claimRewards` (one tx for all v2 gauges)
-2. v3 `getReward` per gauge (one tx each — 1 tx here)
+1. v2 `Voter.claimRewards([gauges])` (one tx for all v2 gauges)
+2. v3 `CLGauge.getReward(uint256)` per staked tokenId (one tx each — typically 1–2)
 3. `claimFees` (one tx for all voted pools)
 4. `claimBribes` (one tx for all voted pools)
 5. `claim` rebase (one tx)

@@ -65,10 +65,11 @@ console.log(`Pending TOPAZ: ${formatUnits(pending, 18)}`);
 await clGauge.attach(gauge).getReward(tokenId);    // sends TOPAZ to position owner
 ```
 
-Or batch across all your staked positions in this gauge:
+There is no user-callable batch overload — `CLGauge.getReward(address)` is voter-only. To claim across multiple of your staked tokenIds, loop:
 
 ```ts
-await clGauge.attach(gauge).getReward(account);    // claims for all of `account`'s staked tokenIds in this gauge
+const tokenIds = await clGauge.attach(gauge).stakedValues(account);
+for (const id of tokenIds) await clGauge.attach(gauge)["getReward(uint256)"](id);
 ```
 
 ## 6. Unstake (auto-claims)

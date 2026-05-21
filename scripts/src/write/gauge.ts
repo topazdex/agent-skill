@@ -74,9 +74,8 @@ export async function getRewardV2(args: { gauge: string; account?: string }) {
   return await c.getReward(account);
 }
 
-export async function getRewardV3(args: { gauge: string; tokenId?: bigint; account?: string }) {
+export async function getRewardV3(args: { gauge: string; tokenId: bigint }) {
+  // CLGauge.getReward(address) is voter-only; users must call getReward(uint256 tokenId).
   const c = new Contract(args.gauge, ABIS.CLGauge, signer());
-  if (args.tokenId !== undefined) return await c["getReward(uint256)"](args.tokenId);
-  const account = args.account ?? (await signer().getAddress());
-  return await c["getReward(address)"](account);
+  return await c["getReward(uint256)"](args.tokenId);
 }

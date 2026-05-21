@@ -15,13 +15,15 @@ Each stream is independent. A vote-and-stake user typically claims all four.
 
 ```solidity
 // v2
-function Gauge.getReward(address _account) external;        // permissionless; sends to _account
-function Voter.claimRewards(address[] memory _gauges) external;   // batch; sends to msg.sender
+function Gauge.getReward(address _account) external;              // caller must be _account OR Voter; rewards sent to _account
+function Voter.claimRewards(address[] memory _gauges) external;   // batch; calls Gauge.getReward(msg.sender) for each gauge
 
 // v3 (CL)
-function CLGauge.getReward(uint256 tokenId) external;       // owner only
-function CLGauge.getReward(address account) external;       // batch all of `account`'s staked tokenIds
+function CLGauge.getReward(uint256 tokenId) external;       // caller must own the staked NFT (was the depositor)
+function CLGauge.getReward(address account) external;       // **VOTER-ONLY** — `require(msg.sender == voter)`; not user-callable
 ```
+
+For users claiming CL gauge emissions, **iterate your staked tokenIds and call `getReward(uint256)` for each**. The `getReward(address)` overload exists for Voter-driven batch distribution, not retail use.
 
 To find every gauge `account` currently has stake in: track from your own logs, or enumerate `Voter.length()` pools and read `gauge.balanceOf(account)` / `gauge.stakedLength(account)` for each. The library function `scripts/src/read/claimable.ts:claimableGaugeRewards(account)` does this with multicall.
 
@@ -29,9 +31,9 @@ After `getReward`, the gauge's `earned(account)` returns 0; `userRewardPerTokenP
 
 ### Permissionlessness
 
-For v2 `Gauge.getReward(_account)`, anyone can call to push rewards to `_account`. This means a keeper / aggregator can poke rewards for users (gas paid by keeper, rewards still go to account). Useful for auto-compounding.
+For v2 `Gauge.getReward(_account)`, the caller must be either `_account` itself or the Voter contract — so it's **not** permissionless. To claim for someone else, route via `Voter.claimRewards([gauges])` (which calls `getReward(msg.sender)`), or call directly as the staker.
 
-For `CLGauge.getReward(tokenId)`, only the owner of the staked position can call. For `CLGauge.getReward(account)`, only `account` itself can call (per source).
+For `CLGauge.getReward(uint256 tokenId)`, only the original depositor (the staker recorded for that tokenId) can call. `CLGauge.getReward(address account)` is reserved for the Voter contract and reverts for end users.
 
 ## 2. Voting fees
 
@@ -116,7 +118,9 @@ const stakedGauges = await myStakedGauges(account);    // helper in scripts/src/
 const v2Gauges = stakedGauges.filter(g => g.type === "v2");
 const v3Gauges = stakedGauges.filter(g => g.type === "v3");
 if (v2Gauges.length > 0) await voter.claimRewards(v2Gauges.map(g => g.gauge));
-for (const g of v3Gauges) await clGauge(g.gauge).getReward(account);
+for (const g of v3Gauges) {
+  for (const tokenId of g.tokenIds) await clGauge(g.gauge)["getReward(uint256)"](tokenId);
+}
 
 // 2. Find voted-for gauges from prior epoch and claim fees + bribes
 if (lastVoted > 0 && lastVoted < currentEpoch) {

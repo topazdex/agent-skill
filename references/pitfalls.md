@@ -31,7 +31,7 @@ Common mistakes to avoid when interacting with Topaz.
 ## Voting
 
 - **`vote` and `reset` revert if called twice in one epoch.** Check `Voter.lastVoted(tokenId)` first. To change vote weights inside the same epoch, you cannot — wait until Thursday 00:00 UTC.
-- **`poke` is the only way to refresh voting power mid-epoch** (e.g. after `increaseAmount` grew your veNFT). It re-applies your existing pool/weight allocation with the new balance.
+- **`poke` is the only way to refresh voting power mid-epoch** (e.g. after `increaseAmount` grew your veNFT). It re-applies your existing pool/weight allocation with the new balance. Not subject to `onlyNewEpoch` but still blocked during the first hour of each epoch (Thu 00:00–01:00 UTC, `DistributeWindow`).
 - **`vote` requires `isApprovedOrOwner(msg.sender, tokenId)`.** Calling from a contract you don't own the NFT in (and didn't `approve` from the owner) reverts.
 - **Voting with `maxVotingNum` (30) pools at once is the cap.** If your vote allocation has 31+ pools, split into multiple veNFTs or drop the lowest-weight choices.
 - **Weights are relative.** `[100, 200]` and `[1, 2]` produce identical allocations. Don't try to make weights "match percent" — the contract normalizes to `usedWeights = balanceOfNFT(tokenId)`.
@@ -43,7 +43,8 @@ Common mistakes to avoid when interacting with Topaz.
 - **`increaseUnlockTime(tokenId, newDuration)`** is interpreted as *the duration from now*, not as an absolute timestamp. Passing a duration that's *less than* the current remaining lock reverts.
 - **You can't `withdraw` before `unlockTime`** unless the lock has been "permanent-unlocked" via `unlockPermanent` + waited. Permanent locks have no expiry until you call `unlockPermanent`.
 - **`merge(from, to)`** transfers all of `from`'s amount into `to` and burns `from`. The destination keeps the longer of the two unlock times. You cannot merge if `from` is voting in the current epoch (must `reset` first, but reset is blocked by `onlyNewEpoch` if you already voted this week — plan ahead).
-- **`split` is gated by `canSplit[owner]`** — set per-address via `VotingEscrow.toggleSplit`. If you can't split, it's likely disabled for your address.
+- **`split` is gated by `canSplit[owner]`** — set per-address via `VotingEscrow.toggleSplit` (or globally via `canSplit[address(0)]`). It's disabled for everyone by default; if your tx reverts with `SplitNotAllowed` that's why.
+- **`split` burns the original veNFT and mints two new ones** (remainder + split-off amount). The new tokenIds are emitted in the `Split` event — your old tokenId is gone.
 
 ## Bribes / fees
 

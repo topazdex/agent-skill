@@ -114,13 +114,31 @@ export async function getBribeInfo(pool: string): Promise<BribeInfo | null> {
   return { bribeContract: bribeAddr, rewardTokens: tokens, perEpochAmounts: amounts };
 }
 
+/**
+ * Split active pools into v2 and v3 sets in one pass.
+ * detectPoolType makes 2 RPC calls per pool; batch them all in parallel.
+ */
+async function partitionPoolsByType(pools: string[]): Promise<{ v2: string[]; v3: string[] }> {
+  const types = await Promise.all(pools.map((p) => detectPoolType(p).catch(() => null)));
+  const v2: string[] = [];
+  const v3: string[] = [];
+  pools.forEach((p, i) => {
+    if (types[i] === "v2") v2.push(p);
+    else if (types[i] === "v3") v3.push(p);
+  });
+  return { v2, v3 };
+}
+
 export async function v2StakedGaugesForAccount(account: string): Promise<string[]> {
-  const pools = await listAllPools();
+  const allPools = await listAllPools();
+  const { v2: v2Pools } = await partitionPoolsByType(allPools);
   const v = voter();
-  const gauges = await Promise.all(pools.map((p) => v.gauges(p) as Promise<string>));
+  const gauges = await Promise.all(v2Pools.map((p) => v.gauges(p) as Promise<string>));
   const balances = await Promise.all(
-    gauges.map((g, i) =>
-      g === ZeroAddress ? Promise.resolve(0n) : gaugeC(g).balanceOf(account) as Promise<bigint>
+    gauges.map((g) =>
+      g === ZeroAddress
+        ? Promise.resolve(0n)
+        : (gaugeC(g).balanceOf(account) as Promise<bigint>).catch(() => 0n)
     )
   );
   return gauges.filter((_, i) => balances[i] > 0n);
@@ -129,17 +147,14 @@ export async function v2StakedGaugesForAccount(account: string): Promise<string[
 export async function v3StakedGaugesForAccount(
   account: string
 ): Promise<{ gauge: string; tokenIds: bigint[] }[]> {
-  const pools = await listAllPools();
+  const allPools = await listAllPools();
+  const { v3: v3Pools } = await partitionPoolsByType(allPools);
   const v = voter();
-  const gauges = await Promise.all(pools.map((p) => v.gauges(p) as Promise<string>));
-  const types = await Promise.all(
-    pools.map((p) => detectPoolType(p).catch(() => null))
-  );
-
-  const v3Gauges = gauges.filter((g, i) => g !== ZeroAddress && types[i] === "v3");
+  const gauges = await Promise.all(v3Pools.map((p) => v.gauges(p) as Promise<string>));
+  const v3Gauges = gauges.filter((g) => g !== ZeroAddress);
   const result = await Promise.all(
     v3Gauges.map(async (g) => {
-      const ids: bigint[] = await clGaugeC(g).stakedValues(account);
+      const ids: bigint[] = await clGaugeC(g).stakedValues(account).catch(() => []);
       return { gauge: g, tokenIds: ids };
     })
   );

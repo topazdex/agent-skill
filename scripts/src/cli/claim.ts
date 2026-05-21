@@ -15,7 +15,7 @@ Usage: yarn tsx src/cli/claim.ts <cmd> [options]
 
   all          --id <tokenId> [--address <addr>]
   gauge-v2     [--address <addr>]                    # batch all v2 gauges you're staked in
-  gauge        --gauge <addr> [--tokenId <id>]       # CL: claim by tokenId (or by account if omitted)
+  gauge        --gauge <addr> --tokenId <id>         # CL gauge: claim emissions for one staked position
   fees         --id <tokenId> --pool 0xA [--pool 0xB ...]
   bribes       --id <tokenId> --pool 0xA [--pool 0xB ...]
   rebase       --id <tokenId>
@@ -53,9 +53,10 @@ async function main() {
       break;
     }
     case "gauge": {
+      if (argv.tokenId === undefined) throw new Error("--tokenId required (CLGauge.getReward(uint256))");
       const tx = await claimGaugeRewardV3({
         gauge: argv.gauge,
-        tokenId: argv.tokenId !== undefined ? BigInt(argv.tokenId) : undefined,
+        tokenId: BigInt(argv.tokenId),
       });
       await tx.wait();
       console.log("ok:", tx.hash);

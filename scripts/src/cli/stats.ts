@@ -47,13 +47,16 @@ async function cmdPool(argv: any) {
   console.log("  tokens:", `${info.symbol0} (${info.decimals0}) / ${info.symbol1} (${info.decimals1})`);
   if (info.type === "v2") {
     console.log("  stable:", info.stable);
-    console.log("  fee:", `${info.fee} (= ${(info.fee / 100).toFixed(2)} bps = ${(info.fee / 10000).toFixed(4)}%)`);
+    // v2 fee is stored such that fee/10000 = decimal rate, i.e. fee is already in bps.
+    // Example: fee=30 → 30 bps = 0.30%
+    console.log("  fee:", `${info.fee} (= ${info.fee} bps = ${(info.fee / 100).toFixed(2)}%)`);
     console.log(`  reserves: ${formatUnits(info.reserve0, info.decimals0)} / ${formatUnits(info.reserve1, info.decimals1)}`);
     console.log("  totalSupply (LP):", info.totalSupply.toString());
   } else {
     console.log("  tickSpacing:", info.tickSpacing);
-    console.log("  fee:", `${info.fee} pips (${(info.fee / 10000).toFixed(2)}%)`);
-    console.log("  unstakedFee:", `${info.unstakedFee} pips`);
+    // v3 fee is in pips (1e-6). 100 pips = 0.01%
+    console.log("  fee:", `${info.fee} pips (${(info.fee / 10_000).toFixed(4)}%)`);
+    console.log("  unstakedFee:", `${info.unstakedFee} pips (${(info.unstakedFee / 10_000).toFixed(2)}%)`);
     console.log("  tick:", info.tick);
     console.log("  sqrtPriceX96:", info.sqrtPriceX96.toString());
     console.log("  liquidity:", info.liquidity.toString());

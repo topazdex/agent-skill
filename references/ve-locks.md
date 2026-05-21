@@ -75,10 +75,14 @@ function merge(uint256 _from, uint256 _to) external;
 //   _from is burned.
 //   Neither lock may be voting in the current epoch (call Voter.reset first if so).
 
-function split(uint256 _tokenId, uint256 _amount) external returns (uint256 newTokenId);
-//   Splits _amount out of _tokenId into a new NFT with the same unlock time.
-//   Requires VotingEscrow.canSplit(owner) == true (governance-gated).
-//   _tokenId must not currently be voting (reset first).
+function split(uint256 _from, uint256 _amount) external returns (uint256 tokenId1, uint256 tokenId2);
+//   BURNS _from and creates TWO new NFTs:
+//     tokenId1 = original amount - _amount    (i.e. the remainder)
+//     tokenId2 = _amount                       (the split-off piece)
+//   Both inherit _from's unlock time / permanent flag.
+//   Requires canSplit[owner] (or canSplit[address(0)]) == true (governance-gated; off by default).
+//   Reverts if _from has voted in the current epoch (voted[_from] == true).
+//   Decode the new tokenIds from the `Split` event in the receipt.
 
 function toggleSplit(address _account, bool _bool) external;   // governance only
 ```

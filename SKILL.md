@@ -15,7 +15,7 @@ Read `README.md` for the architecture diagram and full address tables. Use this 
 
 ## Mental model in one screen
 
-- **Epoch = 1 week, starts Thursday 00:00 UTC.** Voting window: Thu 01:00 UTC of the current epoch through Thu 23:00 UTC of the same week (you can re-vote only after a new epoch begins). Emissions distribute at epoch flip.
+- **Epoch = 1 week, starts Thursday 00:00 UTC.** Voting window for normal veNFTs: **Thu 01:00 UTC → next Wed 23:00 UTC**. The first hour after epoch flip is a `DistributeWindow` (no vote/reset). The last hour is whitelisted-NFTs-only. Re-voting is gated to once per epoch. Emissions distribute at epoch flip.
 - **Two pool types per pair, three pool types total per pair in practice**:
   - v2 volatile pool, identified by `(tokenA, tokenB, stable=false)` via `PoolFactory.getPool`
   - v2 stable pool, `(tokenA, tokenB, stable=true)` via `PoolFactory.getPool`

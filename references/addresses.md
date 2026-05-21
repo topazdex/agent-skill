@@ -68,8 +68,8 @@ Governance (`EpochGovernor`, `ProtocolGovernor`) is intentionally **not** docume
 | NonfungibleTokenPositionDescriptor_V1 | `0x81aCc35240D19948a56b8b68BcC8706F90baBAb5` | Legacy descriptor (archived) |
 | NFTDescriptor (library) | `0x50f9756f631266686b9A7EBDF55998dB3dA5ca0a` | |
 | NFTSVG (library) | `0x21C9257dFCdf04154D34dF5A2204B9402Ef31d9a` | |
-| CustomSwapFeeModule | `0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2` | Per-pool flat fee override (0–10%) |
-| CustomUnstakedFeeModule | `0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582` | Unstaked-position fee (default 10%) |
+| CustomSwapFeeModule | `0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2` | Per-pool flat swap fee override (MAX_FEE = 30,000 pips = 3%) |
+| CustomUnstakedFeeModule | `0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582` | Unstaked-position fee override (MAX_FEE = 500,000 pips = 50%; default 100,000 = 10%) |
 | DynamicSwapFeeModule | `0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541` | TWAP-volatility-scaled fees |
 
 ## Per-gauge addresses are dynamic

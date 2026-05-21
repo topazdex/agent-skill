@@ -18,6 +18,8 @@ function vote(
 - Reverts:
   - `NotApprovedOrOwner` — caller isn't owner or operator of `_tokenId`.
   - `AlreadyVotedOrDeposited` — `lastVoted[tokenId]` falls in the **current** epoch.
+  - `DistributeWindow` — first hour of epoch (Thu 00:00–01:00 UTC), reserved for keepers.
+  - `NotWhitelistedNFT` — last hour of epoch (Wed 23:00 UTC → next Thu 00:00 UTC) and your NFT isn't in `isWhitelistedNFT`.
   - `GaugeDoesNotExist` / `GaugeNotAlive` — one of the pools has no gauge or the gauge is killed.
   - `ZeroBalance` — caller's veNFT has zero current voting power.
   - `UnequalLengths` — arrays mismatch.
@@ -49,7 +51,7 @@ Undoes the current epoch's vote: removes from each `weights[pool]`, decrements `
 function poke(uint256 _tokenId) external;
 ```
 
-Re-applies the current vote allocation at the *current* veNFT balance. Use after `VotingEscrow.increaseAmount` or `increaseUnlockTime` to bring weight tracking up to date. **Not gated by `onlyNewEpoch`** — poke as often as you like.
+Re-applies the current vote allocation at the *current* veNFT balance. Use after `VotingEscrow.increaseAmount` or `increaseUnlockTime` to bring weight tracking up to date. **Not gated by `onlyNewEpoch`** — poke any number of times per epoch. The only restriction is that the first hour of an epoch (Thu 00:00–01:00 UTC) reverts with `DistributeWindow`, same as `vote`/`reset`.
 
 ## Reading the voting state
 

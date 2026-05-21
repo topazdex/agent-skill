@@ -13,7 +13,12 @@ function epochVoteStart(uint256 ts) pure returns (uint256);  // epochStart(ts) +
 function epochVoteEnd(uint256 ts)   pure returns (uint256);  // epochNext(ts) - 1 hour
 ```
 
-Voting window for the current epoch: `[epochVoteStart(now), epochVoteEnd(now))`. Outside this window most votes still **work** (the contract allows `vote()` after epoch flip), but a few protected actions (token whitelisting, gauge create/kill) are restricted.
+Voting window for the current epoch: `[epochVoteStart(now), epochVoteEnd(now))` = `[Thu 01:00 UTC, next Wed 23:00 UTC)`. There are **two restricted windows** on either side:
+
+| Window | Effect |
+|---|---|
+| First hour: `[epochStart, epochStart + 1h)` = Thu 00:00–01:00 UTC | `vote()` and `reset()` revert with `DistributeWindow` (Voter's `onlyNewEpoch` modifier checks `block.timestamp <= epochVoteStart(now)`). This hour is reserved for keepers to call `Voter.distribute(...)` and push emissions. |
+| Last hour: `[epochVoteEnd, epochNext)` = Wed 23:00 UTC → next Thu 00:00 UTC | `vote()` reverts with `NotWhitelistedNFT` for normal NFTs — only `isWhitelistedNFT[tokenId]` veNFTs (typically managed NFTs) can vote in this final hour. |
 
 ## What happens at epoch flip (Thu 00:00 UTC)
 
@@ -72,7 +77,7 @@ export const canVoteNow = (lastVoted: number, now: number) =>
 |---|---|
 | `WEEK` | 7 days = 604,800 seconds |
 | Epoch anchor | Thursday 00:00 UTC (chosen because Unix epoch happens to be a Thursday) |
-| Vote window | Thursday 01:00 UTC → next Thursday 23:00 UTC (offset +1h, end −1h) |
+| Vote window (normal NFTs) | Thursday 01:00 UTC → next Wednesday 23:00 UTC (epoch start +1h, epoch end −1h) |
 | `Voter.DURATION` | 7 days |
 | `Voter.maxVotingNum` | 30 (governance-set: max pools you can vote for from one veNFT) |
 | `VotingEscrow.MAXTIME` | 4 × 365 × 86,400 = 126,144,000 seconds (4 years) |

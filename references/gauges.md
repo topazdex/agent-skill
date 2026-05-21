@@ -50,8 +50,8 @@ Source: `~/topaz/topaz-slipstream/contracts/gauge/CLGauge.sol`.
 ```solidity
 function deposit(uint256 tokenId) external;       // NFT transferred from msg.sender to gauge
 function withdraw(uint256 tokenId) external;      // NFT returned; also auto-claims rewards
-function getReward(uint256 tokenId) external;     // only the owner of the deposited tokenId
-function getReward(address account) external;     // claim for all of `account`'s staked positions
+function getReward(uint256 tokenId) external;     // only the original depositor of that tokenId
+function getReward(address account) external;     // **voter-only** (require msg.sender == voter); not user-callable
 
 function earned(address account, uint256 tokenId) external view returns (uint256);
 
@@ -93,6 +93,8 @@ emissionApr = annualRewardsUsd / stakedTvlUsd * 100
 Note: at epoch flip, `rewardRate` resets based on the new `_notifyRewardAmount`. Using the snapshot `rewardRate` gives the APR *for the current epoch*. For a multi-week average, look at `rewardRateByEpoch(epochTs)` for prior epochs.
 
 Full computation in `apr-calculations.md`.
+
+**Permissions recap:** A keeper can push rewards to *anyone* for v2 only via `Voter.claimRewards([gauges])` (which proxies to `Gauge.getReward(msg.sender)`). Direct `Gauge.getReward(_account)` requires the caller to be `_account` or the Voter. For CL gauges there's no keeper-poke path — the depositor must call `getReward(uint256)` themselves per tokenId.
 
 ## Fees accruing to gauges, not LPs
 

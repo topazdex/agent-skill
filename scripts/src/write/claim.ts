@@ -19,13 +19,12 @@ export async function claimGaugeRewardsV2(args: { gauges: string[] }) {
 
 export async function claimGaugeRewardV3(args: {
   gauge: string;
-  tokenId?: bigint;
-  account?: string;
+  tokenId: bigint;
 }) {
+  // Note: CLGauge.getReward(address) is voter-only. End users must call
+  // getReward(uint256 tokenId) per staked position they own.
   const c = new Contract(args.gauge, ABIS.CLGauge, signer());
-  if (args.tokenId !== undefined) return await c["getReward(uint256)"](args.tokenId);
-  const account = args.account ?? (await signer().getAddress());
-  return await c["getReward(address)"](account);
+  return await c["getReward(uint256)"](args.tokenId);
 }
 
 export async function claimFees(args: { tokenId: bigint; pools: string[] }) {
@@ -97,11 +96,13 @@ export async function claimAll(args: ClaimAllArgs) {
     await tx.wait();
     results.v2GaugeRewards = tx.hash;
   }
-  for (const { gauge } of v3Gauges) {
+  for (const { gauge, tokenIds } of v3Gauges) {
     const c = new Contract(gauge, ABIS.CLGauge, signer());
-    const tx = await c["getReward(address)"](account);
-    await tx.wait();
-    results[`v3GaugeRewards_${gauge}`] = tx.hash;
+    for (const tokenId of tokenIds) {
+      const tx = await c["getReward(uint256)"](tokenId);
+      await tx.wait();
+      results[`v3GaugeRewards_${gauge}_${tokenId}`] = tx.hash;
+    }
   }
 
   // 2. Fees + bribes
