@@ -12,8 +12,20 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed
+
+- **Gauge-lookup confusion that caused agents to report "no gauge" for pairs that actually have multiple live gauges.** Surfaced from a real WBNB/BTCB report: that pair has both a v2-volatile gauge (`0x14c93dDb…87eb`) and a v3 ts=50 gauge (`0xa9F8A05F…3737`), but an agent missed both — checking only one pool variant, and (separately) guessing that the Voter exposes a `gaugeForPool(address)` function. It doesn't — Topaz uses `Voter.gauges(address)` (selector `0xb9a09fd5`). The `gaugeForPool` name belongs to Velodrome/Aerodrome forks; calling it on the deployed Topaz Voter reverts with empty data, which is easy to misread as "no gauge". Fixes:
+  - `references/gauges.md` now has a top-of-file **Voter API** section listing every deployed function with its exact name, explicitly pushing back on `gaugeForPool` and other Solidly-fork aliases.
+  - A new dedicated section explains that a pair can have **up to seven** gauges (v2 stable + v2 volatile + v3 at each tick spacing in {1, 50, 100, 200, 2000}) and shows both the helper-based and manual enumeration patterns.
+  - `references/pitfalls.md` Staking entries extended with "multiple gauges per pair" and "use `voter.gauges`, not `gaugeForPool`".
+  - `developers/error-cookbook.md` gains two entries: "empty-data revert on a read-only function (selector not deployed)" and "`listGaugesForPair` returned empty when I expected a gauge".
+
 ### Added
 
+- `listGaugesForPair(tokenA, tokenB)` in `scripts/src/read/gauges.ts` — enumerates every pool variant (2 v2 + 5 v3) in a single concurrent batch and returns `{ kind, type, pool, gauge, alive }` for each variant with a non-zero gauge. Kept dead gauges in the result (with `alive: false`) instead of silently dropping them, so callers can distinguish "no gauge ever existed" from "gauge was killed".
+- `yarn tsx src/cli/stats.ts gauges-for-pair <tokenA> <tokenB>` — CLI subcommand for ad-hoc agent calls.
+- Smoke-test guard asserting WBNB/BTCB returns ≥ 2 live gauges. Any contract upgrade that breaks the lookup turns smoke red.
+- 6 new unit tests in `src/read/gauges.test.ts` covering: full multi-gauge shape, gauges filtered when `ZeroAddress`, killed gauges retained with `alive: false`, all-empty case, self-lookup rejection, exact call count per variant (no skipping). Total: 109 tests.
 - `developers/error-cookbook.md` — canonical mapping from every revert message Topaz can produce (v2 Router, v3 SwapRouter / CLPool, NonfungiblePositionManager, Voter, VotingEscrow, gauges, ERC20, plus generic RPC patterns) to a user-friendly UI string + concrete remediation step. Each entry cites its source surface and a recommended diagnostic. The closing "Diagnostic pattern" section mirrors `evals/07-explain-revert.md` so the eval and the developer-facing doc stay in lockstep. Linked from `SKILL.md` navigation, `developers/DEVELOPERS.md`, and the priority-3 polish TODO in `README.md`.
 
 

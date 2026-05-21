@@ -1,7 +1,7 @@
-import { Contract, ZeroAddress } from "ethers";
+import { Contract, ZeroAddress, getAddress } from "ethers";
 import { ABIS } from "../lib/abis.js";
 import { provider } from "../lib/client.js";
-import { ADDR } from "../config/addresses.js";
+import { ADDR, TICK_SPACINGS } from "../config/addresses.js";
 import { detectPoolType } from "./pools.js";
 
 const voter = () => new Contract(ADDR.Voter, ABIS.Voter, provider());
@@ -21,6 +21,93 @@ export interface GaugeState {
   feesVotingReward: string;
   bribeVotingReward: string;
   weight: bigint;
+}
+
+/**
+ * One entry per (pool kind, pool address) where a gauge actually exists for a
+ * token pair. Returned by `listGaugesForPair`. Use this when an agent or user
+ * asks "find the gauge for X/Y" — Topaz can have **multiple** gauges per pair
+ * (one per v2 stable/volatile + one per v3 tick spacing), and stopping at the
+ * first ZeroAddress is a known foot-gun.
+ */
+export interface PairGaugeEntry {
+  /** Pool kind label, e.g. "v2-volatile", "v2-stable", "v3-ts-200". */
+  kind: string;
+  /** v2 vs v3 — useful to dispatch the right `Gauge` vs `CLGauge` ABI later. */
+  type: "v2" | "v3";
+  pool: string;
+  gauge: string;
+  alive: boolean;
+}
+
+/**
+ * Find every gauge that exists for a token pair.
+ *
+ * Topaz has up to 7 pools per pair:
+ *   - v2 volatile  (PoolFactory.getPool(a, b, false))
+ *   - v2 stable    (PoolFactory.getPool(a, b, true))
+ *   - v3 at each tick spacing (CLFactory.getPool(a, b, ts) for ts in {1,50,100,200,2000})
+ *
+ * Each pool can have at most one gauge (`Voter.gauges(pool)`). This helper checks
+ * every variant and returns only the entries with a non-zero gauge address.
+ *
+ * Args are accepted in any order (the factory itself normalizes (token0, token1)).
+ *
+ * Returns an empty array when neither token has any pools, or when pools exist
+ * but none has had `Voter.createGauge` called on it.
+ *
+ * Common failure modes this helper prevents:
+ *   1. Checking only one stable flag for v2.
+ *   2. Checking only one tick spacing for v3.
+ *   3. Assuming the wrong function name on the Voter — the live mapping is
+ *      `gauges(address) returns (address)`. There is **no** `gaugeForPool`
+ *      function on Topaz (that name comes from Velodrome/Aerodrome forks);
+ *      calling it reverts.
+ */
+export async function listGaugesForPair(
+  tokenA: string,
+  tokenB: string,
+): Promise<PairGaugeEntry[]> {
+  const a = getAddress(tokenA);
+  const b = getAddress(tokenB);
+  if (a.toLowerCase() === b.toLowerCase()) {
+    throw new Error("tokenA and tokenB must differ");
+  }
+
+  const poolFactory = new Contract(ADDR.PoolFactory, ABIS.PoolFactory, provider());
+  const clFactory = new Contract(ADDR.CLFactory, ABIS.CLFactory, provider());
+  const v = voter();
+
+  const variants: Array<{ kind: string; type: "v2" | "v3"; poolP: Promise<string> }> = [
+    { kind: "v2-volatile", type: "v2", poolP: poolFactory.getPool(a, b, false) as Promise<string> },
+    { kind: "v2-stable", type: "v2", poolP: poolFactory.getPool(a, b, true) as Promise<string> },
+    ...TICK_SPACINGS.map((ts) => ({
+      kind: `v3-ts-${ts}`,
+      type: "v3" as const,
+      poolP: clFactory.getPool(a, b, ts) as Promise<string>,
+    })),
+  ];
+
+  const pools = await Promise.all(variants.map((x) => x.poolP));
+  const gauges = await Promise.all(
+    pools.map((p) => (p === ZeroAddress ? Promise.resolve(ZeroAddress) : (v.gauges(p) as Promise<string>))),
+  );
+  const alives = await Promise.all(
+    gauges.map((g) => (g === ZeroAddress ? Promise.resolve(false) : (v.isAlive(g) as Promise<boolean>))),
+  );
+
+  const out: PairGaugeEntry[] = [];
+  for (let i = 0; i < variants.length; i++) {
+    if (gauges[i] === ZeroAddress) continue;
+    out.push({
+      kind: variants[i].kind,
+      type: variants[i].type,
+      pool: pools[i],
+      gauge: gauges[i],
+      alive: alives[i],
+    });
+  }
+  return out;
 }
 
 export async function getGaugeStateForPool(pool: string): Promise<GaugeState | null> {

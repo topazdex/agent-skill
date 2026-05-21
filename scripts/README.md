@@ -70,6 +70,7 @@ yarn tsx src/cli/stats.ts lock --id 1234
 yarn tsx src/cli/stats.ts position --id 5678
 yarn tsx src/cli/stats.ts claimable --id 1234 --address 0xYOUR_WALLET
 yarn tsx src/cli/stats.ts gauges --limit 50
+yarn tsx src/cli/stats.ts gauges-for-pair WBNB BTCB     # every gauge across all pool variants for a pair
 yarn tsx src/cli/stats.ts bribes --pool 0xPOOL
 yarn tsx src/cli/stats.ts apr --pool 0xPOOL [--position 1234]
 yarn tsx src/cli/stats.ts smoke                 # quick end-to-end sanity check

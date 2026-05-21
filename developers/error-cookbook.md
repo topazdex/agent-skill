@@ -272,6 +272,22 @@ If you encounter a revert that isn't here, open an issue against [topazdex/agent
 - **UI string**: "Transaction reverted without a reason."
 - **Next step**: Pull the trace from the RPC if it supports `debug_traceTransaction`. Otherwise: re-quote the path and rebuild. If it consistently reverts at the same step, the pool itself may be malformed.
 
+### `eth_call` empty-data revert on a read-only function (selector not deployed)
+
+- **Means**: You called a function name that doesn't exist on the deployed contract. The EVM falls through the function dispatcher and reverts with no data.
+- **Why**: Almost always a function-name mismatch between an ABI and the actual deployed contract. Common Topaz-specific case: agents borrowing prior knowledge from Velodrome / Aerodrome and calling `Voter.gaugeForPool(address)` — that function **is not deployed** on Topaz. The correct name is `Voter.gauges(address)` (selector `0xb9a09fd5`). Calling `gaugeForPool` (selector `0x2045be90`) reverts with no data, which an unwary integration can misread as "no gauge exists for this pool."
+- **UI string**: "Internal contract error — wrong function name." (This is an integration bug; surface to dev tooling, not end users.)
+- **Next step**: Check the ABI you're using against `references/abis/Voter.json`. The deployed selector list is fixed; do not "fall back" to interpreting an empty revert as a legitimate `ZeroAddress` response. The skill's `references/gauges.md` lists the canonical Voter function names; the `listGaugesForPair` helper in `scripts/src/read/gauges.ts` uses them directly and never raw-calls speculative selectors.
+
+### `listGaugesForPair` returned an empty array but I expected a gauge
+
+- **Means**: The enumeration genuinely did not find a gauge across all seven variants (v2 stable, v2 volatile, v3 at each tick spacing in {1, 50, 100, 200, 2000}). Either there really is no gauge for this pair at the current block, or one of the input addresses is wrong.
+- **Why**: Two real possibilities:
+  1. The pair exists as a pool but `Voter.createGauge(...)` has never been called — common for low-priority long-tail pairs.
+  2. The token address you passed is wrong (e.g. a Binance-bridged USDT vs the canonical BSC USDT, or an unchecksummed address that silently maps to a different token at the factory level).
+- **UI string**: "No gauge exists for this pair yet."
+- **Next step**: Confirm both token addresses with `references/tokens.md` (or `findToken()` in `scripts/src/config/tokens.ts`). If both are correct and the enumeration is still empty, treat the pair as ungauged — emissions don't flow there, voting for the pool has no economic effect.
+
 ### `nonce too low` / `replacement transaction underpriced`
 
 - **Where**: RPC layer, not the contract.

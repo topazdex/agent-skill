@@ -23,6 +23,8 @@ Common mistakes to avoid when interacting with Topaz.
 
 ## Staking (gauges)
 
+- **A pair can have multiple gauges.** Topaz can deploy up to seven pools per pair (v2 volatile, v2 stable, plus v3 at each tick spacing in {1, 50, 100, 200, 2000}), and **each pool has its own gauge**. Looking up "the gauge for WBNB/BTCB" by querying only one pool variant misses the others. Use `listGaugesForPair(tokenA, tokenB)` (or `yarn tsx src/cli/stats.ts gauges-for-pair <A> <B>`) — it enumerates every variant in a single pass and returns only the live entries. Example: WBNB/BTCB returns two gauges (v2-volatile + v3 at ts=50). See `references/gauges.md` for the manual enumeration if you can't import the helper.
+- **The pool→gauge mapping on Topaz is `Voter.gauges(address)`, not `gaugeForPool(address)`.** That second name belongs to Velodrome / Aerodrome forks and is not deployed on Topaz — calling it reverts with empty data, which can be misread as "no gauge". The canonical selector is `0xb9a09fd5` (`gauges(address) returns (address)`). The skill's `references/gauges.md` lists every deployed Voter function name explicitly so there is no guessing.
 - **CL positions earn rewards only while in-range.** An out-of-range NFT is still "staked" in the `CLGauge`, but its `stakedLiquidityNet` contribution is zero so it accrues nothing. Move ranges or unstake → rebalance → restake.
 - **Approving the NFT.** Before `CLGauge.deposit(tokenId)`, you must `NonfungiblePositionManager.approve(clGauge, tokenId)` (or `setApprovalForAll(clGauge, true)`).
 - **You cannot `increaseLiquidity` or `collect` directly on a staked NFT.** Withdraw it first (`CLGauge.withdraw(tokenId)` — claims rewards as a side effect), modify, restake.

@@ -9,6 +9,7 @@ import { getPool } from "../read/pools.js";
 import {
   getGaugeStateForPool,
   listAllPools,
+  listGaugesForPair,
   getBribeInfo,
 } from "../read/gauges.js";
 import { getLock, listUserLocks } from "../read/locks.js";
@@ -35,6 +36,7 @@ Commands:
   vote --id <tokenId>           Current vote allocation for a veNFT
   claimable --id <tokenId> --address <addr>   All four reward streams
   gauges [--limit 50]           List gauges (subgraph TVL-sorted; on-chain APR)
+  gauges-for-pair <A> <B>       All gauges for token pair (enumerates v2 stable/volatile + every v3 tick spacing)
   bribes --pool <address>       This-epoch bribes posted on a pool
   apr --pool <address>          Pool APR breakdown
   quote --in <addr> --out <addr> --amount <human>   Best-route quote
@@ -118,6 +120,28 @@ async function cmdGauges(argv: any) {
     const gs = await getGaugeStateForPool(p);
     if (!gs) continue;
     console.log(`${p} ${gs.gauge} ${gs.weight.toString()}  ${gs.alive ? "alive" : "killed"}`);
+  }
+}
+
+async function cmdGaugesForPair(argv: any) {
+  const a = argv._[1];
+  const b = argv._[2];
+  if (!a || !b) {
+    throw new Error("usage: gauges-for-pair <tokenA> <tokenB>  (addresses or symbols)");
+  }
+  const tokenA = resolveTokenArg(String(a));
+  const tokenB = resolveTokenArg(String(b));
+  const entries = await listGaugesForPair(tokenA, tokenB);
+  if (entries.length === 0) {
+    console.log(`No gauges found for ${a}/${b}.`);
+    console.log("This means every (v2-stable, v2-volatile, v3 at each tick spacing) variant");
+    console.log("either has no pool or has a pool without a gauge.");
+    return;
+  }
+  for (const e of entries) {
+    console.log(
+      `${e.kind.padEnd(13)} ${e.type}  pool=${e.pool}  gauge=${e.gauge}  ${e.alive ? "ALIVE" : "killed"}`,
+    );
   }
 }
 
@@ -303,6 +327,29 @@ async function cmdSmoke() {
     fail("rebaseApr", e);
   }
 
+  // Regression guard for the "agent saw no gauge" bug: WBNB/BTCB has both a
+  // v2-volatile gauge and a v3 ts=50 gauge. If either disappears (or if a
+  // future contract upgrade renames `Voter.gauges`), this check turns red.
+  try {
+    const entries = await listGaugesForPair(TOKENS.WBNB.address, TOKENS.BTCB.address);
+    const live = entries.filter((e) => e.alive);
+    if (live.length < 2) {
+      throw new Error(
+        `expected ≥2 live gauges for WBNB/BTCB, got ${live.length} (${entries
+          .map((e) => `${e.kind}=${e.alive ? "alive" : "killed/missing"}`)
+          .join(", ")})`,
+      );
+    }
+    ok(
+      "WBNB/BTCB gauge enumeration",
+      `${live.length} live gauges across ${entries.length} pool variants (${entries
+        .map((e) => e.kind)
+        .join(", ")})`,
+    );
+  } catch (e) {
+    fail("WBNB/BTCB gauge enumeration", e);
+  }
+
   console.log(out.join("\n"));
   if (failed > 0) {
     console.error(`\n${failed} smoke check(s) failed`);
@@ -336,6 +383,7 @@ async function main() {
     case "vote": return await cmdVote(argv);
     case "claimable": return await cmdClaimable(argv);
     case "gauges": return await cmdGauges(argv);
+    case "gauges-for-pair": return await cmdGaugesForPair(argv);
     case "bribes": return await cmdBribes(argv);
     case "apr": return await cmdApr(argv);
     case "quote": return await cmdQuote(argv);

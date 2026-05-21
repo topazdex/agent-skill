@@ -7,16 +7,85 @@ Both gauge types support the same conceptual API: deposit, withdraw, getReward, 
 - **v2 `Gauge`** stakes the pool's ERC20 LP token, takes a `uint256` amount.
 - **v3 `CLGauge`** stakes the position NFT, takes a `uint256` tokenId. Emissions accrue only while the position is **in range**.
 
-## Lookups
+## Voter API — exact function names
 
-```ts
-const gauge = await voter.gauges(pool);           // 0x0 if no gauge
-const pool  = await voter.poolForGauge(gauge);    // reverse
-const alive = await voter.isAlive(gauge);          // killed gauges receive 0 emissions
-const isCl  = await gauge.isPool();                // both gauges return true once initialized
+The Topaz `Voter` contract (`0x2F80F810a114223AC69E34E84E735CaD515dAD67`) exposes these mappings. Use the function **names below verbatim** — they are the deployed selectors. There is no `gaugeForPool`, no `gaugesByPool`, no `getGauge` on this contract; those names belong to Velodrome / Aerodrome / other Solidly forks and calling them on Topaz reverts with no data.
+
+```solidity
+function gauges(address pool) external view returns (address gauge);    // pool → gauge (or 0x0)
+function poolForGauge(address gauge) external view returns (address);   // gauge → pool
+function isAlive(address gauge) external view returns (bool);           // false once killed
+function gaugeToFees(address gauge) external view returns (address);    // FeesVotingReward
+function gaugeToBribe(address gauge) external view returns (address);   // BribeVotingReward
+function weights(address pool) external view returns (uint256);         // current epoch weight
+function lastVoted(uint256 tokenId) external view returns (uint256);
+function epochStart(uint256 timestamp) external view returns (uint256);
+function isWhitelistedToken(address token) external view returns (bool);
 ```
 
-Distinguishing v2 vs v3 gauge from address alone: query `gauge.nft()` — for v2 this is a missing function (reverts) and for `CLGauge` it returns the `NonfungiblePositionManager` address. Or check `voter.poolForGauge(gauge)` then check whether the pool address is in `PoolFactory.isPool(addr)` (v2) or `CLFactory.isPool(addr)` (v3).
+The selector for `gauges(address)` is `0xb9a09fd5`. If your agent or library reports "function not found" or an empty-data revert when trying to look up a gauge, it is almost certainly calling `gaugeForPool(address)` (selector `0x2045be90`, which is **not deployed**) — fix the call site, do not "fall back" to assuming there is no gauge.
+
+## Lookups — one pool at a time
+
+When you already have a pool address:
+
+```ts
+const gauge = await voter.gauges(pool);           // 0x0 if no gauge created yet
+const pool  = await voter.poolForGauge(gauge);    // reverse (returns 0x0 if not a gauge)
+const alive = await voter.isAlive(gauge);          // killed gauges receive 0 emissions
+const isCl  = await gauge.isPool();                // both gauge types return true once initialized
+```
+
+Distinguishing v2 vs v3 gauge from address alone: query `gauge.nft()` — for v2 this reverts (function not defined), for `CLGauge` it returns the `NonfungiblePositionManager` address. Or check `voter.poolForGauge(gauge)` and then `PoolFactory.isPool(addr)` (v2) vs `CLFactory.isPool(addr)` (v3).
+
+## Lookups — every gauge for a token pair
+
+**A pair can have multiple gauges.** Each (v2 stable + v2 volatile + v3 at each tick spacing) is a distinct pool, and each has at most one gauge. Stopping at the first `getPool` that returns `ZeroAddress` is a common foot-gun — it might just mean "no pool of that variant" rather than "no gauge for this pair".
+
+The skill exposes a helper so you never have to roll the enumeration by hand:
+
+```ts
+import { listGaugesForPair, ADDR, TOKENS } from "./scripts/src";
+
+const entries = await listGaugesForPair(TOKENS.WBNB.address, TOKENS.BTCB.address);
+// entries: Array<{ kind, type, pool, gauge, alive }>
+// kind: "v2-volatile" | "v2-stable" | "v3-ts-1" | "v3-ts-50" | "v3-ts-100" | "v3-ts-200" | "v3-ts-2000"
+```
+
+For WBNB/BTCB this returns two live gauges:
+
+```
+v2-volatile   v2  pool=0x35BF6c83…  gauge=0x14c93dDb…  ALIVE
+v3-ts-50      v3  pool=0xfdA4eF28…  gauge=0xa9F8A05F…  ALIVE
+```
+
+Same behavior from the CLI:
+
+```bash
+yarn tsx src/cli/stats.ts gauges-for-pair WBNB BTCB
+```
+
+If the helper returns an empty array, the pair genuinely has zero gauges at this block — the enumeration covered every variant and none had a gauge. Don't second-guess; check whether either token is misspelled.
+
+Doing the enumeration manually:
+
+```ts
+const variants: { kind: string; pool: Promise<string> }[] = [
+  { kind: "v2-volatile", pool: poolFactory.getPool(a, b, false) },
+  { kind: "v2-stable",   pool: poolFactory.getPool(a, b, true) },
+  ...[1, 50, 100, 200, 2000].map((ts) => ({
+    kind: `v3-ts-${ts}`,
+    pool: clFactory.getPool(a, b, ts),
+  })),
+];
+const pools = await Promise.all(variants.map((v) => v.pool));
+const gauges = await Promise.all(
+  pools.map((p) => (p === ZeroAddress ? ZeroAddress : voter.gauges(p))),
+);
+// then filter the variants whose gauge !== ZeroAddress
+```
+
+Argument order does not matter — the factory canonicalizes `(token0, token1)` for you. `getPool(WBNB, BTCB, false)` and `getPool(BTCB, WBNB, false)` return the same pool address.
 
 ## v2 Gauge — function reference
 
