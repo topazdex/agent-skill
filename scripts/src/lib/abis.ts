@@ -35,6 +35,7 @@ export const ABIS = {
   SwapRouter: loadAbi("SwapRouter"),
   QuoterV2: loadAbi("QuoterV2"),
   MixedRouteQuoterV1: loadAbi("MixedRouteQuoterV1"),
+  Multicall3: loadAbi("Multicall3"),
 } as const;
 
 export type AbiName = keyof typeof ABIS;

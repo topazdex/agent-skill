@@ -12,6 +12,17 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Changed
+
+- `bestQuote` / `topRoutes` now collapse every candidate (direct v2, direct v3, all 2-hop variants through WBNB/USDT/USDC/BTCB, and mixed v2/v3 paths) into a single `Multicall3.aggregate3` RPC round-trip with `allowFailure: true`. Replaces the prior bounded-concurrency sequential dispatch (~200 RPC calls per quote). Target latency: <500ms on a private RPC. Public API surface unchanged; the `concurrency` option is now a deprecated no-op.
+
+### Added
+
+- `references/abis/Multicall3.json` and `ABIS.Multicall3` — minimal ABI covering `aggregate3` + `tryAggregate`.
+- `scripts/src/lib/multicall.ts` — thin `aggregate3` wrapper + `decodeIfSuccess` helper. Reusable by future read-path batching (gauges, positions, claimable streams).
+- `enumerateCandidates` and `decodeCandidates` exports on `quotes.ts` so unit tests can verify plan construction and result-distribution without going through the live RPC.
+- 11 new unit tests in `src/read/quotes.test.ts` covering plan counts, mixed-route gating, hop deduplication, selector encoding, result decoding, failure filtering, malformed-data handling, and length-mismatch error. Total: 82 tests.
+
 ## [1.0.0] — 2026-05-21
 
 First public release. Foundational quality work complete; safe to install, pin, and depend on.

@@ -1,4 +1,4 @@
-import { Contract, ZeroAddress, getAddress, parseUnits } from "ethers";
+import { Contract, Interface, ZeroAddress, getAddress, parseUnits } from "ethers";
 import { ABIS } from "../lib/abis.js";
 import { provider } from "../lib/client.js";
 import { ADDR, TICK_SPACINGS } from "../config/addresses.js";
@@ -6,11 +6,18 @@ import { encodePath, encodeMixedPath, V2_VOLATILE, V2_STABLE } from "../lib/path
 import { findV2Pool, findV3Pool } from "./pools.js";
 import { getDecimals } from "../lib/erc20.js";
 import { TOKENS } from "../config/tokens.js";
+import { aggregate3, type MulticallRequest, type MulticallResult } from "../lib/multicall.js";
 
 const router = () => new Contract(ADDR.Router, ABIS.Router, provider());
 const quoter = () => new Contract(ADDR.QuoterV2, ABIS.QuoterV2, provider());
 const mixedQuoter = () =>
   new Contract(ADDR.MixedRouteQuoterV1, ABIS.MixedRouteQuoterV1, provider());
+
+// Long-lived ABI interfaces used for encoding/decoding multicall payloads.
+// Built once at module load so we're not re-parsing the JSON on every quote.
+const routerIface = new Interface(ABIS.Router);
+const quoterIface = new Interface(ABIS.QuoterV2);
+const mixedIface = new Interface(ABIS.MixedRouteQuoterV1);
 
 export interface QuoteResult {
   route: string;
@@ -137,64 +144,103 @@ export interface BestQuoteOptions {
    */
   allowMixed?: boolean;
   /**
-   * Maximum number of candidate quotes to dispatch concurrently. Defaults to 10.
-   * Lower this if your RPC rate-limits you; raise it on a private RPC that can
-   * absorb the load.
+   * @deprecated Retained for backwards compatibility. As of v1.1, `bestQuote`
+   * collapses every candidate into a single `Multicall3.aggregate3` round-trip,
+   * so client-side concurrency limits no longer apply. Setting this is a no-op.
    */
   concurrency?: number;
 }
 
-type CandidateTask = () => Promise<BestRoute | null>;
-
-async function mapWithConcurrency<T>(
-  tasks: (() => Promise<T>)[],
-  concurrency: number
-): Promise<T[]> {
-  const out: T[] = new Array(tasks.length);
-  let next = 0;
-  const limit = Math.max(1, Math.floor(concurrency));
-  const workers = Array.from({ length: Math.min(limit, tasks.length) }, async () => {
-    while (true) {
-      const i = next++;
-      if (i >= tasks.length) return;
-      out[i] = await tasks[i]();
-    }
-  });
-  await Promise.all(workers);
-  return out;
+/**
+ * Plan for a single candidate route: one multicall payload + a decoder that
+ * turns the result into a `BestRoute` (or `null` if the route is not viable).
+ *
+ * Exported for unit tests; not part of the stable public API.
+ */
+export interface CandidatePlan {
+  call: MulticallRequest;
+  build: (result: MulticallResult) => BestRoute | null;
 }
 
-function buildCandidateTasks(
+const decodeAmountsOutLast = (r: MulticallResult): bigint => {
+  if (!r.success) return 0n;
+  try {
+    const decoded = routerIface.decodeFunctionResult("getAmountsOut", r.returnData);
+    const amounts = decoded[0] as bigint[];
+    return amounts[amounts.length - 1] ?? 0n;
+  } catch {
+    return 0n;
+  }
+};
+
+const decodeQuoterFirstReturn = (
+  iface: Interface,
+  method: string,
+  r: MulticallResult,
+): bigint => {
+  if (!r.success) return 0n;
+  try {
+    const decoded = iface.decodeFunctionResult(method, r.returnData);
+    return decoded[0] as bigint;
+  } catch {
+    return 0n;
+  }
+};
+
+/**
+ * Enumerate every candidate route (direct v2, direct v3, 2-hop via WBNB / USDT /
+ * USDC / BTCB across all v2/v3 combinations, plus mixed routes when `allowMixed`).
+ *
+ * Returns a list of `CandidatePlan`s. Each plan owns its own multicall payload
+ * and decoder, so `topRoutes` can flatten them, dispatch a single multicall, and
+ * fan the results back out to each plan without any cross-plan coupling.
+ */
+export function enumerateCandidates(
   tokenIn: string,
   tokenOut: string,
   amountIn: bigint,
-  allowMixed: boolean
-): CandidateTask[] {
-  const tasks: CandidateTask[] = [];
+  allowMixed: boolean,
+): CandidatePlan[] {
+  const plans: CandidatePlan[] = [];
 
   // Direct v2
   for (const stable of [false, true] as const) {
-    tasks.push(async () => {
-      const out = await quoteV2(tokenIn, tokenOut, amountIn, stable);
-      if (out === 0n) return null;
-      return {
-        amountOut: out,
-        route: `v2 ${stable ? "stable" : "volatile"} direct`,
-        exec: { type: "v2", route: [v2Route(tokenIn, tokenOut, stable)] },
-      };
+    const route = [v2Route(tokenIn, tokenOut, stable)];
+    plans.push({
+      call: {
+        target: ADDR.Router,
+        callData: routerIface.encodeFunctionData("getAmountsOut", [amountIn, route]),
+      },
+      build: (r) => {
+        const out = decodeAmountsOutLast(r);
+        if (out === 0n) return null;
+        return {
+          amountOut: out,
+          route: `v2 ${stable ? "stable" : "volatile"} direct`,
+          exec: { type: "v2", route },
+        };
+      },
     });
   }
 
   // Direct v3
   for (const ts of TICK_SPACINGS) {
-    tasks.push(async () => {
-      const out = await quoteV3Single(tokenIn, tokenOut, amountIn, ts);
-      if (out === 0n) return null;
-      return {
-        amountOut: out,
-        route: `v3 direct ts=${ts}`,
-        exec: { type: "v3-single", tokenIn, tokenOut, tickSpacing: ts },
-      };
+    plans.push({
+      call: {
+        target: ADDR.QuoterV2,
+        callData: quoterIface.encodeFunctionData("quoteExactInputSingle", [
+          { tokenIn, tokenOut, amountIn, tickSpacing: ts, sqrtPriceLimitX96: 0n },
+        ]),
+      },
+      build: (r) => {
+        const out = decodeQuoterFirstReturn(quoterIface, "quoteExactInputSingle", r);
+        if (out === 0n) return null;
+        return {
+          amountOut: out,
+          route: `v3 direct ts=${ts}`,
+          exec: { type: "v3-single", tokenIn, tokenOut, tickSpacing: ts },
+        };
+      },
     });
   }
 
@@ -204,42 +250,49 @@ function buildCandidateTasks(
     .filter(
       (a) =>
         a !== tokenIn.toLowerCase() &&
-        a !== tokenOut.toLowerCase()
+        a !== tokenOut.toLowerCase(),
     );
 
   for (const via of hops) {
     // v2-v2
     for (const s1 of [false, true] as const) {
       for (const s2 of [false, true] as const) {
-        tasks.push(async () => {
-          const out = await quoteV2Route(amountIn, [
-            v2Route(tokenIn, via, s1),
-            v2Route(via, tokenOut, s2),
-          ]);
-          if (out === 0n) return null;
-          return {
-            amountOut: out,
-            route: `v2 ${s1 ? "stable" : "volatile"} → ${s2 ? "stable" : "volatile"} via ${shortAddr(via)}`,
-            exec: {
-              type: "v2",
-              route: [v2Route(tokenIn, via, s1), v2Route(via, tokenOut, s2)],
-            },
-          };
+        const route = [v2Route(tokenIn, via, s1), v2Route(via, tokenOut, s2)];
+        plans.push({
+          call: {
+            target: ADDR.Router,
+            callData: routerIface.encodeFunctionData("getAmountsOut", [amountIn, route]),
+          },
+          build: (r) => {
+            const out = decodeAmountsOutLast(r);
+            if (out === 0n) return null;
+            return {
+              amountOut: out,
+              route: `v2 ${s1 ? "stable" : "volatile"} → ${s2 ? "stable" : "volatile"} via ${shortAddr(via)}`,
+              exec: { type: "v2", route },
+            };
+          },
         });
       }
     }
     // v3-v3
     for (const ts1 of TICK_SPACINGS) {
       for (const ts2 of TICK_SPACINGS) {
-        tasks.push(async () => {
-          const path = encodePath([tokenIn, via, tokenOut], [ts1, ts2]);
-          const out = await quoteV3Path(path, amountIn);
-          if (out === 0n) return null;
-          return {
-            amountOut: out,
-            route: `v3 ts=${ts1} → ts=${ts2} via ${shortAddr(via)}`,
-            exec: { type: "v3-path", tokens: [tokenIn, via, tokenOut], spacings: [ts1, ts2] },
-          };
+        const path = encodePath([tokenIn, via, tokenOut], [ts1, ts2]);
+        plans.push({
+          call: {
+            target: ADDR.QuoterV2,
+            callData: quoterIface.encodeFunctionData("quoteExactInput", [path, amountIn]),
+          },
+          build: (r) => {
+            const out = decodeQuoterFirstReturn(quoterIface, "quoteExactInput", r);
+            if (out === 0n) return null;
+            return {
+              amountOut: out,
+              route: `v3 ts=${ts1} → ts=${ts2} via ${shortAddr(via)}`,
+              exec: { type: "v3-path", tokens: [tokenIn, via, tokenOut], spacings: [ts1, ts2] },
+            };
+          },
         });
       }
     }
@@ -247,30 +300,42 @@ function buildCandidateTasks(
     // mixed (v3 then v2; v2 then v3)
     for (const ts of TICK_SPACINGS) {
       for (const v2Hop of [V2_VOLATILE, V2_STABLE]) {
-        tasks.push(async () => {
-          const pathA = encodeMixedPath([tokenIn, via, tokenOut], [ts, v2Hop]);
-          const out = await quoteMixed(pathA, amountIn);
-          if (out === 0n) return null;
-          return {
-            amountOut: out,
-            route: `mixed v3 ts=${ts} → v2 ${v2Hop === V2_STABLE ? "stable" : "volatile"} via ${shortAddr(via)}`,
-            exec: { type: "mixed", tokens: [tokenIn, via, tokenOut], hops: [ts, v2Hop] },
-          };
+        const pathA = encodeMixedPath([tokenIn, via, tokenOut], [ts, v2Hop]);
+        plans.push({
+          call: {
+            target: ADDR.MixedRouteQuoterV1,
+            callData: mixedIface.encodeFunctionData("quoteExactInput", [pathA, amountIn]),
+          },
+          build: (r) => {
+            const out = decodeQuoterFirstReturn(mixedIface, "quoteExactInput", r);
+            if (out === 0n) return null;
+            return {
+              amountOut: out,
+              route: `mixed v3 ts=${ts} → v2 ${v2Hop === V2_STABLE ? "stable" : "volatile"} via ${shortAddr(via)}`,
+              exec: { type: "mixed", tokens: [tokenIn, via, tokenOut], hops: [ts, v2Hop] },
+            };
+          },
         });
-        tasks.push(async () => {
-          const pathB = encodeMixedPath([tokenIn, via, tokenOut], [v2Hop, ts]);
-          const out = await quoteMixed(pathB, amountIn);
-          if (out === 0n) return null;
-          return {
-            amountOut: out,
-            route: `mixed v2 ${v2Hop === V2_STABLE ? "stable" : "volatile"} → v3 ts=${ts} via ${shortAddr(via)}`,
-            exec: { type: "mixed", tokens: [tokenIn, via, tokenOut], hops: [v2Hop, ts] },
-          };
+        const pathB = encodeMixedPath([tokenIn, via, tokenOut], [v2Hop, ts]);
+        plans.push({
+          call: {
+            target: ADDR.MixedRouteQuoterV1,
+            callData: mixedIface.encodeFunctionData("quoteExactInput", [pathB, amountIn]),
+          },
+          build: (r) => {
+            const out = decodeQuoterFirstReturn(mixedIface, "quoteExactInput", r);
+            if (out === 0n) return null;
+            return {
+              amountOut: out,
+              route: `mixed v2 ${v2Hop === V2_STABLE ? "stable" : "volatile"} → v3 ts=${ts} via ${shortAddr(via)}`,
+              exec: { type: "mixed", tokens: [tokenIn, via, tokenOut], hops: [v2Hop, ts] },
+            };
+          },
         });
       }
     }
   }
-  return tasks;
+  return plans;
 }
 
 function assertQuoteInputs(tokenIn: string, tokenOut: string, amountIn: bigint): void {
@@ -290,9 +355,10 @@ function assertQuoteInputs(tokenIn: string, tokenOut: string, amountIn: bigint):
  * Tries: direct v2 (volatile + stable), direct v3 at each tick spacing,
  * 2-hop via WBNB / USDT / USDC / BTCB (every v2/v3 combination).
  *
- * All candidate quotes are dispatched in parallel with bounded concurrency
- * (see `opts.concurrency`, default 10). On public RPCs lower this to ~5 to
- * avoid 429s.
+ * Every candidate is packed into a single `Multicall3.aggregate3` RPC round
+ * trip, so total latency is dominated by one network hop rather than ~200
+ * sequential calls. Failed quotes (non-existent pool, revert-priced quoter)
+ * are silently dropped via `allowFailure: true`.
  */
 export async function bestQuote(
   tokenIn: string,
@@ -319,12 +385,32 @@ export async function topRoutes(
 ): Promise<BestRoute[]> {
   assertQuoteInputs(tokenIn, tokenOut, amountIn);
   const allowMixed = opts.allowMixed ?? true;
-  const concurrency = opts.concurrency ?? 10;
-  const tasks = buildCandidateTasks(tokenIn, tokenOut, amountIn, allowMixed);
-  const results = await mapWithConcurrency(tasks, concurrency);
-  const candidates = results.filter((r): r is BestRoute => r !== null);
+  const plans = enumerateCandidates(tokenIn, tokenOut, amountIn, allowMixed);
+  const results = await aggregate3(plans.map((p) => p.call));
+  const candidates = decodeCandidates(plans, results);
   candidates.sort(compareByAmountOutDesc);
   return opts.limit !== undefined ? candidates.slice(0, opts.limit) : candidates;
+}
+
+/**
+ * Fan multicall results back through each candidate plan's decoder. Exported
+ * so unit tests can verify the distribution logic with synthetic results.
+ */
+export function decodeCandidates(
+  plans: CandidatePlan[],
+  results: MulticallResult[],
+): BestRoute[] {
+  if (plans.length !== results.length) {
+    throw new Error(
+      `multicall returned ${results.length} results for ${plans.length} plans`,
+    );
+  }
+  const out: BestRoute[] = [];
+  for (let i = 0; i < plans.length; i++) {
+    const route = plans[i].build(results[i]);
+    if (route) out.push(route);
+  }
+  return out;
 }
 
 function shortAddr(a: string): string {
