@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.1.0] — 2026-05-21
+
 ### Fixed — frontend QA (agents-page review)
 
 - **Installer default-path documentation no longer claims `~/.claude/skills/topaz` as an unconditional default.** Both the website-setup spec (`.claude/topaz-agent-skill-website-setup-generic.md`) and the repo README now describe the installer's actual behavior: auto-detect among `~/.claude/skills`, `~/.config/opencode/skills`, `~/.hermes/skills` in alphabetical order; fall back to `~/.local/share/topaz-skill` if none exist. Surfaced from a QA review of `https://topazdex.com/agents` that found the page copy diverged from the runtime behavior.
@@ -103,6 +106,7 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/topazdex/agent-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/topazdex/agent-skill/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/topazdex/agent-skill/releases/tag/v1.0.0
