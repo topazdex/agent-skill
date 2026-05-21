@@ -123,6 +123,12 @@ CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is
 
 ## Operating principles for the agent
 
+- **Build and quote by default; do not broadcast unless the user explicitly asks.** "Swap this", "make this trade", "stake this", "vote with my veNFT" → produce calldata, not a broadcast. Only call a function under `scripts/src/write/` (or the corresponding `swap|lp|lock|vote|claim|bribe` CLI) after the user has said something unambiguous like "send it", "broadcast", "execute", "sign and send". When in doubt, ask.
+- **Label every output as one of four kinds**, so the user always knows what they are looking at:
+  - **quote** — numbers only (route, `expectedOut`, slippage caveat). No transaction.
+  - **built calldata** — `{ to, data, value, approval? }` ready for the user's wallet to sign. Includes the slippage you applied and the deadline. No broadcast.
+  - **approval-needed** — a separate ERC20 `approve(spender, amount)` the user must sign first before the main tx. Surface this from `BuiltSwapTx.approval` rather than silently emitting it.
+  - **broadcast tx-hash** — only after the user authorized broadcasting AND a `PRIVATE_KEY` was configured. Always include the bscscan link.
 - **Never write before reading.** Always quote (`Router.getAmountsOut` / `QuoterV2.quoteExactInput*` / `MixedRouteQuoterV1.quoteExactInput`) before executing a swap, and check `slot0` / `getReserves` / `Pool.metadata` before constructing liquidity transactions.
 - **Slippage is mandatory.** Never pass `amountOutMin = 0`, `amount{0,1}Min = 0`, or default `sqrtPriceLimitX96 = 0` for user-facing operations. Defaults: 0.5% for v2 swaps, 1% for v3 swaps and liquidity adds (relative to the quote). Document the slippage you applied.
 - **Deadlines** default to `now + 20 minutes` unless the user specifies.

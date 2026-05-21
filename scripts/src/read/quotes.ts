@@ -109,6 +109,17 @@ export interface BestRoute {
   exec: ExecRoute;
 }
 
+/**
+ * Comparator used by `bestQuote` / `topRoutes` to rank candidate routes.
+ * Strictly descending by `amountOut`. Ties preserve input order (stable sort).
+ *
+ * Exported so unit tests can lock the sort behavior — if this flips, the user gets
+ * a worse route for the same liquidity, which is a silent regression we cannot afford.
+ */
+export function compareByAmountOutDesc(a: BestRoute, b: BestRoute): number {
+  return b.amountOut > a.amountOut ? 1 : b.amountOut < a.amountOut ? -1 : 0;
+}
+
 export type ExecRoute =
   | { type: "v2"; route: V2Route[] }
   | { type: "v3-single"; tokenIn: string; tokenOut: string; tickSpacing: number }
@@ -312,7 +323,7 @@ export async function topRoutes(
   const tasks = buildCandidateTasks(tokenIn, tokenOut, amountIn, allowMixed);
   const results = await mapWithConcurrency(tasks, concurrency);
   const candidates = results.filter((r): r is BestRoute => r !== null);
-  candidates.sort((a, b) => (b.amountOut > a.amountOut ? 1 : b.amountOut < a.amountOut ? -1 : 0));
+  candidates.sort(compareByAmountOutDesc);
   return opts.limit !== undefined ? candidates.slice(0, opts.limit) : candidates;
 }
 

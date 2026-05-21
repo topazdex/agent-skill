@@ -67,3 +67,33 @@ describe("canVoteNow", () => {
     expect(canVoteNow(BigInt(THU_2026_01_08_01), NEXT_THU)).toBe(true);
   });
 });
+
+// Golden tests — these freeze the *interpreted state* at three specific UTC timestamps the
+// README calls out (1.D). If any of these flip, the epoch model has silently drifted.
+describe("epoch window state (1.D goldens)", () => {
+  const epochStartTs = THU_2026_01_08_00;
+  const voteOpen = epochStartTs + HOUR;
+  const voteClose = epochStartTs + WEEK - HOUR;
+
+  it("Thu 00:30 UTC → distribute window (vote-not-yet-open)", () => {
+    const t = epochStartTs + 30 * 60;
+    expect(t < voteOpen).toBe(true);
+    expect(t < voteClose).toBe(true);
+    expect(epochVoteStart(t)).toBe(voteOpen);
+    expect(epochVoteEnd(t)).toBe(voteClose);
+  });
+
+  it("Thu 01:30 UTC → normal vote window", () => {
+    const t = epochStartTs + HOUR + 30 * 60;
+    expect(t >= voteOpen).toBe(true);
+    expect(t < voteClose).toBe(true);
+  });
+
+  it("Wed 23:30 UTC → whitelist-only window (last hour of epoch)", () => {
+    const t = epochStartTs + WEEK - 30 * 60;
+    expect(t >= voteClose).toBe(true);
+    expect(t < epochStartTs + WEEK).toBe(true);
+    // Still inside the same epoch — the vote window has ended but the epoch has not flipped.
+    expect(epochStart(t)).toBe(epochStartTs);
+  });
+});

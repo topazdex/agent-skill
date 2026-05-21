@@ -13,6 +13,39 @@ const clGaugeC = (addr: string) => new Contract(addr, ABIS.CLGauge, provider());
 
 const SECONDS_PER_YEAR = 31_536_000;
 
+/**
+ * Pure helper: gauge emission APR (percent). Mirrors the formula the Topaz UI uses.
+ * Returns 0 if the gauge is dead or no liquidity is staked.
+ *
+ * @param rewardRatePerSec - TOPAZ wei per second (from `Gauge.rewardRate()`).
+ * @param topazUsd         - USD value of 1 TOPAZ.
+ * @param stakedTvlUsd     - USD value of liquidity currently earning emissions.
+ * @param alive            - `Voter.isAlive(gauge)`.
+ */
+export function computeEmissionApr(
+  rewardRatePerSec: bigint,
+  topazUsd: number,
+  stakedTvlUsd: number,
+  alive: boolean,
+): number {
+  if (!alive || stakedTvlUsd <= 0) return 0;
+  const annualTopazUsd = (Number(rewardRatePerSec) * SECONDS_PER_YEAR / 1e18) * topazUsd;
+  return (annualTopazUsd / stakedTvlUsd) * 100;
+}
+
+/**
+ * Pure helper: fee APR (percent) from 7-day volume.
+ *
+ * @param vol7d   - Trailing 7-day USD volume.
+ * @param tvlUsd  - Current USD TVL.
+ * @param feeRate - Pool fee as a fraction (e.g. 0.003 for 30 bps).
+ */
+export function computeFeeApr(vol7d: number, tvlUsd: number, feeRate: number): number {
+  if (tvlUsd <= 0) return 0;
+  const avgDaily = vol7d / 7;
+  return (avgDaily * 365 * feeRate / tvlUsd) * 100;
+}
+
 const V3_POOL_TVL_Q = gql`
   query($id: ID!) {
     pool(id: $id) { totalValueLockedUSD volumeUSD feesUSD liquidity }
@@ -123,15 +156,9 @@ export async function poolApr(pool: string): Promise<PoolAprBreakdown> {
     feeRate = Number(fee) / 1_000_000; // 3000 pips -> 0.003
   }
 
-  const annualTopazUsd = (Number(rewardRate) * SECONDS_PER_YEAR / 1e18) * topazUsd;
   const stakedTvlUsd = tvlUsd * stakedFraction;
-  const emissionApr =
-    stakedTvlUsd > 0 && alive ? (annualTopazUsd / stakedTvlUsd) * 100 : 0;
-
-  const avgDaily = vol7d / 7;
-  const annualVolUsd = avgDaily * 365;
-  const annualFeesUsd = annualVolUsd * feeRate;
-  const feeApr = tvlUsd > 0 ? (annualFeesUsd / tvlUsd) * 100 : 0;
+  const emissionApr = computeEmissionApr(rewardRate, topazUsd, stakedTvlUsd, alive);
+  const feeApr = computeFeeApr(vol7d, tvlUsd, feeRate);
 
   return {
     pool,

@@ -1,7 +1,7 @@
 // CLI: yarn validate
 // Static skill validation. Exits 0 on success, 1 if any error-level finding.
 //
-// Implements priority-1.A of README's "battle-tested best practices" TODO:
+// Implements priority-1.A of README's foundational-quality TODO:
 //   - SKILL.md frontmatter (name, description, length).
 //   - Internal links resolve across SKILL/README/developers/references/examples.
 //   - No hardcoded author-local paths (/Users/<x>/..., /home/<x>/...).
