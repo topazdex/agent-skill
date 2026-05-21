@@ -69,7 +69,14 @@ curl -fsSL https://raw.githubusercontent.com/topazdex/agent-skill/main/install.s
 
 ```bash
 git clone https://github.com/topazdex/agent-skill.git <dest>
-git -C <dest> checkout v1.0.0
+git -C <dest> checkout v2.2.0
+```
+
+Or fetch a release's frozen artifacts directly (auto-redirects to the latest tag — no need to know the version number):
+
+```bash
+curl -fsSL https://github.com/topazdex/agent-skill/releases/latest/download/skill.json
+curl -fsSL https://github.com/topazdex/agent-skill/releases/latest/download/SKILL.md
 ```
 
 ## Update
@@ -95,7 +102,7 @@ bash tools/check_update.sh   # exit 0 = up to date, 10 = update available
 cd <dest>/scripts
 yarn validate    # static checks: frontmatter, links, addresses, checksums, manifest parity, ...
 yarn build       # type-check (tsc --noEmit)
-yarn test        # 71 unit tests (vitest, no RPC)
+yarn test        # 109 unit tests (vitest, no RPC)
 yarn smoke       # live read against BSC mainnet — requires BSC_RPC_URL
 ```
 
@@ -109,9 +116,9 @@ Releases are one command:
 cd scripts && yarn release patch --apply   # or minor / major / x.y.z
 ```
 
-`yarn release` bumps the version in `SKILL.md`, `skill.json`, and `CHANGELOG.md` atomically, runs the full validation suite, commits, tags, and pushes. GitHub Actions (`.github/workflows/release.yml`) then re-validates, creates the GitHub Release with notes extracted from `CHANGELOG.md`, and (if configured) fires a `repository_dispatch` to the website repo so `/skill.md` and `/skill.json` stay in sync without manual file copies.
+`yarn release` bumps the version in `SKILL.md`, `skill.json`, `README.md`, and `CHANGELOG.md` atomically, runs the full validation suite, commits, tags, and pushes. GitHub Actions (`.github/workflows/release.yml`) then re-validates, creates the GitHub Release with notes extracted from `CHANGELOG.md`, and attaches `skill.json` + `SKILL.md` as release assets (so `releases/latest/download/...` URLs always resolve to the newest tag).
 
-Full release flow + one-time website handshake setup: [`docs/RELEASING.md`](./docs/RELEASING.md).
+The Topaz website auto-mirrors anything that lands on `main` via Next.js ISR with a 1-hour cache — no handshake step in this workflow. Full release flow + propagation details: [`docs/RELEASING.md`](./docs/RELEASING.md).
 
 ## Entry points
 
