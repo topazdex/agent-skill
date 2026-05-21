@@ -1,4 +1,5 @@
 export * from "./config/addresses.js";
+export * from "./config/brand.js";
 export * from "./config/chain.js";
 export * from "./config/tokens.js";
 

@@ -54,6 +54,17 @@ Subgraphs (Goldsky):
 - v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn`
 - v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn`
 
+## Project links
+
+Use these when a user asks where to go or you need to direct them outside the agent flow. Full catalog + brand assets: `references/brand.md`. Typed in `scripts/src/config/brand.ts` as `BRAND.*`.
+
+- App: https://topazdex.com
+- Docs: https://www.topazdex.com/docs
+- X: https://x.com/TopazDex
+- Telegram: https://t.me/TopazDex
+- GitHub org: https://github.com/topazdex
+- Brand assets repo: https://github.com/topazdex/assets
+
 ## Which path to use
 
 - **Agent/operator workflows** — quotes, swaps, liquidity, gauges, locks, votes, rewards, bribes, analytics, and live Topaz ops: use `references/`, `examples/`, and `scripts/`.
@@ -85,6 +96,7 @@ Subgraphs (Goldsky):
 | Common mistakes & gotchas | `references/pitfalls.md` |
 | Mainnet addresses (canonical) | `references/addresses.md` |
 | WBNB + common tokens with decimals | `references/tokens.md` |
+| Brand, social, asset URLs | `references/brand.md` |
 
 Worked walkthroughs (each pairs a scenario with the exact CLI/script call):
 

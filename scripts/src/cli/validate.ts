@@ -14,6 +14,7 @@ import * as path from "node:path";
 import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { getAddress } from "ethers";
+import { BRAND } from "../config/brand.js";
 
 const SELF_FILE = fileURLToPath(import.meta.url);
 const SCRIPTS_DIR = path.resolve(path.dirname(SELF_FILE), "../..");
@@ -435,6 +436,55 @@ const checkSubgraphUrls = (): void => {
   }
 };
 
+// --- A7. Brand URL parity ---
+// Channel URLs (web/docs/socials/github/assetsRepo) must appear in every "front door"
+// surface — README.md, SKILL.md, and references/brand.md.
+// Asset deep-links (logoPng, logoSvg, ...) only need to appear in references/brand.md;
+// requiring them in README/SKILL would just be clutter.
+const BRAND_FRONT_DOOR_FILES = ["README.md", "SKILL.md", "references/brand.md"];
+const BRAND_ASSET_HOME = "references/brand.md";
+
+const collectChannelUrls = (): string[] => {
+  const out: string[] = [];
+  for (const [key, v] of Object.entries(BRAND)) {
+    if (key === "assets") continue;
+    if (typeof v === "string" && v.startsWith("http")) out.push(v);
+  }
+  return out;
+};
+
+const collectAssetUrls = (): string[] =>
+  Object.values(BRAND.assets).filter((v) => typeof v === "string" && v.startsWith("http"));
+
+const checkBrandUrls = (): void => {
+  const channelUrls = collectChannelUrls();
+  for (const rel of BRAND_FRONT_DOOR_FILES) {
+    const abs = path.join(REPO_ROOT, rel);
+    if (!fs.existsSync(abs)) {
+      error(rel, "expected file does not exist (brand-URL parity check)");
+      continue;
+    }
+    const text = readText(abs);
+    for (const url of channelUrls) {
+      if (!text.includes(url)) {
+        error(rel, `BRAND channel URL \`${url}\` is in scripts/src/config/brand.ts but not in ${rel}`);
+      }
+    }
+  }
+
+  const assetText = fs.existsSync(path.join(REPO_ROOT, BRAND_ASSET_HOME))
+    ? readText(path.join(REPO_ROOT, BRAND_ASSET_HOME))
+    : "";
+  for (const url of collectAssetUrls()) {
+    if (!assetText.includes(url)) {
+      error(
+        BRAND_ASSET_HOME,
+        `BRAND asset URL \`${url}\` is in scripts/src/config/brand.ts but not in ${BRAND_ASSET_HOME}`,
+      );
+    }
+  }
+};
+
 // --- Run ---
 const sectionHeader = (label: string): void => {
   console.log(`\n— ${label} —`);
@@ -456,6 +506,8 @@ sectionHeader("EIP-55 checksums");
 checkChecksums();
 sectionHeader("Subgraph URLs");
 checkSubgraphUrls();
+sectionHeader("Brand URLs");
+checkBrandUrls();
 
 // --- Report ---
 const errors = FINDINGS.filter((f) => f.severity === "error");

@@ -4,6 +4,15 @@ Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (
 
 Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
 
+## Links
+
+- **Website:** https://topazdex.com
+- **Docs:** https://www.topazdex.com/docs
+- **X (Twitter):** https://x.com/TopazDex
+- **Telegram:** https://t.me/TopazDex
+- **GitHub:** https://github.com/topazdex
+- **Brand assets:** https://github.com/topazdex/assets — full catalog in [`references/brand.md`](./references/brand.md); typed constants in [`scripts/src/config/brand.ts`](./scripts/src/config/brand.ts).
+
 ## Entry points
 
 - **For agents:** start at `SKILL.md`, then drill into `references/*.md` and `examples/*.md` as needed.
@@ -195,6 +204,16 @@ Builder-side input validation and safety (added on this branch):
 - [x] `quoteV2` and the v3 quoters all `try/catch` reverts; one bad pool can't kill a `bestQuote`.
 - [x] Provider is constructed with `staticNetwork: { chainId: 56 }` so ethers rejects wrong-chain RPCs.
 - [x] Write helpers throw on missing `PRIVATE_KEY` (no silent degradation); every write CLI requires explicit confirmation unless `--yes`.
+
+Skill hygiene, validator, and brand surface (added on this branch):
+
+- [x] Static skill validator `scripts/src/cli/validate.ts` (run via `yarn validate`) covering 8 categories: frontmatter, internal links (markdown + backticked paths, fenced-code-aware), author-local paths, external-repo source pointers, secrets / vendored deps / yarn-cache artifacts, address-set parity (config ↔ README ↔ references), EIP-55 checksum validity (via `ethers.getAddress`), subgraph URL consistency, and brand URL parity. Git-aware: only inspects tracked files.
+- [x] `.claude/INTERNAL-SOURCE-POINTERS.md` (gitignored) captures the developer-machine paths under `~/topaz/topaz-{contracts,slipstream,interface,v2-subgraph,v3-subgraph}/`. Those pointers were removed from all tracked public docs and `scripts/src/config/addresses.ts`; the validator now rejects any future leak of those paths.
+- [x] `scripts/.yarn/install-state.gz` untracked + `**/.yarn/{cache,unplugged,build-state.yml,install-state.gz}` gitignored.
+- [x] Doc-only addresses (`BalanceLogicLibrary`, `DelegationLogicLibrary`, `NFTDescriptor`, `NFTSVG`, legacy `NonfungibleTokenPositionDescriptor_V1`) added to `scripts/src/config/addresses.ts` and `README.md` to satisfy strict byte-for-byte parity with `references/addresses.md`.
+- [x] Vitest harness + 55 unit tests across `path`, `epoch`, `tickMath`, `tokens`, `txBuilders` (incl. mocked `buildBestSwapTx` calldata-shape test). `yarn test` / `yarn test:watch`.
+- [x] Real bug fix surfaced by the tests: `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}` — JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `src/lib/tickMath.ts`. Smoke test still passes.
+- [x] Brand surface: `scripts/src/config/brand.ts` typed `BRAND` constant (web, docs, X, Telegram, GitHub, assetsRepo, plus `assets.{logoPng,logoSvg,tokenLogoPng,topaz100Png,previewJpg}` pointing at `raw.githubusercontent.com/topazdex/assets/main/*`). Catalog page `references/brand.md` with embedding examples. Links section in `README.md`, project-links section in `SKILL.md`. Validator enforces channel-URL parity across README/SKILL/brand.md and asset-URL presence in brand.md.
 
 ### TODO — priority 1: battle-tested best practices
 
