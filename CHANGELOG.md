@@ -12,6 +12,19 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- **Release-asset uploads.** `release.yml` now attaches `skill.json` and `SKILL.md` as assets on every GitHub Release (with `--clobber` so re-running the workflow on an existing tag replaces them). This makes the following URLs serve the latest tag's content via GitHub auto-redirect:
+  - `https://github.com/topazdex/agent-skill/releases/latest/download/skill.json`
+  - `https://github.com/topazdex/agent-skill/releases/latest/download/SKILL.md`
+  Today the live integration at `topazdex.com` pulls from `main` via Next.js ISR, but these asset URLs are the documented migration path if production ever needs to gate WIP commits out of the site (see `topaz-agent-skill-website-integration.md` in `.claude/`).
+
+### Changed — docs
+
+- **`docs/RELEASING.md` Website-propagation section rewritten** to match the live integration: dynamic Next.js ISR fetch with a 1-hour window. Adds the same-day verification hint ("Redeploy without build cache" on Vercel), a table of what each Topaz endpoint mirrors, and the release-asset URL alternative.
+- **`README.md` top-of-file Current-version block** now points readers at `docs/RELEASING.md` and explains that `topazdex.com/agents`, `topazdex.com/skill.md`, and `topazdex.com/skill.json` auto-update on a 1h ISR cycle once a version lands on `main`.
+- **`.claude/topaz-agent-skill-website-setup-generic.md` Sync Strategy section refactored** to treat dynamic-ISR-fetch as the recommended pattern (proven by topazdex.com) and demote CI sync / asset pinning / static manual copy to clearly-labeled alternatives. Cross-references the integration doc for the actual handler code.
+
 ### Fixed
 
 - **README.md `Current version` line is now kept in sync.** v2.0.0 + v2.1.0 both shipped with `**Current version:** \`1.0.0\`` on the README's third line because the release CLI only bumped `SKILL.md`, `skill.json`, and `CHANGELOG.md` — not the README. Fixed retroactively (README now reads `2.1.0`) and forward: `release.ts` now also rewrites the `**Current version:** \`X.Y.Z\`` marker in lockstep, and `yarn validate` enforces parity between `README.md`, `SKILL.md`, and `skill.json` (any drift becomes an error, not a warning).

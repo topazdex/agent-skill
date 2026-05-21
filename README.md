@@ -6,6 +6,8 @@ Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor
 
 **Current version:** `2.1.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
+The Topaz website auto-mirrors this version: `https://topazdex.com/agents`, `https://topazdex.com/skill.md`, and `https://topazdex.com/skill.json` all pull from `main` on a 1-hour ISR cycle. Pushing a new version here propagates without any website-side changes — see [`docs/RELEASING.md`](./docs/RELEASING.md) for details.
+
 ## Links
 
 - **Website:** https://topazdex.com

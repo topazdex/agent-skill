@@ -64,9 +64,27 @@ See `CHANGELOG.md` top matter for the patch/minor/major rules. Summary:
 
 ## Website propagation
 
-The website (`topazdex.com`) auto-fetches `SKILL.md` and `skill.json` from `raw.githubusercontent.com` on its own schedule. After a release lands here, the site picks up the new version on its next pull — no action needed from this repo.
+The website (`topazdex.com`) auto-fetches `SKILL.md` and `skill.json` from `https://raw.githubusercontent.com/topazdex/agent-skill/main/...` via Next.js Incremental Static Regeneration (ISR), refreshed **every 1 hour**. After a push to `main`, the surfaces below pick up the new version on their next ISR cycle — no action needed from this repo:
 
-If a future deployment wants webhook-driven sync instead of polling, `docs/website-sync.yml.example` has a copy-paste-ready GitHub Actions template that listens for a `repository_dispatch` event. Not wired into the current `release.yml`; uncomment and add the appropriate secret/variable if you want it.
+| Surface | What updates |
+|---|---|
+| `https://topazdex.com/skill.json` | Body re-mirrors `skill.json` |
+| `https://topazdex.com/skill.md` | Body re-mirrors `SKILL.md` |
+| `https://topazdex.com/agents` | Version pill + metadata strip re-read from `skill.json` |
+| `https://topazdex.com/.well-known/agent-skill.json` | No change — static, no version field |
+
+**Same-day verification.** If you cut a release and need to verify the live website immediately (rather than waiting up to an hour for the ISR window to expire), ask the website team to trigger a **"Redeploy without build cache"** on Vercel. The next visitor then forces a fresh fetch from `raw.githubusercontent.com`.
+
+**Release-asset URLs.** Every `release.yml` run attaches `skill.json` and `SKILL.md` as assets to the GitHub Release, so the following URLs always serve the latest tag's content (auto-redirected by GitHub):
+
+```text
+https://github.com/topazdex/agent-skill/releases/latest/download/skill.json
+https://github.com/topazdex/agent-skill/releases/latest/download/SKILL.md
+```
+
+This isn't what the live integration uses today (it points at the `main` branch), but it's the documented migration path if you ever want to gate WIP commits out of production — see the integration's `topaz-agent-skill-website-integration.md` for the swap details.
+
+**Webhook-driven sync (alternative).** If a future deployment wants push-based sync instead of polling, `docs/website-sync.yml.example` has a copy-paste-ready GitHub Actions template that listens for a `repository_dispatch` event. Not wired into the current `release.yml`; the dynamic ISR fetch the website already uses is sufficient.
 
 ## Recovering from a bad release
 

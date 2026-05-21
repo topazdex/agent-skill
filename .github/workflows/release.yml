@@ -143,3 +143,19 @@ jobs:
               --latest
           fi
 
+      - name: Attach SKILL.md and skill.json as release assets
+        # Lets downstream consumers (including the topazdex.com integration) pin
+        # to release-asset URLs that auto-redirect to the latest tag, instead of
+        # depending on a specific branch:
+        #   https://github.com/topazdex/agent-skill/releases/latest/download/skill.json
+        #   https://github.com/topazdex/agent-skill/releases/latest/download/SKILL.md
+        # `--clobber` so re-running the workflow on an existing tag replaces
+        # the assets instead of erroring on the upload.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release upload "${{ steps.tag.outputs.name }}" \
+            skill.json SKILL.md \
+            --clobber
+
