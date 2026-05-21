@@ -1,0 +1,28 @@
+{
+  "name": "topaz-skill-scripts",
+  "version": "0.1.0",
+  "private": true,
+  "description": "TypeScript helpers for interacting with Topaz Dex on BNB Mainnet (chain id 56).",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "tsx": "tsx",
+    "build": "tsc --noEmit",
+    "smoke": "tsx src/cli/stats.ts smoke"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.4",
+    "graphql": "^16.9.0",
+    "graphql-request": "^7.1.0",
+    "minimist": "^1.2.8"
+  },
+  "devDependencies": {
+    "@types/minimist": "^1.2.5",
+    "@types/node": "^20.14.10",
+    "tsx": "^4.19.2",
+    "typescript": "^5.5.3"
+  }
+}

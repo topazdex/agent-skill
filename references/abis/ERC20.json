@@ -1,0 +1,15 @@
+{
+  "abi": [
+    {"type": "function", "stateMutability": "view", "name": "name", "inputs": [], "outputs": [{"type": "string"}]},
+    {"type": "function", "stateMutability": "view", "name": "symbol", "inputs": [], "outputs": [{"type": "string"}]},
+    {"type": "function", "stateMutability": "view", "name": "decimals", "inputs": [], "outputs": [{"type": "uint8"}]},
+    {"type": "function", "stateMutability": "view", "name": "totalSupply", "inputs": [], "outputs": [{"type": "uint256"}]},
+    {"type": "function", "stateMutability": "view", "name": "balanceOf", "inputs": [{"name": "owner", "type": "address"}], "outputs": [{"type": "uint256"}]},
+    {"type": "function", "stateMutability": "view", "name": "allowance", "inputs": [{"name": "owner", "type": "address"}, {"name": "spender", "type": "address"}], "outputs": [{"type": "uint256"}]},
+    {"type": "function", "stateMutability": "nonpayable", "name": "approve", "inputs": [{"name": "spender", "type": "address"}, {"name": "amount", "type": "uint256"}], "outputs": [{"type": "bool"}]},
+    {"type": "function", "stateMutability": "nonpayable", "name": "transfer", "inputs": [{"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}], "outputs": [{"type": "bool"}]},
+    {"type": "function", "stateMutability": "nonpayable", "name": "transferFrom", "inputs": [{"name": "from", "type": "address"}, {"name": "to", "type": "address"}, {"name": "amount", "type": "uint256"}], "outputs": [{"type": "bool"}]},
+    {"type": "event", "name": "Transfer", "inputs": [{"name": "from", "type": "address", "indexed": true}, {"name": "to", "type": "address", "indexed": true}, {"name": "value", "type": "uint256", "indexed": false}], "anonymous": false},
+    {"type": "event", "name": "Approval", "inputs": [{"name": "owner", "type": "address", "indexed": true}, {"name": "spender", "type": "address", "indexed": true}, {"name": "value", "type": "uint256", "indexed": false}], "anonymous": false}
+  ]
+}
