@@ -2,8 +2,17 @@
   "name": "topaz-skill-scripts",
   "version": "0.1.0",
   "private": true,
-  "description": "TypeScript helpers for interacting with Topaz Dex on BNB Mainnet (chain id 56).",
+  "description": "TypeScript helpers and builder references for interacting with Topaz Dex on BNB Mainnet (chain id 56).",
   "license": "MIT",
+  "type": "module",
+  "main": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./addresses": "./src/config/addresses.ts",
+    "./tokens": "./src/config/tokens.ts",
+    "./quotes": "./src/read/quotes.ts",
+    "./tx-builders": "./src/lib/txBuilders.ts"
+  },
   "engines": {
     "node": ">=20.0.0"
   },

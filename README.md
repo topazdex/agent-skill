@@ -7,7 +7,8 @@ Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor
 ## Entry points
 
 - **For agents:** start at `SKILL.md`, then drill into `references/*.md` and `examples/*.md` as needed.
-- **For humans:** address tables below, deeper docs under `references/`, runnable code under `scripts/`.
+- **For developers:** start at `developers/DEVELOPERS.md` for app, SDK, calldata, dashboard, subgraph, and frontend integration guidance.
+- **For humans doing ops:** address tables below, deeper docs under `references/`, runnable code under `scripts/`.
 
 ## Contract addresses (BNB Mainnet, chain id 56)
 
@@ -128,6 +129,8 @@ topaz-skill/
 │   ├── apr-calculations.md
 │   ├── pitfalls.md
 │   └── abis/                # JSON ABIs for ethers/web3
+├── developers/              # Builder guides: app integration, calldata, subgraphs, dashboards
+├── sdk/                     # SDK layer notes; public exports currently live under scripts/src
 ├── examples/                # Narrative walkthroughs
 └── scripts/                 # TypeScript + ethers v6 helpers
     ├── package.json
@@ -150,6 +153,10 @@ yarn tsx src/cli/stats.ts pool 0x<pool-address>    # read-only example
 ```
 
 Full env + per-CLI usage in `scripts/README.md`.
+
+## Developer guides
+
+If you are building an app or SDK on top of Topaz, start with `developers/DEVELOPERS.md`. It links to focused guides for quote widgets, wallet-ready swap calldata, subgraph recipes, position dashboards, gauges/APR, and frontend integration.
 
 ## Pointers to source
 

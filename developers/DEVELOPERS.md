@@ -1,0 +1,147 @@
+# Building on Topaz Dex
+
+This guide is the builder-facing entry point for the Topaz skill repository. `SKILL.md` teaches agents how to operate Topaz; this directory explains how developers can integrate Topaz into applications, dashboards, bots, and analytics pipelines.
+
+Topaz Dex runs on **BNB Chain mainnet (chain id 56)** and combines:
+
+- **v2 pools**: Solidly-style volatile and stable AMMs.
+- **v3 / Slipstream pools**: concentrated liquidity pools keyed by tick spacing.
+- **ve(3,3) incentives**: TOPAZ emissions, gauges, veTOPAZ voting, bribes, fees, and rebases.
+
+## Choose the right integration surface
+
+- **Frontend or wallet integration**: use transaction builders from `scripts/src/lib/txBuilders.ts`. These return `{ to, data, value }` plus quote metadata so your app can show a confirmation screen and let the user's wallet sign.
+- **Backend bots / ops agents**: use CLI wrappers under `scripts/src/cli/` or write modules under `scripts/src/write/`, which broadcast with an env-provided `PRIVATE_KEY`.
+- **Analytics / dashboards**: use the Goldsky subgraphs for indexed pool/volume/TVL data, and on-chain reads for gauges, votes, claimables, and real-time pool state.
+- **Protocol reference**: use `references/` for addresses, ABIs, timing rules, pitfalls, and contract-specific mechanics.
+
+## Quickstart
+
+```bash
+git clone https://github.com/topazdex/agent-skill.git
+cd agent-skill/scripts
+cp .env.example .env
+# edit .env and set BSC_RPC_URL; PRIVATE_KEY is only needed for broadcasting writes
+corepack yarn install
+corepack yarn smoke
+```
+
+Read-only helpers work with only `BSC_RPC_URL`. Write executors require `PRIVATE_KEY`. Transaction builders do **not** require `PRIVATE_KEY` because they only construct calldata.
+
+## Importable modules
+
+The scripts package now exposes a small public surface via `src/index.ts`:
+
+```ts
+import {
+  ADDR,
+  TOKENS,
+  bestQuote,
+  buildBestSwapTx,
+  buildV3SwapTx,
+  getV3PoolInfo,
+} from "./src/index.js";
+```
+
+For production apps, prefer importing from package exports once this repository is published as an npm package. Until then, use these files as reference implementations or vendor them into your app.
+
+## Core contract addresses
+
+Canonical addresses live in two places and should stay synchronized:
+
+- Human reference: `references/addresses.md`
+- Typed constants: `scripts/src/config/addresses.ts`
+
+The most commonly used addresses are:
+
+- `ADDR.WBNB`: wrapped BNB.
+- `ADDR.TOPAZ`: TOPAZ ERC20.
+- `ADDR.Router`: v2 router.
+- `ADDR.SwapRouter`: v3 / Slipstream router.
+- `ADDR.QuoterV2`: v3 quoter.
+- `ADDR.MixedRouteQuoterV1`: mixed v2+v3 quoter.
+- `ADDR.PoolFactory`: v2 pool factory.
+- `ADDR.CLFactory`: v3 pool factory.
+- `ADDR.NonfungiblePositionManager`: v3 LP position NFTs.
+- `ADDR.Voter`: gauge/vote/bribe/fee registry.
+
+## Builder workflows
+
+### Quotes and route selection
+
+Use `bestQuote(tokenIn, tokenOut, amountIn)` from `scripts/src/read/quotes.ts` to compare:
+
+- direct v2 volatile/stable pools
+- direct v3 tick spacings
+- 2-hop routes through common intermediaries
+- mixed v2/v3 routes
+
+For simple UX, show:
+
+- route label
+- expected output
+- effective price
+- price impact if available
+- minimum output after slippage
+- whether the returned route is executable atomically
+
+See `developers/quote-widget.md`.
+
+### Swap transaction construction
+
+Use `buildBestSwapTx` or the more specific builders in `scripts/src/lib/txBuilders.ts` to construct wallet-ready calldata:
+
+```ts
+const tx = await buildBestSwapTx({
+  tokenIn: ADDR.WBNB,
+  tokenOut: ADDR.TOPAZ,
+  amountIn: "0.5",
+  slippageBps: 100n,
+  recipient: userAddress,
+});
+
+await walletClient.sendTransaction({
+  to: tx.to,
+  data: tx.data,
+  value: tx.value,
+});
+```
+
+See `developers/swap-calldata.md`.
+
+### Pool and position dashboards
+
+Use subgraphs for historical/indexed data:
+
+- v2 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn`
+- v3 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn`
+
+Use on-chain reads for current ownership and live state:
+
+- v2 LP balances: ERC20 `balanceOf(user)` on pair addresses.
+- v3 positions: `NonfungiblePositionManager.balanceOf`, `tokenOfOwnerByIndex`, `positions(tokenId)`.
+- gauges/votes/claimables: `Voter`, `Gauge`, `CLGauge`, `VotingEscrow`, reward contracts.
+
+See `developers/user-positions.md` and `developers/subgraph-recipes.md`.
+
+## Safety and UX checklist
+
+- Always quote before building a write transaction.
+- Always show expected output and minimum output after slippage.
+- Never default `amountOutMin` or liquidity minimums to zero.
+- Verify a pool exists before suggesting a route.
+- Make approvals explicit and spender-specific.
+- For BNB-in v3 swaps, set `value = amountIn` and use WBNB as `tokenIn`.
+- Warn users when liquidity is thin relative to trade size.
+- Use current on-chain reads for claimables, votes, and position ownership; subgraphs may lag.
+- Respect epoch timing: normal voting opens Thursday 01:00 UTC and closes one hour before the next epoch.
+
+## What is intentionally out of scope
+
+- BSC testnet deployments.
+- Governance proposal authoring.
+- Deploying new protocol contracts.
+- Custodial key management.
+- Production-grade hosted routing infrastructure.
+
+This repository should be treated as a reference implementation and developer accelerator, not a substitute for your app's own validation, simulation, monitoring, and risk controls.

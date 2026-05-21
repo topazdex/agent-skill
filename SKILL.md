@@ -54,6 +54,12 @@ Subgraphs (Goldsky):
 - v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn`
 - v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn`
 
+## Which path to use
+
+- **Agent/operator workflows** — quotes, swaps, liquidity, gauges, locks, votes, rewards, bribes, analytics, and live Topaz ops: use `references/`, `examples/`, and `scripts/`.
+- **Developer/builder workflows** — building a dApp, wallet integration, quote widget, calldata builder, dashboard, SDK, analytics pipeline, or bribe/voting UI on top of Topaz: start at `developers/DEVELOPERS.md`, then use the targeted files under `developers/`.
+- Keep protocol facts single-sourced. Do not duplicate addresses, ABIs, tick spacing rules, epoch windows, or gauge mappings in app code; import them from `scripts/src/config/` or reference `references/`.
+
 ## Where to look next
 
 | Task | File |
@@ -69,6 +75,10 @@ Subgraphs (Goldsky):
 | Claim gauge emissions, fees, bribes, rebase | `references/rewards-claiming.md` |
 | Deposit a bribe / incentive on a pool | `references/bribes-deposit.md` |
 | Query the subgraphs (entities + example queries) | `references/analytics-subgraph.md` |
+| Build on Topaz as a developer | `developers/DEVELOPERS.md` |
+| Build quote widgets | `developers/quote-widget.md` |
+| Build wallet-ready swap calldata | `developers/swap-calldata.md` |
+| Build pool/position/gauge dashboards | `developers/user-positions.md`, `developers/gauges-and-apr.md` |
 | On-chain reads for live stats | `references/analytics-onchain.md` |
 | Compute gauge / fee / voting APRs | `references/apr-calculations.md` |
 | Epoch boundaries, voting window, distribute() | `references/epoch-timing.md` |

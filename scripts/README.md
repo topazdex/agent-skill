@@ -109,11 +109,28 @@ yarn tsx src/cli/bribe.ts deposit --pool 0xPOOL --token 0xUSDC --amount 5000
 
 ## Programmatic usage
 
-Most CLI commands wrap library functions you can call directly:
+Most CLI commands wrap library functions you can call directly. For app and wallet integrations, prefer transaction builders that return calldata instead of broadcasting with a local private key:
 
 ```ts
-import { swapV2 } from "../src/write/swap";
-import { signer } from "../src/lib/client";
+import { ADDR, buildBestSwapTx } from "./src/index.js";
+
+const tx = await buildBestSwapTx({
+  tokenIn: ADDR.WBNB,
+  tokenOut: ADDR.TOPAZ,
+  amountIn: "0.5",
+  recipient: userAddress,
+  slippageBps: 100n,
+});
+
+// Submit with a wallet/provider of your choice:
+// await signer.sendTransaction({ to: tx.to, data: tx.data, value: tx.value });
+```
+
+For backend agents or ops scripts that intentionally broadcast with `PRIVATE_KEY`, use the write helpers directly:
+
+```ts
+import { swapV2 } from "./src/write/swap.js";
+import { signer } from "./src/lib/client.js";
 
 const tx = await swapV2({
   tokenIn:  "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",  // WBNB
