@@ -21,6 +21,10 @@ Version semantics for this skill:
 
 - `computeFeeApr` signature changed from `(vol7d, tvlUsd, feeRate)` to `(fees7d, tvlUsd)`. Topaz v3 supports `DynamicSwapFeeModule` and `CustomSwapFeeModule`, so the fee a pool actually charged over a week can differ from its nominal `fee()`. Realized fees (`feesUSD` from the subgraph) capture whatever dynamic adjustments were applied; `vol7d * feeRate` cannot. `poolApr` consumes the new signal and no longer reads `PoolFactory.getFee` or `CLPool.fee` — one fewer RPC per call. Goldens in `src/read/apr.test.ts` updated.
 
+### Added — multicall retry policy
+
+- `aggregate3` now takes an optional `{ retries, retryBackoffMs, exec }` options bag. Default policy: up to 2 attempts total with a 250ms backoff. Reverts inside the batch still surface as `success: false` per call; only outer RPC errors (provider 502, ECONNRESET, etc.) trigger the retry. The `exec` injection point lets unit tests drive the retry path deterministically without mocking ethers Contracts. 7 new tests in `src/lib/multicall.test.ts`. Total: 103 tests.
+
 ### Added
 
 - `references/abis/Multicall3.json` and `ABIS.Multicall3` — minimal ABI covering `aggregate3` + `tryAggregate`.

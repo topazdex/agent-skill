@@ -20,17 +20,49 @@ export interface MulticallResult {
   returnData: string;
 }
 
+export interface Aggregate3Options {
+  /**
+   * Maximum total attempts on transient RPC errors. Default 2 (one retry).
+   * The retry waits `retryBackoffMs` between attempts. Reverts inside the
+   * multicall don't count as transient — those land as `success: false` in
+   * the result array and are handled by the caller.
+   */
+  retries?: number;
+  /** Backoff in milliseconds between attempts. Default 250ms. */
+  retryBackoffMs?: number;
+  /**
+   * Injectable executor for tests. Production callers leave this unset and
+   * the executor uses `provider().aggregate3.staticCall(...)`.
+   */
+  exec?: (formatted: Array<{ target: string; allowFailure: boolean; callData: string }>) => Promise<Array<[boolean, string]>>;
+}
+
 const multicallIface = new Interface(ABIS.Multicall3);
+
+const defaultExec = async (
+  formatted: Array<{ target: string; allowFailure: boolean; callData: string }>,
+): Promise<Array<[boolean, string]>> => {
+  const multicall = new Contract(MULTICALL3, ABIS.Multicall3, provider());
+  return (await multicall.aggregate3.staticCall(formatted)) as Array<[boolean, string]>;
+};
+
+const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Execute a batch of read-only calls in a single RPC round-trip.
  * Defaults `allowFailure: true` on each call so one bad target (non-existent pool,
  * revert-priced quoter) doesn't kill the whole batch.
  *
+ * Transient RPC errors (the outer `staticCall` rejecting — e.g. 429, ECONNRESET,
+ * provider timeout) trigger up to `retries` attempts with `retryBackoffMs` between
+ * them. Default policy is one retry after 250ms, total two attempts. The retry
+ * window is small on purpose: a quote is no good if we wait 30 seconds for it.
+ *
  * Returns one result per input call, in order.
  */
 export async function aggregate3(
   calls: MulticallRequest[],
+  opts: Aggregate3Options = {},
 ): Promise<MulticallResult[]> {
   if (calls.length === 0) return [];
   const formatted = calls.map((c) => ({
@@ -38,9 +70,22 @@ export async function aggregate3(
     allowFailure: c.allowFailure ?? true,
     callData: c.callData,
   }));
-  const multicall = new Contract(MULTICALL3, ABIS.Multicall3, provider());
-  const raw = (await multicall.aggregate3.staticCall(formatted)) as Array<[boolean, string]>;
-  return raw.map(([success, returnData]) => ({ success, returnData }));
+  const exec = opts.exec ?? defaultExec;
+  const maxAttempts = Math.max(1, opts.retries ?? 2);
+  const backoffMs = Math.max(0, opts.retryBackoffMs ?? 250);
+
+  let lastErr: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const raw = await exec(formatted);
+      return raw.map(([success, returnData]) => ({ success, returnData }));
+    } catch (e) {
+      lastErr = e;
+      if (attempt >= maxAttempts) break;
+      if (backoffMs > 0) await sleep(backoffMs);
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error(String(lastErr));
 }
 
 /**
