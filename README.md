@@ -4,14 +4,105 @@ Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (
 
 Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
 
+**Current version:** `1.0.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
+
 ## Links
 
 - **Website:** https://topazdex.com
 - **Docs:** https://www.topazdex.com/docs
+- **Agents page:** https://topazdex.com/agents *(canonical install / discovery page)*
 - **X (Twitter):** https://x.com/TopazDex
 - **Telegram:** https://t.me/TopazDex
 - **GitHub:** https://github.com/topazdex
 - **Brand assets:** https://github.com/topazdex/assets — full catalog in [`references/brand.md`](./references/brand.md); typed constants in [`scripts/src/config/brand.ts`](./scripts/src/config/brand.ts).
+
+## Install
+
+This repo **is** the skill package. Any agent that can read a `SKILL.md` plus a directory of references and scripts can consume it — Claude Code, Codex, OpenCode, Hermes, custom in-house agents, or a human at a terminal.
+
+The fastest path is to clone the repo into wherever your agent looks for skills, then run the validator and smoke check.
+
+```bash
+git clone https://github.com/topazdex/agent-skill.git <dest>
+cd <dest>/scripts
+cp .env.example .env        # set BSC_RPC_URL; PRIVATE_KEY only needed for writes
+yarn install --immutable
+yarn validate && yarn smoke
+```
+
+Replace `<dest>` with whichever directory your agent reads skills from. Common conventions:
+
+| Runtime | Conventional location |
+|---|---|
+| Claude Code (user-wide) | `~/.claude/skills/topaz` |
+| Claude Code (project-local) | `<your-project>/.claude/skills/topaz` |
+| Hermes | `~/.hermes/skills/defi/topaz` |
+| OpenCode | `~/.config/opencode/skills/topaz` |
+| Codex / generic CLI agent | anywhere — point your agent at it explicitly |
+| Standalone / inspecting from a terminal | anywhere |
+
+If your agent has no notion of skills at all, just clone the repo somewhere and tell the agent to read `SKILL.md` plus the linked `references/` and `examples/` files when working on Topaz.
+
+### One-line install
+
+`install.sh` runs the clone + dependency install + validator for you. Default destination is `~/.claude/skills/topaz`, but override it with an argument:
+
+```bash
+# default destination
+curl -fsSL https://raw.githubusercontent.com/topazdex/agent-skill/main/install.sh | bash
+
+# pick your own
+curl -fsSL https://raw.githubusercontent.com/topazdex/agent-skill/main/install.sh \
+  | bash -s -- ~/some/other/path
+```
+
+### Pin a version
+
+```bash
+git clone https://github.com/topazdex/agent-skill.git <dest>
+git -C <dest> checkout v1.0.0
+```
+
+## Update
+
+```bash
+# convenience wrapper — runs git pull, refreshes deps, re-runs validate/smoke
+bash <dest>/update.sh
+
+# or just:
+git -C <dest> pull --ff-only
+```
+
+Check whether an update is available without applying it:
+
+```bash
+cd <dest>
+bash tools/check_update.sh   # exit 0 = up to date, 10 = update available
+```
+
+## Verify
+
+```bash
+cd <dest>/scripts
+yarn validate    # static checks: frontmatter, links, addresses, checksums, manifest parity, ...
+yarn build       # type-check (tsc --noEmit)
+yarn test        # 71 unit tests (vitest, no RPC)
+yarn smoke       # live read against BSC mainnet — requires BSC_RPC_URL
+```
+
+CI runs `validate` + `build` + `test` on every PR. See `.github/workflows/validate.yml`.
+
+## Releases
+
+Releases are one command:
+
+```bash
+cd scripts && yarn release patch --apply   # or minor / major / x.y.z
+```
+
+`yarn release` bumps the version in `SKILL.md`, `skill.json`, and `CHANGELOG.md` atomically, runs the full validation suite, commits, tags, and pushes. GitHub Actions (`.github/workflows/release.yml`) then re-validates, creates the GitHub Release with notes extracted from `CHANGELOG.md`, and (if configured) fires a `repository_dispatch` to the website repo so `/skill.md` and `/skill.json` stay in sync without manual file copies.
+
+Full release flow + one-time website handshake setup: [`docs/RELEASING.md`](./docs/RELEASING.md).
 
 ## Entry points
 

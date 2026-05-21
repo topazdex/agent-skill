@@ -1,0 +1,78 @@
+name: validate
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+concurrency:
+  group: validate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable corepack (yarn 4)
+        run: corepack enable
+
+      - name: Install scripts/ dependencies
+        working-directory: scripts
+        run: yarn install --immutable
+
+      - name: Validate skill (yarn validate)
+        working-directory: scripts
+        run: yarn validate
+
+      - name: Type-check (yarn build)
+        working-directory: scripts
+        run: yarn build
+
+      - name: Unit tests (yarn test)
+        working-directory: scripts
+        run: yarn test
+
+  smoke:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # Run smoke only when an RPC secret is configured. PRs from forks won't
+    # see the secret, so this job becomes a no-op there.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install scripts/ dependencies
+        working-directory: scripts
+        run: yarn install --immutable
+
+      - name: Live smoke test
+        if: ${{ env.BSC_RPC_URL != '' }}
+        working-directory: scripts
+        env:
+          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+        run: yarn smoke
+
+      - name: Skip smoke (no BSC_RPC_URL secret)
+        if: ${{ env.BSC_RPC_URL == '' }}
+        env:
+          BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
+        run: echo "BSC_RPC_URL secret not set — skipping live smoke."

@@ -22,7 +22,8 @@
     "validate": "tsx src/cli/validate.ts",
     "smoke": "tsx src/cli/stats.ts smoke",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "release": "tsx src/cli/release.ts"
   },
   "dependencies": {
     "dotenv": "^16.4.5",

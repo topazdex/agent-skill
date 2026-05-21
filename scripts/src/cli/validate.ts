@@ -1,13 +1,17 @@
 // CLI: yarn validate
 // Static skill validation. Exits 0 on success, 1 if any error-level finding.
 //
-// Implements priority-1.A of README's foundational-quality TODO:
-//   - SKILL.md frontmatter (name, description, length).
+// Implements priority-1.A of README's foundational-quality TODO + the distribution-layer
+// release guardrails:
+//   - SKILL.md frontmatter (name, description, length, version).
 //   - Internal links resolve across SKILL/README/developers/references/examples.
 //   - No hardcoded author-local paths (/Users/<x>/..., /home/<x>/...).
 //   - No committed secrets or vendored deps.
 //   - Address-set parity: scripts/src/config/addresses.ts ⊆ README.md ⊆ references/addresses.md.
 //   - Subgraph URLs consistent across docs, config, and .env.example.
+//   - skill.json manifest is present, valid JSON, has install/update/verify commands,
+//     and its `version` matches SKILL.md frontmatter (release-time parity).
+//   - Brand channel URLs appear on every front-door surface (README, SKILL, references/brand.md).
 
 import * as fs from "node:fs";
 import * as path from "node:path";
@@ -82,10 +86,19 @@ const lineOf = (text: string, idx: number): number =>
   text.slice(0, idx).split("\n").length;
 
 // --- A1. SKILL.md frontmatter ---
-// Hermes/Anthropic Skills require name + description; description ≤ 1024 chars.
+// Agent-skill convention (Anthropic Skills, Hermes, and most agent runtimes that read
+// SKILL.md frontmatter) requires name + description; description ≤ 1024 chars.
 const SKILL_DESCRIPTION_MAX = 1024;
 
-const parseFrontmatter = (md: string): { name?: string; description?: string; raw?: string } => {
+interface Frontmatter {
+  name?: string;
+  description?: string;
+  version?: string;
+  license?: string;
+  raw?: string;
+}
+
+const parseFrontmatter = (md: string): Frontmatter => {
   const m = md.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n/);
   if (!m) return {};
   const raw = m[1];
@@ -95,7 +108,13 @@ const parseFrontmatter = (md: string): { name?: string; description?: string; ra
     if (!kv) continue;
     fields[kv[1]] = kv[2].trim();
   }
-  return { name: fields.name, description: fields.description, raw };
+  return {
+    name: fields.name,
+    description: fields.description,
+    version: fields.version,
+    license: fields.license,
+    raw,
+  };
 };
 
 const checkFrontmatter = (): void => {
@@ -436,6 +455,92 @@ const checkSubgraphUrls = (): void => {
   }
 };
 
+// --- A6b. skill.json manifest + version parity ---
+// skill.json must exist at repo root, parse as JSON, declare the required fields,
+// and its `version` must equal the `version` declared in SKILL.md's frontmatter.
+// This is the single guardrail that catches "released v1.1.0 but forgot to bump
+// the manifest" before it ships.
+
+interface SkillManifest {
+  schema_version?: string;
+  name?: string;
+  version?: string;
+  description?: string;
+  repository?: string;
+  install?: { command?: string };
+  update?: { command?: string };
+  verify?: { commands?: string[] };
+}
+
+const checkSkillManifest = (): void => {
+  const manifestPath = path.join(REPO_ROOT, "skill.json");
+  if (!fs.existsSync(manifestPath)) {
+    error("skill.json", "skill.json is missing at repo root (distribution manifest)");
+    return;
+  }
+  let parsed: SkillManifest;
+  try {
+    parsed = JSON.parse(readText(manifestPath)) as SkillManifest;
+  } catch (e) {
+    error("skill.json", `skill.json is not valid JSON: ${(e as Error).message}`);
+    return;
+  }
+
+  const required: (keyof SkillManifest)[] = [
+    "schema_version",
+    "name",
+    "version",
+    "description",
+    "repository",
+  ];
+  for (const k of required) {
+    if (!parsed[k]) error("skill.json", `missing required field \`${k}\``);
+  }
+
+  if (!parsed.install?.command) error("skill.json", "missing `install.command`");
+  if (!parsed.update?.command) error("skill.json", "missing `update.command`");
+  if (!parsed.verify?.commands || parsed.verify.commands.length === 0) {
+    error("skill.json", "missing `verify.commands` (at least one verification command expected)");
+  }
+
+  // skill.json.name must equal SKILL.md frontmatter `name`.
+  const skillPath = path.join(REPO_ROOT, "SKILL.md");
+  const fm = parseFrontmatter(readText(skillPath));
+  if (parsed.name && fm.name && parsed.name !== fm.name) {
+    error(
+      "skill.json",
+      `name drift: SKILL.md declares \`${fm.name}\`, skill.json declares \`${parsed.name}\``,
+    );
+  }
+
+  // Version parity: skill.json.version === SKILL.md frontmatter `version`.
+  // SKILL.md's frontmatter parser is flat, so a top-level `version: x.y.z` line is required.
+  const skillVersion = fm.version;
+  if (!skillVersion) {
+    error("SKILL.md", "frontmatter missing top-level `version` (required for release parity with skill.json)");
+  } else if (parsed.version && parsed.version !== skillVersion) {
+    error(
+      "skill.json",
+      `version drift: SKILL.md declares \`${skillVersion}\`, skill.json declares \`${parsed.version}\``,
+    );
+  }
+
+  // CHANGELOG should mention the current version so we never tag without release notes.
+  const changelogPath = path.join(REPO_ROOT, "CHANGELOG.md");
+  if (parsed.version && fs.existsSync(changelogPath)) {
+    const cl = readText(changelogPath);
+    const versionHeading = new RegExp(`^##\\s*\\[?${parsed.version.replace(/\./g, "\\.")}\\]?`, "m");
+    if (!versionHeading.test(cl)) {
+      warn(
+        "CHANGELOG.md",
+        `no \`## [${parsed.version}]\` (or \`## ${parsed.version}\`) section found — add release notes before tagging`,
+      );
+    }
+  } else if (!fs.existsSync(changelogPath)) {
+    warn("CHANGELOG.md", "no CHANGELOG.md at repo root (recommended for releases)");
+  }
+};
+
 // --- A7. Brand URL parity ---
 // Channel URLs (web/docs/socials/github/assetsRepo) must appear in every "front door"
 // surface — README.md, SKILL.md, and references/brand.md.
@@ -506,6 +611,8 @@ sectionHeader("EIP-55 checksums");
 checkChecksums();
 sectionHeader("Subgraph URLs");
 checkSubgraphUrls();
+sectionHeader("Manifest (skill.json)");
+checkSkillManifest();
 sectionHeader("Brand URLs");
 checkBrandUrls();
 

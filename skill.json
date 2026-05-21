@@ -1,0 +1,117 @@
+{
+  "schema_version": "1.0",
+  "name": "topaz",
+  "display_name": "Topaz Dex Agent Skill",
+  "version": "1.0.0",
+  "description": "Agent skill for Topaz Dex — a ve(3,3) DEX on BNB Chain that combines Solidly-style v2 pools with Uniswap-v3-style concentrated liquidity. Covers swaps, liquidity (v2 LP + v3 NFT positions), gauges, veTOPAZ locks, voting, bribes, rewards, and subgraph/on-chain analytics.",
+  "homepage": "https://topazdex.com",
+  "agents_page": "https://topazdex.com/agents",
+  "repository": "https://github.com/topazdex/agent-skill",
+  "issues": "https://github.com/topazdex/agent-skill/issues",
+  "license": "MIT",
+  "skill_md": "https://raw.githubusercontent.com/topazdex/agent-skill/main/SKILL.md",
+  "canonical_skill_md": "https://topazdex.com/skill.md",
+  "manifest": "https://topazdex.com/skill.json",
+  "package_url": "https://github.com/topazdex/agent-skill.git",
+  "release_url": "https://github.com/topazdex/agent-skill/releases/latest",
+  "changelog": "https://github.com/topazdex/agent-skill/blob/main/CHANGELOG.md",
+  "install": {
+    "type": "git",
+    "command": "git clone https://github.com/topazdex/agent-skill.git <dest>",
+    "script": "https://raw.githubusercontent.com/topazdex/agent-skill/main/install.sh",
+    "notes": "Any directory works as <dest>. install.sh defaults to ~/.claude/skills/topaz when invoked with no argument, but the skill is runtime-neutral — pick whatever path your agent reads skills from.",
+    "conventional_destinations": {
+      "claude-code-user": "~/.claude/skills/topaz",
+      "claude-code-project": ".claude/skills/topaz",
+      "hermes": "~/.hermes/skills/defi/topaz",
+      "opencode": "~/.config/opencode/skills/topaz",
+      "codex-or-generic": "any path — point the agent at it explicitly"
+    }
+  },
+  "consumption_modes": [
+    {
+      "mode": "read_url",
+      "description": "Agent fetches https://topazdex.com/skill.md or the raw GitHub SKILL.md and follows it as operating instructions. Best for browser agents and chat agents with web-fetch tools. References and helper scripts are not available in this mode.",
+      "entrypoint": "https://topazdex.com/skill.md"
+    },
+    {
+      "mode": "clone_repo",
+      "description": "Agent clones the full GitHub repository to access SKILL.md, references/, examples/, evals/, and the TypeScript helpers under scripts/. This is the recommended mode for any agent that can run a shell command.",
+      "command": "git clone https://github.com/topazdex/agent-skill.git <dest>"
+    },
+    {
+      "mode": "copy_to_agent_memory",
+      "description": "User or agent copies SKILL.md (or the entire repo) into the agent's native skills, rules, knowledge, custom-instruction, or memory system. Update strategy is then the agent's responsibility."
+    },
+    {
+      "mode": "runtime_specific_install",
+      "description": "Agent installs the repo into its own conventional skill/plugin/rules directory. See install.conventional_destinations for examples per runtime."
+    }
+  ],
+  "single_file_skill_available": true,
+  "update": {
+    "type": "git",
+    "command": "git -C <dest> pull --ff-only",
+    "script": "https://raw.githubusercontent.com/topazdex/agent-skill/main/update.sh"
+  },
+  "verify": {
+    "commands": [
+      "cd scripts && yarn install --immutable",
+      "cd scripts && yarn validate",
+      "cd scripts && yarn build",
+      "cd scripts && yarn test",
+      "cd scripts && yarn smoke"
+    ],
+    "notes": "yarn smoke is a live read against BSC mainnet — requires BSC_RPC_URL in scripts/.env (no PRIVATE_KEY needed for reads)."
+  },
+  "compatibility": {
+    "agents": ["any agent that can read a SKILL.md + linked references"],
+    "verified_with": ["claude-code", "hermes", "codex", "opencode", "generic"],
+    "node": ">=20.0.0",
+    "package_manager": "yarn@4",
+    "requires_local_install_for_full_functionality": true,
+    "notes": "SKILL.md alone is sufficient for instruction loading. Helper scripts, ABIs, builders, and the validator require a full git clone."
+  },
+  "chains": [
+    {
+      "name": "BNB Smart Chain",
+      "chain_id": 56,
+      "network": "mainnet"
+    }
+  ],
+  "entry_points": {
+    "agent": "SKILL.md",
+    "human": "README.md",
+    "developer": "developers/DEVELOPERS.md",
+    "operator_scripts": "scripts/README.md"
+  },
+  "social": {
+    "twitter": "https://x.com/TopazDex",
+    "telegram": "https://t.me/TopazDex",
+    "github_org": "https://github.com/topazdex",
+    "docs": "https://www.topazdex.com/docs",
+    "brand_assets": "https://github.com/topazdex/assets"
+  },
+  "safety": {
+    "default_behavior": "quote-and-build",
+    "broadcast_policy": "Never broadcast unless the user explicitly authorizes it and a PRIVATE_KEY is configured.",
+    "output_labels": ["quote", "built calldata", "approval-needed", "broadcast tx-hash"]
+  },
+  "tags": [
+    "defi",
+    "dex",
+    "bnb-chain",
+    "bsc",
+    "topaz",
+    "ve33",
+    "solidly",
+    "slipstream",
+    "concentrated-liquidity",
+    "swaps",
+    "gauges",
+    "venft",
+    "bribes",
+    "voting",
+    "rewards"
+  ]
+}

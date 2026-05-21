@@ -11,7 +11,7 @@ Run from the repo root unless otherwise noted.
 - [ ] **No author-local paths or external-repo source pointers** — no `/Users/<x>/...`, no `/home/<x>/...`, no `~/topaz/topaz-{contracts,slipstream,interface,v2-subgraph,v3-subgraph}/...`. Those live in `.claude/INTERNAL-SOURCE-POINTERS.md` (gitignored). Covered by `yarn validate`.
 - [ ] **`yarn install --immutable` succeeds from the lockfile** — run inside `scripts/`. No lockfile drift, no missing peers.
 - [ ] **`yarn build` clean** — `tsc --noEmit` exits 0 inside `scripts/`. No `any`, no `@ts-ignore`, no suppressed errors.
-- [ ] **`yarn validate` clean** — 0 errors, 0 warnings across all 9 categories (frontmatter, internal links, author-local paths, external-repo pointers, secrets/vendored, address parity, EIP-55 checksums, subgraph URLs, brand URLs).
+- [ ] **`yarn validate` clean** — 0 errors, 0 warnings across all 10 categories (frontmatter, internal links, author-local paths, external-repo pointers, secrets/vendored, address parity, EIP-55 checksums, subgraph URLs, manifest [`skill.json`] + version parity, brand URLs).
 - [ ] **`yarn test` passes** — every vitest suite green, no `.skip`, no `.todo` introduced without justification.
 - [ ] **`yarn smoke` passes against a live BSC RPC** — all 9 checks PASS. If any FAIL, fix the underlying drift (stale address, broken RPC, dead gauge) before merging.
 - [ ] **Golden tests pass** — `quotes.test.ts`, `apr.test.ts`, `epoch.test.ts`, `path.test.ts`. Bumping a golden requires a one-line justification in the PR description.
@@ -33,6 +33,13 @@ Run from the repo root unless otherwise noted.
 - [ ] **Default path is read/quote/calldata, not broadcast** — any new write helper requires explicit `PRIVATE_KEY` and explicit user confirmation (or `--yes` on CLIs).
 - [ ] **New `BuiltSwapTx`-shaped return values carry `quotedAt` and `deadline`** so frontends can detect stale quotes.
 - [ ] **Slippage cannot default to zero on a user-facing path** — `normalizeAndValidate` already enforces `0 ≤ slippageBps ≤ 10000`; if you add a new builder, route it through the same normalizer.
+
+## Release PRs (or `release: vX.Y.Z` commits on main)
+
+- [ ] Use `yarn release <patch|minor|major|x.y.z>` rather than hand-editing `version` strings. The CLI keeps `SKILL.md`, `skill.json`, and `CHANGELOG.md` in sync atomically.
+- [ ] `CHANGELOG.md` `## [Unreleased]` had real content before bumping (or the bump is intentionally a no-op release).
+- [ ] After pushing the tag, confirm `.github/workflows/release.yml` ran green and the GitHub Release exists with notes pulled from `CHANGELOG.md`.
+- [ ] If the website handshake is configured, confirm a sync PR opened in the website repo. If not configured yet, see [`docs/RELEASING.md`](./RELEASING.md) for the one-time setup.
 
 ## Recommended (not blocking)
 

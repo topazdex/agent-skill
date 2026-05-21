@@ -1,0 +1,165 @@
+name: release
+
+# Fires when a semver tag is pushed (e.g. v1.0.1). Re-runs the full validation
+# suite and creates a GitHub release whose notes are extracted from CHANGELOG.md
+# for the tagged version.
+#
+# The expected flow is:
+#   1. yarn release patch|minor|major      (locally, bumps versions + changelog)
+#   2. review the diff, commit, push tag
+#   3. this workflow runs and publishes the release
+#   4. sync-website.yml notifies the website repo so it can pull the new
+#      skill.json / SKILL.md without manual file copies
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to publish (e.g. v1.0.1)'
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Resolve tag
+        id: tag
+        run: |
+          if [ -n "${{ inputs.tag }}" ]; then
+            echo "name=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
+            echo "version=${{ inputs.tag }}" | sed 's/=v/=/' >> "$GITHUB_OUTPUT"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+            echo "name=$TAG" >> "$GITHUB_OUTPUT"
+            echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.tag.outputs.name }}
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Verify SKILL.md and skill.json agree on the tag version
+        run: |
+          set -euo pipefail
+          TAG_VERSION="${{ steps.tag.outputs.version }}"
+          SKILL_VERSION=$(grep -E '^version:' SKILL.md | head -1 | awk '{print $2}')
+          MANIFEST_VERSION=$(node -e 'console.log(require("./skill.json").version)')
+          echo "tag=$TAG_VERSION skill=$SKILL_VERSION manifest=$MANIFEST_VERSION"
+          if [ "$SKILL_VERSION" != "$TAG_VERSION" ] || [ "$MANIFEST_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::version drift — tag=$TAG_VERSION, SKILL.md=$SKILL_VERSION, skill.json=$MANIFEST_VERSION"
+            exit 1
+          fi
+
+      - name: Install scripts/ dependencies
+        working-directory: scripts
+        run: yarn install --immutable
+
+      - name: Validate
+        working-directory: scripts
+        run: yarn validate
+
+      - name: Type-check
+        working-directory: scripts
+        run: yarn build
+
+      - name: Unit tests
+        working-directory: scripts
+        run: yarn test
+
+      - name: Extract release notes from CHANGELOG.md
+        id: notes
+        run: |
+          set -euo pipefail
+          VERSION="${{ steps.tag.outputs.version }}"
+          # Pull everything from `## [<version>]` up to the next `## [` heading.
+          awk -v v="$VERSION" '
+            $0 ~ "^## \\[" v "\\]" { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md > /tmp/release-notes.md
+          if [ ! -s /tmp/release-notes.md ]; then
+            echo "::warning::no CHANGELOG section found for [$VERSION] — using a generic note"
+            echo "Release v$VERSION." > /tmp/release-notes.md
+          fi
+          {
+            echo ""
+            echo "---"
+            echo ""
+            echo "**Install**"
+            echo ""
+            echo '```bash'
+            echo "curl -fsSL https://raw.githubusercontent.com/topazdex/agent-skill/${{ steps.tag.outputs.name }}/install.sh | bash"
+            echo '```'
+            echo ""
+            echo "Or pin to this version:"
+            echo ""
+            echo '```bash'
+            echo "git clone https://github.com/topazdex/agent-skill.git <dest>"
+            echo "git -C <dest> checkout ${{ steps.tag.outputs.name }}"
+            echo '```'
+            echo ""
+            echo "**Manifest:** https://raw.githubusercontent.com/topazdex/agent-skill/${{ steps.tag.outputs.name }}/skill.json"
+            echo "**Skill file:** https://raw.githubusercontent.com/topazdex/agent-skill/${{ steps.tag.outputs.name }}/SKILL.md"
+          } >> /tmp/release-notes.md
+          echo "path=/tmp/release-notes.md" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${{ steps.tag.outputs.name }}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "release $TAG already exists — updating notes"
+            gh release edit "$TAG" \
+              --title "Topaz Agent Skill $TAG" \
+              --notes-file "${{ steps.notes.outputs.path }}"
+          else
+            gh release create "$TAG" \
+              --title "Topaz Agent Skill $TAG" \
+              --notes-file "${{ steps.notes.outputs.path }}" \
+              --latest
+          fi
+
+      - name: Notify website repo (repository_dispatch)
+        # Skip cleanly when the secret/var is missing — fresh repos haven't configured
+        # the website handshake yet, and we don't want releases to fail because of it.
+        env:
+          GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
+          WEBSITE_REPO: ${{ vars.WEBSITE_REPO }}
+        run: |
+          set -euo pipefail
+          if [ -z "${GH_TOKEN:-}" ] || [ -z "${WEBSITE_REPO:-}" ]; then
+            echo "WEBSITE_DISPATCH_TOKEN secret or WEBSITE_REPO variable not set — skipping website notification."
+            echo "See .github/workflows/sync-website.yml for setup instructions."
+            exit 0
+          fi
+          TAG="${{ steps.tag.outputs.name }}"
+          VERSION="${{ steps.tag.outputs.version }}"
+          gh api "repos/$WEBSITE_REPO/dispatches" \
+            --method POST \
+            --field event_type='topaz-agent-skill-released' \
+            --field "client_payload[tag]=$TAG" \
+            --field "client_payload[version]=$VERSION" \
+            --field "client_payload[skill_md_url]=https://raw.githubusercontent.com/topazdex/agent-skill/$TAG/SKILL.md" \
+            --field "client_payload[skill_json_url]=https://raw.githubusercontent.com/topazdex/agent-skill/$TAG/skill.json" \
+            --field "client_payload[release_url]=https://github.com/topazdex/agent-skill/releases/tag/$TAG"
+          echo "dispatched topaz-agent-skill-released to $WEBSITE_REPO"

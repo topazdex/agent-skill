@@ -1,0 +1,95 @@
+# Copy this file into the website repo as:
+#   .github/workflows/sync-topaz-skill.yml
+#
+# It listens for `repository_dispatch` events fired by the agent-skill release
+# workflow and writes the new SKILL.md + skill.json into the website's static
+# assets. By default it opens a PR; flip `auto_merge` to commit directly to
+# the default branch.
+
+name: sync-topaz-skill
+
+on:
+  repository_dispatch:
+    types: [topaz-agent-skill-released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to pull from agent-skill (e.g. v1.0.1). Leave blank to use main.'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    env:
+      # Where the website serves its static files from. Change if your framework
+      # uses a different path (e.g. `static/`, `src/public/`, `app/public/`).
+      PUBLIC_DIR: public
+      AGENT_SKILL_REPO: topazdex/agent-skill
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve ref
+        id: ref
+        run: |
+          set -euo pipefail
+          REF="${{ github.event.client_payload.tag || inputs.tag || 'main' }}"
+          VERSION="${{ github.event.client_payload.version }}"
+          echo "ref=$REF" >> "$GITHUB_OUTPUT"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "syncing from $AGENT_SKILL_REPO@$REF"
+
+      - name: Pull SKILL.md and skill.json
+        run: |
+          set -euo pipefail
+          mkdir -p "$PUBLIC_DIR" "$PUBLIC_DIR/.well-known"
+          curl -fsSL "https://raw.githubusercontent.com/$AGENT_SKILL_REPO/${{ steps.ref.outputs.ref }}/skill.json" \
+            -o "$PUBLIC_DIR/skill.json"
+          curl -fsSL "https://raw.githubusercontent.com/$AGENT_SKILL_REPO/${{ steps.ref.outputs.ref }}/SKILL.md" \
+            -o "$PUBLIC_DIR/skill.md"
+          # Tiny discovery file so /.well-known/agent-skill.json keeps working.
+          cat > "$PUBLIC_DIR/.well-known/agent-skill.json" <<EOF
+          {
+            "name": "topaz",
+            "display_name": "Topaz Dex Agent Skill",
+            "manifest": "https://topazdex.com/skill.json",
+            "skill_md": "https://topazdex.com/skill.md",
+            "repository": "https://github.com/$AGENT_SKILL_REPO",
+            "agents_page": "https://topazdex.com/agents"
+          }
+          EOF
+
+      - name: Diff
+        id: diff
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create PR
+        if: steps.diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore(agents): sync Topaz skill to ${{ steps.ref.outputs.ref }}"
+          branch: "sync/topaz-skill-${{ steps.ref.outputs.ref }}"
+          delete-branch: true
+          title: "sync(agents): Topaz skill ${{ steps.ref.outputs.ref }}"
+          body: |
+            Automated sync triggered by [topazdex/agent-skill@${{ steps.ref.outputs.ref }}](https://github.com/${{ env.AGENT_SKILL_REPO }}/releases/tag/${{ steps.ref.outputs.ref }}).
+
+            Pulls the latest `SKILL.md` and `skill.json` into `${{ env.PUBLIC_DIR }}/` so `/skill.md` and `/skill.json` stay in sync with the agent-skill repo.
+
+            Release notes: ${{ github.event.client_payload.release_url }}
+          labels: |
+            agents
+            automation
+
+      - name: No changes
+        if: steps.diff.outputs.changed == 'false'
+        run: echo "skill files already in sync — nothing to do."

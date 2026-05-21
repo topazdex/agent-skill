@@ -1,6 +1,6 @@
 # Agent Eval Prompts
 
-Markdown checklist of expected agent behavior for the Topaz skill. Reviewed manually for now; the format is structured enough to be re-targeted at an automated harness later (e.g. Hermes recording tool calls and final answers).
+Markdown checklist of expected agent behavior for the Topaz skill. Reviewed manually for now; the format is structured enough to be re-targeted at an automated harness later (any agent runtime that can record tool calls and final answers — Hermes, an in-house eval driver, a Codex/Claude-Code wrapper, etc.).
 
 Closes priority-1.E in [`../README.md`](../README.md).
 
@@ -20,7 +20,7 @@ Each file under `evals/` describes one prompt and the expected agent behavior:
 
 For each file in this directory:
 
-1. Open a clean Hermes session.
+1. Open a clean agent session (Hermes, Claude Code, Codex, OpenCode, or any runtime that has the Topaz skill installed).
 2. Paste the `Prompt` block verbatim.
 3. Tick the boxes by comparing the agent's tool calls + final answer against the `MUST include` / `MUST NOT include` lists.
 4. If any `MUST NOT` is hit, that's a regression — file an issue or fix immediately.
