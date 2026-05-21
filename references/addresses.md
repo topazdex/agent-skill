@@ -1,12 +1,6 @@
 # Topaz — Mainnet Addresses (BNB Chain, id 56)
 
-All addresses below are the **only** authoritative on-chain identifiers for Topaz Dex on BNB Mainnet. They are mirrored in:
-
-- `~/topaz/topaz-contracts/deployments/bscMainnet/<Name>.json` (core / v2)
-- `~/topaz/topaz-slipstream/deployments/bscMainnet/<Name>.json` (slipstream / v3)
-- `scripts/src/config/addresses.ts` (this skill's TS code)
-
-If any address ever diverges between these three, the deployment JSON is the source of truth — update the other two.
+All addresses below are the **only** authoritative on-chain identifiers for Topaz Dex on BNB Mainnet. Within this skill, the same set is mirrored in `scripts/src/config/addresses.ts` and `README.md`; the validator (`yarn validate` in `scripts/`) enforces parity.
 
 ## Chain
 
@@ -28,7 +22,7 @@ If any address ever diverges between these three, the deployment JSON is the sou
 
 For a list of whitelisted bribe tokens and common quote assets (USDT, USDC, BTCB, etc.), see `tokens.md`.
 
-## Core / v2 contracts (from `topaz-contracts/deployments/bscMainnet/`)
+## Core / v2 contracts
 
 | Contract | Address | Notes |
 |---|---|---|
@@ -52,7 +46,7 @@ For a list of whitelisted bribe tokens and common quote assets (USDT, USDC, BTCB
 
 Governance (`EpochGovernor`, `ProtocolGovernor`) is intentionally **not** documented in this skill — out of scope.
 
-## Slipstream / v3 contracts (from `topaz-slipstream/deployments/bscMainnet/`)
+## Slipstream / v3 contracts
 
 | Contract | Address | Notes |
 |---|---|---|

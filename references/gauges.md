@@ -20,7 +20,7 @@ Distinguishing v2 vs v3 gauge from address alone: query `gauge.nft()` — for v2
 
 ## v2 Gauge — function reference
 
-Source: `~/topaz/topaz-contracts/contracts/gauges/Gauge.sol`.
+ABI: `references/abis/Gauge.json`.
 
 ```solidity
 function deposit(uint256 _amount) external;                     // stake on behalf of msg.sender
@@ -45,7 +45,7 @@ Approvals: the LP token (which is the v2 `pool` address — it's its own ERC20) 
 
 ## CLGauge — function reference
 
-Source: `~/topaz/topaz-slipstream/contracts/gauge/CLGauge.sol`.
+ABI: `references/abis/CLGauge.json`.
 
 ```solidity
 function deposit(uint256 tokenId) external;       // NFT transferred from msg.sender to gauge

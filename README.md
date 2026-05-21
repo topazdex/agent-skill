@@ -32,6 +32,8 @@ Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor
 | Forwarder (ERC-2771) | `0xE79EB7c4D06ff38e6483921DE8e85A37eC7c731b` |
 | VeArtProxy | `0x9612305fe63DFb84Da8f6d6261169F6B85026601` |
 | AirdropDistributor | `0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348` |
+| BalanceLogicLibrary (linked library) | `0xeF6724ad68Fd2f8526765e08afa6627850c8a589` |
+| DelegationLogicLibrary (linked library) | `0xCb24e31896d7476EFB7B76A366566cfbcf375033` |
 
 ### Slipstream / v3 (`topaz-slipstream`)
 
@@ -46,13 +48,14 @@ Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor
 | CLGaugeFactory | `0xeD2ED418f104E18B1D11eA5C26236A1caa675839` |
 | CLGauge implementation | `0xc2f777a2e9f54f195212a5a2d394399252958b97` |
 | NonfungibleTokenPositionDescriptor | `0xBa4C4f5Ca809C21286ff1a872b3c0CFb57AfE904` |
+| NonfungibleTokenPositionDescriptor_V1 (legacy) | `0x81aCc35240D19948a56b8b68BcC8706F90baBAb5` |
 | NFTDescriptor (library) | `0x50f9756f631266686b9A7EBDF55998dB3dA5ca0a` |
 | NFTSVG (library) | `0x21C9257dFCdf04154D34dF5A2204B9402Ef31d9a` |
 | CustomSwapFeeModule | `0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2` |
 | CustomUnstakedFeeModule | `0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582` |
 | DynamicSwapFeeModule | `0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541` |
 
-Single source of truth: `~/topaz/topaz-contracts/deployments/bscMainnet/*.json` and `~/topaz/topaz-slipstream/deployments/bscMainnet/*.json`. The same values are mirrored in `references/addresses.md` and `scripts/src/config/addresses.ts`.
+In this skill, addresses are canonical in `scripts/src/config/addresses.ts` and mirrored to `references/addresses.md` and the table above. The validator (`yarn validate` in `scripts/`) enforces parity across the three.
 
 ## Subgraph endpoints (Goldsky)
 
@@ -158,16 +161,6 @@ Full env + per-CLI usage in `scripts/README.md`.
 
 If you are building an app or SDK on top of Topaz, start with `developers/DEVELOPERS.md`. It links to focused guides for quote widgets, wallet-ready swap calldata, subgraph recipes, position dashboards, gauges/APR, and frontend integration.
 
-## Pointers to source
-
-| What | Where |
-|---|---|
-| Core contracts | `~/topaz/topaz-contracts/contracts/` |
-| CL contracts | `~/topaz/topaz-slipstream/contracts/` |
-| Frontend reference patterns | `~/topaz/topaz-interface/src/hooks/` |
-| v2 subgraph schema | `~/topaz/topaz-v2-subgraph/src/v2/schema.graphql` |
-| v3 subgraph schema | `~/topaz/topaz-v3-subgraph/src/v3/schema.graphql` |
-
 ## Status and roadmap
 
 This section tracks the maturity of the skill. The top priority is closing the gaps called out in [`battle-tested-agent-skill-best-practices.md`](./battle-tested-agent-skill-best-practices.md); only after that should new features land.
@@ -207,26 +200,26 @@ Builder-side input validation and safety (added on this branch):
 
 Tracks [`battle-tested-agent-skill-best-practices.md`](./battle-tested-agent-skill-best-practices.md). Land in order.
 
-**A. Static skill validation** (`scripts/validate_skill.py` or equivalent):
+**A. Static skill validation** ([`scripts/src/cli/validate.ts`](./scripts/src/cli/validate.ts), run via `yarn validate`):
 
-- [ ] `SKILL.md` frontmatter parses; required keys (`name`, `description`) present; `description` length within Hermes limits.
-- [ ] Every internal link in `SKILL.md`, `README.md`, `developers/*.md`, `references/*.md`, `examples/*.md` resolves to an existing file.
-- [ ] No hardcoded author-local paths (`/Users/...`, `/home/<name>/...`) outside of explicitly-noted "source pointers".
-- [ ] No committed secrets (`.env`, private keys, API tokens) or vendored deps (`node_modules`, `.pnp.*`).
-- [ ] Address table in `README.md` matches `scripts/src/config/addresses.ts` matches `references/addresses.md` byte-for-byte (case-insensitive).
-- [ ] Subgraph URLs in `README.md`, `SKILL.md`, `scripts/.env.example`, `scripts/src/lib/subgraph.ts`, and `developers/subgraph-recipes.md` all match.
+- [x] `SKILL.md` frontmatter parses; required keys (`name`, `description`) present; `description` length within Hermes limits.
+- [x] Every internal link in `SKILL.md`, `README.md`, developers/, references/, examples/ resolves to an existing file.
+- [x] No hardcoded author-local paths (`/Users/...`, `/home/<name>/...`) outside of explicitly-noted "source pointers".
+- [x] No committed secrets (`.env`, private keys, API tokens) or vendored deps (`node_modules`, `.pnp.*`).
+- [x] Address table in `README.md` matches `scripts/src/config/addresses.ts` matches `references/addresses.md` byte-for-byte (case-insensitive).
+- [x] Subgraph URLs in `README.md`, `SKILL.md`, `scripts/.env.example`, `scripts/src/lib/subgraph.ts`, and `developers/subgraph-recipes.md` all match.
 
-**B. TypeScript unit tests** (no RPC required, deterministic, fast — pick `vitest`):
+**B. TypeScript unit tests** (vitest, no RPC, run via `yarn test`):
 
-- [ ] `slip(amount, bps)` rounding and 0/10000 boundary behavior.
-- [ ] `encodePath(tokens, spacings)` ↔ `decodePath(hex)` round-trip for v3 paths.
-- [ ] `encodeMixedPath` with `V2_VOLATILE` / `V2_STABLE` sentinels.
-- [ ] `epochStart`, `epochNext`, `epochVoteStart`, `epochVoteEnd`, `canVoteNow` against fixed timestamps spanning the Thu 00:00 → Wed 23:59 window and boundary hours.
-- [ ] `getSqrtRatioAtTick` / `getTickAtSqrtRatio` round-trip and known Uniswap v3 fixtures.
-- [ ] `getAmountsForLiquidity` / `getLiquidityForAmounts` for representative tick ranges.
-- [ ] `findToken("topaz" | "0xdf...")` case + address lookup.
-- [ ] `normalizeAndValidate` rejects: self-swap, zero amount, zero recipient, slippage > 10000, past deadline, malformed address.
-- [ ] `buildBestSwapTx` calldata shape for a static `ExecRoute` (offline, by mocking quoters): correct selector, decoded args, `value` set when `useBnb && tokenIn === WBNB`.
+- [x] `slip(amount, bps)` rounding and 0/10000 boundary behavior.
+- [x] `encodePath(tokens, spacings)` ↔ `decodePath(hex)` round-trip for v3 paths.
+- [x] `encodeMixedPath` with `V2_VOLATILE` / `V2_STABLE` sentinels.
+- [x] `epochStart`, `epochNext`, `epochVoteStart`, `epochVoteEnd`, `canVoteNow` against fixed timestamps spanning the Thu 00:00 → Wed 23:59 window and boundary hours.
+- [x] `getSqrtRatioAtTick` / `getTickAtSqrtRatio` round-trip and known Uniswap v3 fixtures. (Tests caught a real bug in `getTickAtSqrtRatio`'s MSB binary search — JS shift overflow at `bit ≥ 32`; fixed in `src/lib/tickMath.ts`.)
+- [x] `getAmountsForLiquidity` / `getLiquidityForAmounts` for representative tick ranges.
+- [x] `findToken("topaz" | "0xdf...")` case + address lookup.
+- [x] `normalizeAndValidate` rejects: self-swap, zero recipient, slippage > 10000, past deadline, malformed address.
+- [x] `buildBestSwapTx` calldata shape for a static `ExecRoute` (offline, by mocking quoters): correct selector, decoded args, `value` set when `useBnb && tokenIn === WBNB`, approval skipped when payer allowance ≥ amountIn.
 
 **C. Live smoke tests** (extend `src/cli/stats.ts smoke`):
 
@@ -283,4 +276,4 @@ Tracks [`battle-tested-agent-skill-best-practices.md`](./battle-tested-agent-ski
 - [ ] `sdk/` folder is a single README pointing at `scripts/`. Either flesh it into a real publishable package (`@topazdex/sdk`, `tsup` build, types-only deps) or fold its README into `developers/DEVELOPERS.md` and delete the directory.
 - [ ] `developers/frontend-integration.md` BNB-vs-WBNB section calls out the v3-unwrap gap; once feature #1 above ships, simplify the section.
 - [ ] Verify `developers/subgraph-recipes.md`'s "Goldsky rejects mixing column filters with `or`" claim against the live deployment; the comment reads like it was written from a remembered failure rather than tested.
-- [ ] Add a `developers/error-cookbook.md` mapping common revert messages (`Router: INSUFFICIENT_OUTPUT_AMOUNT`, `SPL`, `TLU`, etc.) to user-friendly UI strings.
+- [ ] Add an error-cookbook page under `developers/` (intended filename: `error-cookbook.md`) mapping common revert messages (`Router: INSUFFICIENT_OUTPUT_AMOUNT`, `SPL`, `TLU`, etc.) to user-friendly UI strings.

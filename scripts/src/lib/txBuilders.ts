@@ -15,9 +15,9 @@ import {
 } from "../read/quotes.js";
 
 const DEFAULT_DEADLINE = () => Math.floor(Date.now() / 1000) + 60 * 20;
-const MAX_SLIPPAGE_BPS = 10_000n;
+export const MAX_SLIPPAGE_BPS = 10_000n;
 const isWbnb = (token: string) => token.toLowerCase() === ADDR.WBNB.toLowerCase();
-const slip = (amount: bigint, bps: bigint) => (amount * (10_000n - bps)) / 10_000n;
+export const slip = (amount: bigint, bps: bigint): bigint => (amount * (10_000n - bps)) / 10_000n;
 const nowSec = () => Math.floor(Date.now() / 1000);
 
 export interface ApprovalRequirement {
@@ -111,7 +111,7 @@ interface NormalizedSwapInputs {
   useBnb: boolean;
 }
 
-function normalizeAndValidate(args: {
+export function normalizeAndValidate(args: {
   tokenIn: string;
   tokenOut?: string;
   recipient: string;

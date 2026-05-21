@@ -101,7 +101,7 @@ Worked walkthroughs (each pairs a scenario with the exact CLI/script call):
 All write-capable code lives under `scripts/`. Common shape:
 
 ```bash
-cd /home/aaron/topaz/topaz-skill/scripts
+cd <topaz-skill>/scripts
 cp .env.example .env   # set BSC_RPC_URL; PRIVATE_KEY only needed for writes
 yarn install
 yarn tsx src/cli/<cmd>.ts <args>...

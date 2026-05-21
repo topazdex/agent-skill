@@ -1,6 +1,6 @@
 # Analytics — Subgraphs
 
-Topaz indexes two subgraphs on Goldsky. Schemas are mirrored from the indexer source in `~/topaz/topaz-v2-subgraph/src/v2/schema.graphql` and `~/topaz/topaz-v3-subgraph/src/v3/schema.graphql`.
+Topaz indexes two subgraphs on Goldsky — a v2 (Solidly) subgraph and a v3 (Slipstream) subgraph. The entity catalogs below are the canonical reference for query authoring.
 
 ## Endpoints
 

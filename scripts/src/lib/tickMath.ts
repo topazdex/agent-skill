@@ -65,7 +65,10 @@ export function getTickAtSqrtRatio(sqrtPriceX96: bigint): number {
   let r = sqrtPriceX128;
   let msb = 0;
   for (const [bit, mask] of POWERS_OF_2) {
-    const f = (r > mask ? 1 : 0) << bit;
+    // `bit` already encodes the magnitude (128, 64, ...); the Solidity reference
+    // uses `shl(7, gt(...))` etc. where 7,6,... map to those same magnitudes.
+    // JS `1 << 128` overflows to 1 (32-bit shift), so we must use `bit` directly.
+    const f = r > mask ? bit : 0;
     msb |= f;
     r >>= BigInt(f);
   }

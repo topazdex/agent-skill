@@ -22,7 +22,7 @@ So a TOPAZ → WBNB (v3 ts=200) → USDT (v2 stable) path is:
 [ TOPAZ(20) | 0x0000C8(3, =200)  | WBNB(20) | 0xFFFFFE(3, =stable) | USDT(20) ]
 ```
 
-See `~/topaz/topaz-slipstream/contracts/periphery/lens/MixedRouteQuoterV1.sol` for the exact branching logic. `scripts/src/lib/path.ts` exposes:
+The branching logic is implemented in `MixedRouteQuoterV1` on-chain (see `references/abis/MixedRouteQuoterV1.json`). `scripts/src/lib/path.ts` exposes:
 
 ```ts
 export const V2_VOLATILE = -1;

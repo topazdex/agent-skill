@@ -132,7 +132,7 @@ Two reward types accompany managed NFTs:
 - `FreeManagedReward` — rewards distributed instantly when collected (e.g. arbitrage profits).
 - `LockedManagedReward` — rewards are converted into more TOPAZ and locked into the managed NFT itself.
 
-Out of scope for typical users; see `~/topaz/topaz-contracts/contracts/rewards/{Free,Locked}ManagedReward.sol` if you need to integrate.
+Out of scope for typical users; integrate against the `FreeManagedReward` and `LockedManagedReward` contracts on-chain (look up the per-managed-NFT addresses via `Voter`).
 
 ## Scripts
 

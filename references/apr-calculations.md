@@ -1,6 +1,6 @@
 # APR Calculations
 
-There are three APR figures in the Topaz UI; we compute them the same way the frontend does (`~/topaz/topaz-interface/src/hooks/useGaugeApr.ts`).
+There are three APR figures in the Topaz UI; we compute them the same way the frontend does.
 
 ## Conventions
 

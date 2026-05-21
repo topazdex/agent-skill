@@ -1,7 +1,6 @@
 // Topaz Dex — BNB Mainnet (chain id 56).
-// Mirrors ~/topaz/topaz-contracts/deployments/bscMainnet/*.json and
-//         ~/topaz/topaz-slipstream/deployments/bscMainnet/*.json
-// If you change one, update the others.
+// Canonical address set for this skill. The same values must appear in README.md and
+// references/addresses.md; `yarn validate` (scripts/src/cli/validate.ts) enforces parity.
 
 export const ADDR = {
   // Tokens
@@ -23,6 +22,9 @@ export const ADDR = {
   Forwarder: "0xE79EB7c4D06ff38e6483921DE8e85A37eC7c731b",
   VeArtProxy: "0x9612305fe63DFb84Da8f6d6261169F6B85026601",
   AirdropDistributor: "0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348",
+  // Linked libraries used by VotingEscrow (read-only / power-user)
+  BalanceLogicLibrary: "0xeF6724ad68Fd2f8526765e08afa6627850c8a589",
+  DelegationLogicLibrary: "0xCb24e31896d7476EFB7B76A366566cfbcf375033",
 
   // Slipstream / v3
   CLFactory: "0x73DC984D9490286E735548f61dfCCec67Af82ed9",
@@ -34,6 +36,9 @@ export const ADDR = {
   QuoterV2: "0x7CCB89bB9BdEF68688F39a2c22d249fD1D9759f1",
   MixedRouteQuoterV1: "0x47c3570b90e7234FE695Ad5F1bE69E21fe1a9ee2",
   NonfungibleTokenPositionDescriptor: "0xBa4C4f5Ca809C21286ff1a872b3c0CFb57AfE904",
+  NonfungibleTokenPositionDescriptorV1: "0x81aCc35240D19948a56b8b68BcC8706F90baBAb5", // legacy, archived
+  NFTDescriptor: "0x50f9756f631266686b9A7EBDF55998dB3dA5ca0a", // linked library
+  NFTSVG: "0x21C9257dFCdf04154D34dF5A2204B9402Ef31d9a", // linked library
   CustomSwapFeeModule: "0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2",
   CustomUnstakedFeeModule: "0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582",
   DynamicSwapFeeModule: "0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541",
