@@ -34,16 +34,24 @@ export function computeEmissionApr(
 }
 
 /**
- * Pure helper: fee APR (percent) from 7-day volume.
+ * Pure helper: fee APR (percent) from 7-day **realized** USD fees.
  *
- * @param vol7d   - Trailing 7-day USD volume.
+ * We use realized fees rather than `vol7d * feeRate` because Topaz v3 pools
+ * support `DynamicSwapFeeModule` and `CustomSwapFeeModule`, so the fee rate
+ * a pool actually charged over the last week can differ from its nominal
+ * `fee()` value. The subgraph emits `feesUSD` directly from swap events, so
+ * fees7d already reflects whatever dynamic adjustments were applied.
+ *
+ * Conversion is `fees7d * 52 / tvlUsd * 100` — i.e. we approximate one year
+ * as 52 weeks (≈ 52.142857). The ~0.3% drift vs `365/7` is negligible relative
+ * to the underlying TVL/volume noise.
+ *
+ * @param fees7d  - Trailing 7-day USD fees collected by the pool.
  * @param tvlUsd  - Current USD TVL.
- * @param feeRate - Pool fee as a fraction (e.g. 0.003 for 30 bps).
  */
-export function computeFeeApr(vol7d: number, tvlUsd: number, feeRate: number): number {
+export function computeFeeApr(fees7d: number, tvlUsd: number): number {
   if (tvlUsd <= 0) return 0;
-  const avgDaily = vol7d / 7;
-  return (avgDaily * 365 * feeRate / tvlUsd) * 100;
+  return (fees7d * 52 / tvlUsd) * 100;
 }
 
 const V3_POOL_TVL_Q = gql`
@@ -107,7 +115,7 @@ export interface PoolAprBreakdown {
 
 export async function poolApr(pool: string): Promise<PoolAprBreakdown> {
   const type = await detectPoolType(pool);
-  const { tvlUsd, vol7d, fees7d: _fees7d } = await subgraphPool(pool, type);
+  const { tvlUsd, fees7d } = await subgraphPool(pool, type);
   const topazUsd = await getTopazUsdPrice();
   const v = voter();
   const gauge: string = await v.gauges(pool);
@@ -121,44 +129,38 @@ export async function poolApr(pool: string): Promise<PoolAprBreakdown> {
       tvlUsd,
       stakedTvlUsd: 0,
       emissionApr: 0,
-      feeApr: 0,
+      feeApr: computeFeeApr(fees7d, tvlUsd),
       rewardRatePerSec: 0n,
       topazUsd,
     };
   }
   const alive: boolean = await v.isAlive(gauge);
 
-  let rewardRate: bigint, stakedFraction: number, feeRate: number;
+  let rewardRate: bigint, stakedFraction: number;
   if (type === "v2") {
     const g = gaugeC(gauge);
-    const [rate, totalSupply, poolSupply, fee] = await Promise.all([
+    const [rate, totalSupply, poolSupply] = await Promise.all([
       g.rewardRate() as Promise<bigint>,
       g.totalSupply() as Promise<bigint>,
       new Contract(pool, ABIS.Pool, provider()).totalSupply() as Promise<bigint>,
-      // v2 fee is bps-style: fee/10000 = bps; e.g. 30 = 0.30%
-      new Contract(ADDR.PoolFactory, ABIS.PoolFactory, provider())
-        .getFee(pool, await new Contract(pool, ABIS.Pool, provider()).stable()) as Promise<bigint>,
     ]);
     rewardRate = rate;
     stakedFraction = poolSupply > 0n ? Number(totalSupply) / Number(poolSupply) : 0;
-    feeRate = Number(fee) / 10000; // 30 -> 0.003
   } else {
     const g = clGaugeC(gauge);
     const pc = new Contract(pool, ABIS.CLPool, provider());
-    const [rate, stakedLiq, liq, fee] = await Promise.all([
+    const [rate, stakedLiq, liq] = await Promise.all([
       g.rewardRate() as Promise<bigint>,
       pc.stakedLiquidity() as Promise<bigint>,
       pc.liquidity() as Promise<bigint>,
-      pc.fee() as Promise<bigint>,
     ]);
     rewardRate = rate;
     stakedFraction = liq > 0n ? Number(stakedLiq) / Number(liq) : 0;
-    feeRate = Number(fee) / 1_000_000; // 3000 pips -> 0.003
   }
 
   const stakedTvlUsd = tvlUsd * stakedFraction;
   const emissionApr = computeEmissionApr(rewardRate, topazUsd, stakedTvlUsd, alive);
-  const feeApr = computeFeeApr(vol7d, tvlUsd, feeRate);
+  const feeApr = computeFeeApr(fees7d, tvlUsd);
 
   return {
     pool,

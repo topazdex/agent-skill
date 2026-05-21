@@ -17,6 +17,10 @@ Version semantics for this skill:
 - `bestQuote` / `topRoutes` now collapse every candidate (direct v2, direct v3, all 2-hop variants through WBNB/USDT/USDC/BTCB, and mixed v2/v3 paths) into a single `Multicall3.aggregate3` RPC round-trip with `allowFailure: true`. Replaces the prior bounded-concurrency sequential dispatch (~200 RPC calls per quote). Target latency: <500ms on a private RPC. Public API surface unchanged; the `concurrency` option is now a deprecated no-op.
 - **v3 swaps that end in WBNB now deliver native BNB by default.** When `useBnb` is true (the default) and the v3 swap's terminal token is WBNB, `buildV3SwapTx` and `buildV3PathSwapTx` emit `SwapRouter.multicall([exactInputSingle|exactInput(recipient=Router, amountOutMinimum=0), unwrapWETH9(amountOutMin, recipient=user)])` rather than a plain exactInputSingle/exactInput. Slippage is enforced at the unwrap boundary. Pass `useBnb: false` to opt out and receive WBNB instead. Matches the long-standing v2 behavior so the two builders are now symmetric. Closes the gap previously called out in `developers/frontend-integration.md`.
 
+### Changed — breaking
+
+- `computeFeeApr` signature changed from `(vol7d, tvlUsd, feeRate)` to `(fees7d, tvlUsd)`. Topaz v3 supports `DynamicSwapFeeModule` and `CustomSwapFeeModule`, so the fee a pool actually charged over a week can differ from its nominal `fee()`. Realized fees (`feesUSD` from the subgraph) capture whatever dynamic adjustments were applied; `vol7d * feeRate` cannot. `poolApr` consumes the new signal and no longer reads `PoolFactory.getFee` or `CLPool.fee` — one fewer RPC per call. Goldens in `src/read/apr.test.ts` updated.
+
 ### Added
 
 - `references/abis/Multicall3.json` and `ABIS.Multicall3` — minimal ABI covering `aggregate3` + `tryAggregate`.
