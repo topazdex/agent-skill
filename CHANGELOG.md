@@ -12,6 +12,15 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed
+
+- **README.md `Current version` line is now kept in sync.** v2.0.0 + v2.1.0 both shipped with `**Current version:** \`1.0.0\`` on the README's third line because the release CLI only bumped `SKILL.md`, `skill.json`, and `CHANGELOG.md` — not the README. Fixed retroactively (README now reads `2.1.0`) and forward: `release.ts` now also rewrites the `**Current version:** \`X.Y.Z\`` marker in lockstep, and `yarn validate` enforces parity between `README.md`, `SKILL.md`, and `skill.json` (any drift becomes an error, not a warning).
+- **Release workflow's tag-version assertion now also checks README.md.** `.github/workflows/release.yml` would have published v2.1.0 with a stale README anyway — the verify step only compared the tag against `SKILL.md` and `skill.json`. README is now included, so a future release with drift would fail CI before reaching `gh release create`.
+
+### Removed
+
+- `repository_dispatch` step in `.github/workflows/release.yml`. The Topaz website auto-fetches `SKILL.md` and `skill.json` directly from `raw.githubusercontent.com` on its own schedule, so the webhook handshake we'd built was dead code for this deployment. Documentation updated to match: `docs/RELEASING.md` no longer instructs anyone to wire up `WEBSITE_DISPATCH_TOKEN` / `WEBSITE_REPO`. `docs/website-sync.yml.example` is retained as an optional reference for future deployments that want webhook-driven sync instead of polling.
+
 
 ## [2.1.0] — 2026-05-21
 

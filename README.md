@@ -4,7 +4,7 @@ Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (
 
 Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
 
-**Current version:** `1.0.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
+**Current version:** `2.1.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
 ## Links
 

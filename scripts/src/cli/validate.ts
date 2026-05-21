@@ -525,6 +525,25 @@ const checkSkillManifest = (): void => {
     );
   }
 
+  // README.md "Current version" line must match. The release CLI bumps this line,
+  // but a hand-edit could drift — this catches it.
+  const readmePath = path.join(REPO_ROOT, "README.md");
+  if (parsed.version && fs.existsSync(readmePath)) {
+    const readmeText = readText(readmePath);
+    const m = readmeText.match(/\*\*Current version:\*\*\s+`([^`]+)`/);
+    if (!m) {
+      error(
+        "README.md",
+        "missing the `**Current version:** \\`X.Y.Z\\`` marker (release.ts uses this to bump README in sync with SKILL.md / skill.json)",
+      );
+    } else if (m[1] !== parsed.version) {
+      error(
+        "README.md",
+        `version drift: README.md declares \`${m[1]}\`, skill.json declares \`${parsed.version}\``,
+      );
+    }
+  }
+
   // CHANGELOG should mention the current version so we never tag without release notes.
   const changelogPath = path.join(REPO_ROOT, "CHANGELOG.md");
   if (parsed.version && fs.existsSync(changelogPath)) {

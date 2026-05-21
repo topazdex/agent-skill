@@ -28,6 +28,7 @@ const REPO_ROOT = path.resolve(path.dirname(SELF_FILE), "../../..");
 const SKILL_MD = path.join(REPO_ROOT, "SKILL.md");
 const SKILL_JSON = path.join(REPO_ROOT, "skill.json");
 const CHANGELOG = path.join(REPO_ROOT, "CHANGELOG.md");
+const README = path.join(REPO_ROOT, "README.md");
 
 // --- arg parsing ---
 interface Args {
@@ -121,6 +122,21 @@ const bumpSkillJson = (newVersion: string): void => {
   // Sanity check: result must still parse.
   JSON.parse(updated) as unknown;
   fs.writeFileSync(SKILL_JSON, updated);
+};
+
+// Catches the `**Current version:** \`X.Y.Z\`` line at the top of README.md.
+// Historically (v2.0.0 + v2.1.0) this stayed stale because the release CLI
+// only bumped SKILL.md + skill.json + CHANGELOG. The validator now enforces
+// parity, but the writer keeps it from drifting in the first place.
+const bumpReadme = (newVersion: string): void => {
+  const raw = fs.readFileSync(README, "utf8");
+  const re = /(\*\*Current version:\*\*\s+`)[^`]+(`)/;
+  if (!re.test(raw)) {
+    die("README.md is missing the `**Current version:** \\`X.Y.Z\\`` marker that release.ts updates");
+  }
+  const updated = raw.replace(re, `$1${newVersion}$2`);
+  if (updated === raw) die("README.md `Current version:` line was not updated (regex miss)");
+  fs.writeFileSync(README, updated);
 };
 
 const today = (): string => {
@@ -241,8 +257,9 @@ const main = (): void => {
 
   bumpSkillMd(newVersion);
   bumpSkillJson(newVersion);
+  bumpReadme(newVersion);
   bumpChangelog(newVersion, currentVersion);
-  ok("wrote SKILL.md, skill.json, CHANGELOG.md");
+  ok("wrote SKILL.md, skill.json, README.md, CHANGELOG.md");
 
   ok("running validator");
   execSync("yarn validate", { cwd: path.join(REPO_ROOT, "scripts"), stdio: "inherit" });
@@ -257,15 +274,15 @@ const main = (): void => {
 
   if (args.apply) {
     ok("applying: commit + tag + push --follow-tags");
-    execSync(`git add SKILL.md skill.json CHANGELOG.md`, { cwd: REPO_ROOT, stdio: "inherit" });
+    execSync(`git add SKILL.md skill.json README.md CHANGELOG.md`, { cwd: REPO_ROOT, stdio: "inherit" });
     execSync(`git commit -m "release: v${newVersion}"`, { cwd: REPO_ROOT, stdio: "inherit" });
     execSync(`git tag -a v${newVersion} -m "Topaz agent skill v${newVersion}"`, { cwd: REPO_ROOT, stdio: "inherit" });
     execSync(`git push origin ${args.branch} --follow-tags`, { cwd: REPO_ROOT, stdio: "inherit" });
     ok(`pushed v${newVersion}; GitHub Actions will create the release.`);
   } else {
     console.log("\nNext steps (review the diff first, then run):\n");
-    console.log(`  git diff SKILL.md skill.json CHANGELOG.md`);
-    console.log(`  git add SKILL.md skill.json CHANGELOG.md`);
+    console.log(`  git diff SKILL.md skill.json README.md CHANGELOG.md`);
+    console.log(`  git add SKILL.md skill.json README.md CHANGELOG.md`);
     console.log(`  git commit -m "release: v${newVersion}"`);
     console.log(`  git tag -a v${newVersion} -m "Topaz agent skill v${newVersion}"`);
     console.log(`  git push origin ${args.branch} --follow-tags`);

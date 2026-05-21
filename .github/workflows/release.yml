@@ -1,15 +1,18 @@
 name: release
 
-# Fires when a semver tag is pushed (e.g. v1.0.1). Re-runs the full validation
+# Fires when a semver tag is pushed (e.g. v2.1.0). Re-runs the full validation
 # suite and creates a GitHub release whose notes are extracted from CHANGELOG.md
 # for the tagged version.
 #
 # The expected flow is:
-#   1. yarn release patch|minor|major      (locally, bumps versions + changelog)
-#   2. review the diff, commit, push tag
-#   3. this workflow runs and publishes the release
-#   4. sync-website.yml notifies the website repo so it can pull the new
-#      skill.json / SKILL.md without manual file copies
+#   1. yarn release patch|minor|major --apply   (locally, bumps versions + changelog
+#                                                + commits + tags + pushes)
+#   2. this workflow runs on the tag push and publishes the GitHub Release
+#
+# The website (topazdex.com) auto-fetches SKILL.md + skill.json from
+# raw.githubusercontent.com on its own schedule — no handshake from this workflow
+# is required. If a future deployment wants webhook-driven sync instead of
+# polling, see docs/website-sync.yml.example for a copy-paste template.
 
 on:
   push:
@@ -56,15 +59,16 @@ jobs:
       - name: Enable corepack
         run: corepack enable
 
-      - name: Verify SKILL.md and skill.json agree on the tag version
+      - name: Verify tag, SKILL.md, skill.json, and README.md all agree on the version
         run: |
           set -euo pipefail
           TAG_VERSION="${{ steps.tag.outputs.version }}"
           SKILL_VERSION=$(grep -E '^version:' SKILL.md | head -1 | awk '{print $2}')
           MANIFEST_VERSION=$(node -e 'console.log(require("./skill.json").version)')
-          echo "tag=$TAG_VERSION skill=$SKILL_VERSION manifest=$MANIFEST_VERSION"
-          if [ "$SKILL_VERSION" != "$TAG_VERSION" ] || [ "$MANIFEST_VERSION" != "$TAG_VERSION" ]; then
-            echo "::error::version drift — tag=$TAG_VERSION, SKILL.md=$SKILL_VERSION, skill.json=$MANIFEST_VERSION"
+          README_VERSION=$(grep -oE '\*\*Current version:\*\* `[^`]+`' README.md | head -1 | sed -E 's/.*`([^`]+)`/\1/')
+          echo "tag=$TAG_VERSION skill=$SKILL_VERSION manifest=$MANIFEST_VERSION readme=$README_VERSION"
+          if [ "$SKILL_VERSION" != "$TAG_VERSION" ] || [ "$MANIFEST_VERSION" != "$TAG_VERSION" ] || [ "$README_VERSION" != "$TAG_VERSION" ]; then
+            echo "::error::version drift — tag=$TAG_VERSION, SKILL.md=$SKILL_VERSION, skill.json=$MANIFEST_VERSION, README.md=$README_VERSION"
             exit 1
           fi
 
@@ -139,27 +143,3 @@ jobs:
               --latest
           fi
 
-      - name: Notify website repo (repository_dispatch)
-        # Skip cleanly when the secret/var is missing — fresh repos haven't configured
-        # the website handshake yet, and we don't want releases to fail because of it.
-        env:
-          GH_TOKEN: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
-          WEBSITE_REPO: ${{ vars.WEBSITE_REPO }}
-        run: |
-          set -euo pipefail
-          if [ -z "${GH_TOKEN:-}" ] || [ -z "${WEBSITE_REPO:-}" ]; then
-            echo "WEBSITE_DISPATCH_TOKEN secret or WEBSITE_REPO variable not set — skipping website notification."
-            echo "See .github/workflows/sync-website.yml for setup instructions."
-            exit 0
-          fi
-          TAG="${{ steps.tag.outputs.name }}"
-          VERSION="${{ steps.tag.outputs.version }}"
-          gh api "repos/$WEBSITE_REPO/dispatches" \
-            --method POST \
-            --field event_type='topaz-agent-skill-released' \
-            --field "client_payload[tag]=$TAG" \
-            --field "client_payload[version]=$VERSION" \
-            --field "client_payload[skill_md_url]=https://raw.githubusercontent.com/topazdex/agent-skill/$TAG/SKILL.md" \
-            --field "client_payload[skill_json_url]=https://raw.githubusercontent.com/topazdex/agent-skill/$TAG/skill.json" \
-            --field "client_payload[release_url]=https://github.com/topazdex/agent-skill/releases/tag/$TAG"
-          echo "dispatched topaz-agent-skill-released to $WEBSITE_REPO"

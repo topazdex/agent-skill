@@ -23,11 +23,12 @@ That's it. The CLI:
 GitHub Actions takes over from there (`.github/workflows/release.yml`):
 
 1. Re-runs `yarn validate`, `yarn build`, `yarn test` against the tagged commit.
-2. Re-verifies that the tag, `SKILL.md`, and `skill.json` all agree.
+2. Re-verifies that the tag, `SKILL.md`, `skill.json`, and `README.md` all agree on the version.
 3. Extracts release notes from `CHANGELOG.md` for the tagged version.
 4. Appends install instructions to the notes.
 5. Creates (or updates) the GitHub Release.
-6. Dispatches a `topaz-agent-skill-released` event to the website repo so the website can pull the new `SKILL.md` / `skill.json` without anyone copying files by hand.
+
+That's the whole flow. The website (`topazdex.com`) auto-fetches `SKILL.md` and `skill.json` from `raw.githubusercontent.com` on its own schedule, so once the release is published the site picks up the new version automatically — no handshake from this workflow required.
 
 ## Without `--apply`
 
@@ -35,11 +36,11 @@ GitHub Actions takes over from there (`.github/workflows/release.yml`):
 
 ```bash
 yarn release patch
-git diff SKILL.md skill.json CHANGELOG.md
+git diff SKILL.md skill.json README.md CHANGELOG.md
 # happy with it? then:
-git add SKILL.md skill.json CHANGELOG.md
-git commit -m "release: v1.0.1"
-git tag -a v1.0.1 -m "Topaz agent skill v1.0.1"
+git add SKILL.md skill.json README.md CHANGELOG.md
+git commit -m "release: v2.1.1"
+git tag -a v2.1.1 -m "Topaz agent skill v2.1.1"
 git push origin main --follow-tags
 ```
 
@@ -61,21 +62,11 @@ See `CHANGELOG.md` top matter for the patch/minor/major rules. Summary:
 - **minor** — new helpers, new workflows, new examples, new evals, additive ABI/address entries.
 - **major** — breaking helper APIs, renamed install paths, manifest schema bumps, removal of previously documented workflows.
 
-## Website handshake (one-time setup)
+## Website propagation
 
-The release workflow can notify the website repo on every release so the website doesn't need manual file copies. This is opt-in — if you don't configure it, releases still publish cleanly, the website just won't be auto-updated.
+The website (`topazdex.com`) auto-fetches `SKILL.md` and `skill.json` from `raw.githubusercontent.com` on its own schedule. After a release lands here, the site picks up the new version on its next pull — no action needed from this repo.
 
-### On the agent-skill repo (this repo)
-
-1. Create a fine-grained PAT with `Contents: write` and `Metadata: read` for **the website repo only**. Recommended permissions are intentionally narrow — it only needs to fire a `repository_dispatch`.
-2. In this repo's settings → Secrets → Actions, add **`WEBSITE_DISPATCH_TOKEN`** with that PAT.
-3. In this repo's settings → Variables → Actions, add **`WEBSITE_REPO`** with the full slug, e.g. `topazdex/topazdex-website`.
-
-### On the website repo
-
-Add a workflow that listens for the dispatch. A copy-paste-ready template lives in `docs/website-sync.yml.example`. Copy it to `.github/workflows/sync-topaz-skill.yml` in the website repo and commit.
-
-It pulls `SKILL.md` and `skill.json` from the released tag, writes them into `public/skill.md` and `public/skill.json`, opens a PR, and (optionally) auto-merges.
+If a future deployment wants webhook-driven sync instead of polling, `docs/website-sync.yml.example` has a copy-paste-ready GitHub Actions template that listens for a `repository_dispatch` event. Not wired into the current `release.yml`; uncomment and add the appropriate secret/variable if you want it.
 
 ## Recovering from a bad release
 
