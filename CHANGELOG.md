@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.2.0] — 2026-05-21
+
 ### Added
 
 - **Release-asset uploads.** `release.yml` now attaches `skill.json` and `SKILL.md` as assets on every GitHub Release (with `--clobber` so re-running the workflow on an existing tag replaces them). This makes the following URLs serve the latest tag's content via GitHub auto-redirect:
@@ -128,7 +131,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/topazdex/agent-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/topazdex/agent-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/topazdex/agent-skill/compare/v1.0.0...v2.0.0
 [1.0.0]: https://github.com/topazdex/agent-skill/releases/tag/v1.0.0
