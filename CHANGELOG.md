@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.3.0] — 2026-05-22
+
 ### Added
 
 - **`buildBribeDepositTx({ pool, token, amount, payer? })`** in `scripts/src/lib/actionBuilders.ts` — wallet-ready bribe calldata builder. Resolves gauge via `Voter.gauges`, asserts `isAlive`, looks up `BribeVotingReward` via `gaugeToBribe`, checks the token is either already a reward token of the bribe contract or `Voter.isWhitelistedToken == true`, then returns `{ approval?, deposit, gauge, bribe, amount, epochStart, epochVoteEnd, builtAt }`. Approval is omitted when an optional `payer` already has enough `allowance(token, payer, bribe)`. Re-exported from `scripts/src/index.ts` and `scripts/package.json` (`./action-builders` entry point). 7 new tests in `src/lib/actionBuilders.test.ts` cover happy path, allowance skip, already-registered reward token, missing gauge, killed gauge, non-whitelisted token, and zero amount. Total: 116 tests.
@@ -157,7 +160,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/topazdex/agent-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/topazdex/agent-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/topazdex/agent-skill/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/topazdex/agent-skill/compare/v1.0.0...v2.0.0
