@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.3.1] — 2026-05-22
+
 ### Fixed
 
 - **Token registry mislabels — agents were getting wrong prices.** Two addresses in `scripts/src/config/tokens.ts` and `references/tokens.md` were attached to the wrong symbols, which caused agents to quote against pools they thought were one asset but were actually another (concretely: "swap USDT → SOL" was failing because SOL wasn't in the registry, and the actual SOL contract was sitting under the `WETH` key with the wrong name):
@@ -177,7 +180,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.3.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.3.1...HEAD
+[2.3.1]: https://github.com/topazdex/agent-skill/compare/v2.3.0...v2.3.1
 [2.3.0]: https://github.com/topazdex/agent-skill/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/topazdex/agent-skill/compare/v2.1.0...v2.2.0
 [2.1.0]: https://github.com/topazdex/agent-skill/compare/v2.0.0...v2.1.0

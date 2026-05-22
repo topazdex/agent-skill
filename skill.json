@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "name": "topaz",
   "display_name": "Topaz Dex Agent Skill",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Agent skill for Topaz Dex — a ve(3,3) DEX on BNB Chain that combines Solidly-style v2 pools with Uniswap-v3-style concentrated liquidity. Covers swaps, liquidity (v2 LP + v3 NFT positions), gauges, veTOPAZ locks, voting, bribes, rewards, and subgraph/on-chain analytics.",
   "homepage": "https://topazdex.com",
   "agents_page": "https://topazdex.com/agents",
