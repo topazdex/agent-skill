@@ -12,6 +12,23 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed
+
+- **Token registry mislabels — agents were getting wrong prices.** Two addresses in `scripts/src/config/tokens.ts` and `references/tokens.md` were attached to the wrong symbols, which caused agents to quote against pools they thought were one asset but were actually another (concretely: "swap USDT → SOL" was failing because SOL wasn't in the registry, and the actual SOL contract was sitting under the `WETH` key with the wrong name):
+  - `0x570A5D26f7765Ecb712C0924E4De545B89fD43dF` — was labeled `WETH (alternate pegged)`, is actually **SOL** (Binance-Peg SOLANA). Verified against Topaz v3 subgraph + BscScan.
+  - `0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d` — was labeled `EGB`, is actually **USD1** (World Liberty Financial USD).
+- Regression tests added: `findToken("SOL")` returns the right address, `findToken("WETH")`/`findToken("EGB")` return `undefined` so the stale names cannot silently resurface, and the SOL/USD1 entries assert their on-chain `name` fields.
+
+### Added
+
+- **Full token registry rebuild.** Every previously-unlabeled address in the whitelist now has a verified `symbol`, `name`, and `decimals` pulled from the Topaz v2/v3 Goldsky subgraphs and confirmed on-chain. New canonical entries: `USD1`, `FDUSD`, `SOL`, `XRP`, `DOGE`, `BLUE`, `gBLUE`, `BOOK`, `BUD`, `Broccoli`, `CaptainBNB`, `ClipX`, `EARN`, `$RISE`, `Trusty`, `bibi`, `NianNian`. Two **non-18-decimal tokens** flagged: `DOGE` (8) and `BLUE` (9). Hardcoding `18` will produce wrong amounts for these — always use `getDecimals` (`scripts/src/lib/erc20.ts`) or the registry.
+- **`BNB` symbol alias.** `findToken("BNB")` now resolves to `WBNB` so callers can write "swap BNB for X" naturally; the router's `swapExactETHForTokens` / `unwrapWETH9` helpers handle the wrap/unwrap. Implemented via a new `aliases` field on `TokenMeta`; `$RISE` ↔ `RISE` uses the same mechanism.
+- **`references/tokens.md` refresh recipe.** New "Refreshing this list from the subgraph" section with the exact GraphQL query to re-derive symbol/name/decimals for any new whitelist entry — so the next maintainer can keep the registry honest without guessing.
+
+### Changed
+
+- **`scripts/src/cli/swap.ts` USAGE string** now lists the full set of built-in symbols instead of the stale 8-token line (which still mentioned `EGB`). Points at `references/tokens.md` for the canonical list.
+
 
 ## [2.3.0] — 2026-05-22
 

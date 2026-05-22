@@ -18,7 +18,10 @@ Usage: yarn tsx src/cli/swap.ts <mode> [options]
   best   --in <addr> --out <addr> --amount <human> [--execute]
   quote  --in <addr> --out <addr> --amount <human>
 
-Tokens accept either a 0x… address OR a symbol (USDT, WBNB, TOPAZ, BTCB, ETH, USDC, CAKE, EGB).
+Tokens accept either a 0x… address OR a symbol. Built-in symbols include
+  BNB / WBNB, TOPAZ, USDT, USDC, USD1, FDUSD, BTCB, ETH, SOL, XRP, CAKE, DOGE,
+  BLUE, gBLUE, BOOK, BUD, Broccoli, CaptainBNB, ClipX, EARN, $RISE, Trusty,
+  bibi, NianNian. See references/tokens.md for the canonical list.
 `.trim();
 
 function resolveToken(query: string): string {
