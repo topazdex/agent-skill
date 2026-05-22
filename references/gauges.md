@@ -95,7 +95,7 @@ ABI: `references/abis/Gauge.json`.
 function deposit(uint256 _amount) external;                     // stake on behalf of msg.sender
 function deposit(uint256 _amount, address _recipient) external; // stake on behalf of someone else
 function withdraw(uint256 _amount) external;                    // unstake; does NOT auto-claim rewards
-function getReward(address _account) external;                  // permissionless; rewards sent to _account
+function getReward(address _account) external;                  // caller must be _account or Voter; rewards sent to _account
 
 function earned(address _account) external view returns (uint256);
 function balanceOf(address _account) external view returns (uint256);     // staked LP

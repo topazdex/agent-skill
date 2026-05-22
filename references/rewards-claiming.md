@@ -25,7 +25,7 @@ function CLGauge.getReward(address account) external;       // **VOTER-ONLY** �
 
 For users claiming CL gauge emissions, **iterate your staked tokenIds and call `getReward(uint256)` for each**. The `getReward(address)` overload exists for Voter-driven batch distribution, not retail use.
 
-To find every gauge `account` currently has stake in: track from your own logs, or enumerate `Voter.length()` pools and read `gauge.balanceOf(account)` / `gauge.stakedLength(account)` for each. The library function `scripts/src/read/claimable.ts:claimableGaugeRewards(account)` does this with multicall.
+To find every gauge `account` currently has stake in: track from your own logs, or enumerate `Voter.length()` pools and read `gauge.balanceOf(account)` / `clGauge.stakedValues(account)` for each. The library functions `v2StakedGaugesForAccount(account)` and `v3StakedGaugesForAccount(account)` in `scripts/src/read/gauges.ts` do this.
 
 After `getReward`, the gauge's `earned(account)` returns 0; `userRewardPerTokenPaid` advances.
 
@@ -90,7 +90,7 @@ const earned = await Promise.all(tokens.map(t => bribe.earned(t, tokenId)));
 const toClaim = tokens.filter((_, i) => earned[i] > 0n);
 ```
 
-`scripts/src/read/claimable.ts:claimableBribes(tokenId)` returns the full ready-to-pass `(bribeContracts[], tokens[][])` arrays.
+`scripts/src/read/claimable.ts:claimableSummary(tokenId, account)` returns claimable fees and bribes grouped by pool with token amounts. Use `scripts/src/write/claim.ts` only after the user explicitly asks to broadcast.
 
 ## 4. Rebase
 
@@ -109,37 +109,54 @@ Always call `claim` after a new epoch starts so the latest week's rebase is incl
 ## Claim-everything recipe
 
 ```ts
+// poolContract/rewardContract are thin ethers.Contract wrappers using Pool/Reward ABIs.
+
 // 0. ensure you own/are approved for the veNFT
 const lastVoted = Number(await voter.lastVoted(tokenId));
 const currentEpoch = Number(await voter.epochStart(BigInt(Math.floor(Date.now()/1000))));
 
 // 1. Find your staked gauges and claim emissions
-const stakedGauges = await myStakedGauges(account);    // helper in scripts/src/read/gauges.ts
-const v2Gauges = stakedGauges.filter(g => g.type === "v2");
-const v3Gauges = stakedGauges.filter(g => g.type === "v3");
-if (v2Gauges.length > 0) await voter.claimRewards(v2Gauges.map(g => g.gauge));
+const v2Gauges = await v2StakedGaugesForAccount(account);
+const v3Gauges = await v3StakedGaugesForAccount(account);
+if (v2Gauges.length > 0) await voter.claimRewards(v2Gauges);
 for (const g of v3Gauges) {
-  for (const tokenId of g.tokenIds) await clGauge(g.gauge)["getReward(uint256)"](tokenId);
+  for (const positionTokenId of g.tokenIds) {
+    await clGauge(g.gauge)["getReward(uint256)"](positionTokenId);
+  }
 }
 
 // 2. Find voted-for gauges from prior epoch and claim fees + bribes
 if (lastVoted > 0 && lastVoted < currentEpoch) {
-  const votedGauges = await myVotedGauges(tokenId);
-  const feeRewards   = await Promise.all(votedGauges.map(g => voter.gaugeToFees(g)));
+  const vote = await getVote(tokenId);
+  const votedGauges = await Promise.all(vote.allocations.map(a => voter.gauges(a.pool)));
+  const feeRewards = await Promise.all(votedGauges.map(g => voter.gaugeToFees(g)));
   const bribeRewards = await Promise.all(votedGauges.map(g => voter.gaugeToBribe(g)));
-  const tokens       = await tokensForGauges(votedGauges);    // [[t0,t1], ...]
 
-  await voter.claimFees(feeRewards, tokens, tokenId);
+  const feeTokens = await Promise.all(vote.allocations.map(async a => {
+    const pool = poolContract(a.pool);
+    return await Promise.all([pool.token0(), pool.token1()]);
+  }));
+  await voter.claimFees(feeRewards, feeTokens, tokenId);
 
-  const bribeTokens  = await activeBribeTokens(bribeRewards, tokenId);
-  await voter.claimBribes(bribeRewards, bribeTokens, tokenId);
+  const bribeTokens = await Promise.all(bribeRewards.map(async rewardAddr => {
+    const bribe = rewardContract(rewardAddr);
+    const len = Number(await bribe.rewardsListLength());
+    const tokens = await Promise.all([...Array(len)].map((_, i) => bribe.rewards(i)));
+    const earned = await Promise.all(tokens.map(t => bribe.earned(t, tokenId)));
+    return tokens.filter((_, i) => earned[i] > 0n);
+  }));
+  const nonEmptyBribes = bribeRewards.filter((_, i) => bribeTokens[i].length > 0);
+  const nonEmptyTokens = bribeTokens.filter(tokens => tokens.length > 0);
+  if (nonEmptyBribes.length > 0) {
+    await voter.claimBribes(nonEmptyBribes, nonEmptyTokens, tokenId);
+  }
 }
 
 // 3. Claim rebase
 await rewardsDistributor.claim(tokenId);
 ```
 
-`scripts/src/write/claim.ts:claimAll({ tokenId, account })` runs the whole sequence with multicall batching.
+`scripts/src/write/claim.ts:claimAll({ tokenId, account })` runs the whole sequence with the signer account.
 
 ## When can you claim?
 
@@ -154,8 +171,8 @@ await rewardsDistributor.claim(tokenId);
 | Read all claimable | `scripts/src/read/claimable.ts` — returns gauge/emissions, fees, bribes, rebase quantities |
 | Claim emissions (v2 batch) | `scripts/src/write/claim.ts` — `claimGaugeRewardsV2({ gauges })` |
 | Claim emissions (v3 single/batch) | `claimGaugeRewardsV3({ gauge, account?, tokenIds? })` |
-| Claim fees | `claimFees({ tokenId, gauges })` — auto-resolves fee contracts + tokens |
-| Claim bribes | `claimBribes({ tokenId, gauges })` |
+| Claim fees | `claimFees({ tokenId, pools })` — auto-resolves gauges, fee contracts, and pool tokens |
+| Claim bribes | `claimBribes({ tokenId, pools })` — auto-resolves gauges, bribe contracts, and active reward tokens |
 | Claim rebase | `claimRebase({ tokenId })` |
 | Claim everything | `claimAll({ tokenId, account })` |
 | CLI | `yarn tsx src/cli/claim.ts all --id 123` (uses signer address for account) |

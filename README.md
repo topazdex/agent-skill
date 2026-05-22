@@ -297,9 +297,10 @@ Agent-facing operator layer (read + write):
 Developer/builder layer (added on this branch):
 
 - [x] `developers/` with builder-facing recipes (`DEVELOPERS.md`, `quote-widget.md`, `swap-calldata.md`, `user-positions.md`, `subgraph-recipes.md`, `gauges-and-apr.md`, `frontend-integration.md`, `error-cookbook.md`).
-- [x] Public import surface via `scripts/src/index.ts` (re-exports `ADDR`, `TOKENS`, `ABIS`, `provider`, `bestQuote`, `topRoutes`, `buildBestSwapTx`, `buildV{2,3}SwapTx`, `buildV{2,3}{Route,Path}SwapTx`, `buildFromExecRoute`, `getPoolV{2,3}`, claimable/locks/votes/positions/apr/subgraph helpers, epoch math, tick math).
-- [x] Wallet-ready calldata builders in `scripts/src/lib/txBuilders.ts` returning `{ to, data, value, expectedOut, amountOutMin, route, quotedAt, deadline, approval? }`.
-- [x] `bestQuote` enumerates direct v2/v3 + 2-hop combinations across WBNB/USDT/USDC/BTCB and selects the highest output. Now parallelized with bounded concurrency (default 10) — live WBNB→TOPAZ best-route quote runs in ~2s end-to-end on a public RPC.
+- [x] Public import surface via `scripts/src/index.ts` (re-exports `ADDR`, `TOKENS`, `ABIS`, `provider`, `bestQuote`, `topRoutes`, `buildBestSwapTx`, `buildV{2,3}SwapTx`, `buildV{2,3}{Route,Path}SwapTx`, `buildFromExecRoute`, `buildBribeDepositTx`, `getPoolV{2,3}`, claimable/locks/votes/positions/apr/subgraph helpers, epoch math, tick math).
+- [x] Wallet-ready swap calldata builders in `scripts/src/lib/txBuilders.ts` returning `{ to, data, value, expectedOut, amountOutMin, route, quotedAt, deadline, approval? }`.
+- [x] Wallet-ready bribe calldata builder in `scripts/src/lib/actionBuilders.ts` returning approval + `notifyRewardAmount` calldata after gauge/live/whitelist checks.
+- [x] `bestQuote` enumerates direct v2/v3 + 2-hop combinations across WBNB/USDT/USDC/BTCB and selects the highest output. Candidates are packed into one `Multicall3.aggregate3` read, so failed quote paths do not stall route search.
 - [x] `topRoutes(...)` returns the full sorted candidate list with an optional `limit`, so UIs can show alternates or compare best-mixed vs best-executable side by side.
 - [x] Mixed v2/v3 routes are surfaced by `bestQuote` (default `allowMixed: true`) but gated out of `buildBestSwapTx` (it requests `allowMixed: false`) because Topaz has no atomic mixed-route executor today.
 
@@ -310,7 +311,7 @@ Builder-side input validation and safety (added on this branch):
 - [x] `BuiltSwapTx` carries `quotedAt` and `deadline` (unix seconds) for staleness UX.
 - [x] `quoteV2` and the v3 quoters all `try/catch` reverts; one bad pool can't kill a `bestQuote`.
 - [x] Provider is constructed with `staticNetwork: { chainId: 56 }` so ethers rejects wrong-chain RPCs.
-- [x] Write helpers throw on missing `PRIVATE_KEY` (no silent degradation); every write CLI requires explicit confirmation unless `--yes`.
+- [x] Write helpers throw on missing `PRIVATE_KEY` (no silent degradation); write CLIs broadcast only when explicitly invoked with a configured key, while no-broadcast wallet flows use builders.
 
 Skill hygiene, validator, and brand surface (added on this branch):
 
@@ -318,11 +319,11 @@ Skill hygiene, validator, and brand surface (added on this branch):
 - [x] `.claude/INTERNAL-SOURCE-POINTERS.md` (gitignored) captures the developer-machine paths under `~/topaz/topaz-{contracts,slipstream,interface,v2-subgraph,v3-subgraph}/`. Those pointers were removed from all tracked public docs and `scripts/src/config/addresses.ts`; the validator now rejects any future leak of those paths.
 - [x] `scripts/.yarn/install-state.gz` untracked + `**/.yarn/{cache,unplugged,build-state.yml,install-state.gz}` gitignored.
 - [x] Doc-only addresses (`BalanceLogicLibrary`, `DelegationLogicLibrary`, `NFTDescriptor`, `NFTSVG`, legacy `NonfungibleTokenPositionDescriptor_V1`) added to `scripts/src/config/addresses.ts` and `README.md` to satisfy strict byte-for-byte parity with `references/addresses.md`.
-- [x] Vitest harness + 103 unit tests across `path`, `epoch`, `tickMath`, `tokens`, `txBuilders`, `apr`, `quotes`, `multicall` (incl. mocked `buildBestSwapTx` calldata-shape test, the 1.D goldens, multicall3 enumerate/decode coverage, `isStale` boundary/deadline cases, v3 native-BNB-out multicall/unwrap assertions, realized-fees APR goldens, and aggregate3 retry-policy coverage with injectable exec). `yarn test` / `yarn test:watch`.
+- [x] Vitest harness + 116 unit tests across `path`, `epoch`, `tickMath`, `tokens`, `txBuilders`, `actionBuilders`, `apr`, `quotes`, `gauges`, and `multicall` (incl. mocked `buildBestSwapTx` calldata-shape test, bribe approval/deposit calldata tests, the 1.D goldens, multicall3 enumerate/decode coverage, `isStale` boundary/deadline cases, v3 native-BNB-out multicall/unwrap assertions, realized-fees APR goldens, and aggregate3 retry-policy coverage with injectable exec). `yarn test` / `yarn test:watch`.
 - [x] Real bug fix surfaced by the tests: `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}` — JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `src/lib/tickMath.ts`. Smoke test still passes.
 - [x] Brand surface: `scripts/src/config/brand.ts` typed `BRAND` constant (web, docs, X, Telegram, GitHub, assetsRepo, plus `assets.{logoPng,logoSvg,tokenLogoPng,topaz100Png,previewJpg}` pointing at `raw.githubusercontent.com/topazdex/assets/main/*`). Catalog page `references/brand.md` with embedding examples. Links section in `README.md`, project-links section in `SKILL.md`. Validator enforces channel-URL parity across README/SKILL/brand.md and asset-URL presence in brand.md.
 - [x] Live smoke test (`yarn smoke`) extended from 5 to 9 checks (bytecode on every `ADDR`, TOPAZ symbol+decimals, v2/v3 TVL > 0, live `bestQuote` + route-type assertion, full `buildBestSwapTx` shape, live `Voter.gauges` + `isAlive`). Exits non-zero on any FAIL.
-- [x] Golden tests (1.D) — `compareByAmountOutDesc` extracted from `quotes.ts`; `computeEmissionApr` + `computeFeeApr` extracted from `apr.ts` (poolApr behavior unchanged); new `src/read/{quotes,apr}.test.ts` + epoch window-state goldens. 71 vitest tests total.
+- [x] Golden tests (1.D) — `compareByAmountOutDesc` extracted from `quotes.ts`; `computeEmissionApr` + `computeFeeApr` extracted from `apr.ts` (poolApr behavior unchanged); `src/read/{quotes,apr}.test.ts` + epoch window-state goldens are covered by the current 116-test vitest suite.
 - [x] Agent eval prompts (1.E) — `evals/` directory with 8 markdown checklists covering quote / build-swap / can-i-vote / claimable-bribes / quote-widget / deposit-bribe / explain-revert / safe-refusals.
 - [x] PR checklist (1.F) — `docs/PR-CHECKLIST.md` mirroring validator + tests + smoke + golden + eval steps. Includes "bumping a golden" guidance.
 - [x] `SKILL.md` Operating principles patched with an explicit broadcast-safety rule: "Build and quote by default; do not broadcast unless the user explicitly asks; label every output as one of {quote / built calldata / approval-needed / broadcast tx-hash}."

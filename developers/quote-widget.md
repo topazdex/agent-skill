@@ -24,7 +24,7 @@ export async function quoteSwap(tokenIn: string, tokenOut: string, amountHuman: 
   ]);
 
   const amountIn = parseUnits(amountHuman, decIn);
-  const quote = await bestQuote(tokenIn, tokenOut, amountIn);
+  const quote = await bestQuote(tokenIn, tokenOut, amountIn, { allowMixed: false });
 
   return {
     route: quote.route,
@@ -44,6 +44,10 @@ export function applySlippage(amountOut: bigint, slippageBps: bigint) {
 ```
 
 Show both the expected output and minimum output. Do not hide slippage from the user.
+
+## Staleness
+
+For wallet-ready calldata, call `buildBestSwapTx(...)` after the user chooses slippage and recipient. Treat the returned `quotedAt` as the freshness signal; refresh the quote before signing if it is older than roughly 15-30 seconds.
 
 ## Route labels
 

@@ -21,6 +21,7 @@
 
 ## Expected writes
 
+- [ ] `buildBribeDepositTx({ pool, token: USDC, amount: "100" })` or equivalent manual ABI encoding.
 - [ ] **Approval calldata** for `USDC.approve(BribeVotingReward, amount)`. The approval target is **the bribe contract, not the gauge**.
 - [ ] **Bribe-deposit calldata** for `BribeVotingReward.notifyRewardAmount(USDC, amount)`.
 - [ ] Neither is broadcast unless the user explicitly authorizes (see [`07-explain-revert.md`](./07-explain-revert.md) for the safety rule).

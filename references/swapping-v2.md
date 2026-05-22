@@ -91,7 +91,7 @@ const stable   = await poolFactory.getPool(tokenA, tokenB, true);
 
 Quote both routes and use whichever returns a better `amountOut`. For correlated assets (USDT/USDC, similar pegged pairs) the stable pool is almost always better at modest sizes but worse for large sizes that depeg. The simplest robust strategy is: **quote both, take the larger amountOut**.
 
-`scripts/src/read/quotes.ts` exposes `bestV2Quote(tokenIn, tokenOut, amountIn)` which does this for direct pairs, and `bestV2MultiHopQuote(tokenIn, tokenOut, amountIn, viaTokens)` for 2-hop routes via a list of common intermediaries (typically WBNB and USDT).
+`scripts/src/read/quotes.ts` exposes `quoteV2(...)` for one v2 route and `bestQuote(...)` / `topRoutes(...)` for direct and 2-hop route search across v2, v3, and mixed candidates. Pass `{ allowMixed: false }` when the result will feed executable wallet calldata.
 
 ## Slippage pattern
 
@@ -133,8 +133,9 @@ const tx = await router.swapExactTokensForTokens(
 
 | Operation | Where |
 |---|---|
-| Quote | `scripts/src/read/quotes.ts` — `quoteV2(tokenIn, tokenOut, amountIn, stable?)`, `bestV2Quote(...)` |
-| Swap (token→token) | `scripts/src/write/swap.ts` — `swapV2({ routes, amountIn, slippageBps, deadlineSec })` |
+| Quote | `scripts/src/read/quotes.ts` — `quoteV2(tokenIn, tokenOut, amountIn, stable)`, `bestQuote(...)`, `topRoutes(...)` |
+| Build calldata | `scripts/src/lib/txBuilders.ts` — `buildV2SwapTx(...)`, `buildBestSwapTx(...)` |
+| Broadcast token→token | `scripts/src/write/swap.ts` — `swapV2({ tokenIn, tokenOut, amountIn, stable, slippageBps, deadline })` |
 | CLI | `yarn tsx src/cli/swap.ts v2 --in <addr> --out <addr> --amount <n> [--stable] [--slippage 50]` |
 
 See also `examples/swap-v2-volatile.md`, `examples/swap-v2-stable.md`.

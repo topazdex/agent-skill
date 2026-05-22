@@ -179,7 +179,8 @@ To programmatically pick the better venue, see `references/swapping-mixed.md` �
 |---|---|
 | Single-pool quote | `scripts/src/read/quotes.ts` — `quoteV3Single({ tokenIn, tokenOut, amountIn, tickSpacing })` |
 | Multi-hop quote | `quoteV3Path(pathBytes, amountIn)` |
-| Find best CL pool for a pair | `findBestCLPool(tokenA, tokenB, amountIn)` — iterates `tickSpacings()` |
+| Find best executable CL route | `topRoutes(tokenA, tokenB, amountIn, { allowMixed: false })` — includes direct and multi-hop v3 candidates |
+| Build calldata | `scripts/src/lib/txBuilders.ts` — `buildV3SwapTx(...)`, `buildV3PathSwapTx(...)`, `buildBestSwapTx(...)` |
 | Execute single | `scripts/src/write/swap.ts` — `swapV3Single({ tokenIn, tokenOut, amountIn, tickSpacing, slippageBps })` |
 | Execute multi-hop | `swapV3Path({ tokens, spacings, amountIn, slippageBps })` |
 | CLI | `yarn tsx src/cli/swap.ts v3 --in <addr> --out <addr> --amount <n> [--ts 200] [--slippage 100]` |

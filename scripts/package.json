@@ -11,6 +11,7 @@
     "./addresses": "./src/config/addresses.ts",
     "./tokens": "./src/config/tokens.ts",
     "./quotes": "./src/read/quotes.ts",
+    "./action-builders": "./src/lib/actionBuilders.ts",
     "./tx-builders": "./src/lib/txBuilders.ts"
   },
   "engines": {

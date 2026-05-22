@@ -28,7 +28,7 @@ Common mistakes to avoid when interacting with Topaz.
 - **CL positions earn rewards only while in-range.** An out-of-range NFT is still "staked" in the `CLGauge`, but its `stakedLiquidityNet` contribution is zero so it accrues nothing. Move ranges or unstake → rebalance → restake.
 - **Approving the NFT.** Before `CLGauge.deposit(tokenId)`, you must `NonfungiblePositionManager.approve(clGauge, tokenId)` (or `setApprovalForAll(clGauge, true)`).
 - **You cannot `increaseLiquidity` or `collect` directly on a staked NFT.** Withdraw it first (`CLGauge.withdraw(tokenId)` — claims rewards as a side effect), modify, restake.
-- **`Gauge.getReward(account)` is permissionless for v2.** Anyone can call it, but rewards go to `account`. For CL, `CLGauge.getReward(tokenId)` only the position owner can call.
+- **`Gauge.getReward(account)` is not permissionless for v2.** The caller must be `account` or the Voter; rewards go to `account`. For CL, `CLGauge.getReward(tokenId)` only the original depositor can call.
 
 ## Voting
 
@@ -51,9 +51,9 @@ Common mistakes to avoid when interacting with Topaz.
 ## Bribes / fees
 
 - **Bribe tokens must be whitelisted** or already a reward token of that specific bribe contract. If `Voter.isWhitelistedToken(token) == false` and `BribeVotingReward.isReward(token) == false`, `notifyRewardAmount` reverts with `NotWhitelisted`.
-- **Bribes deposited after Thu 23:00 UTC roll to the next epoch's voters.** Time it correctly.
-- **`claimFees` / `claimBribes` are called on the contracts (not Voter), but with `tokenId`.** The exact pattern is `Voter.claimFees(feeContracts[], tokens[][], tokenId)` — note the nested arrays. `tokens[i]` is the list of reward tokens to pull from `feeContracts[i]`. Mismatched lengths revert.
-- **You must own (or be approved for) the veNFT** to call `claimBribes`/`claimFees`/`claimRewards` for it (the Voter checks `isApprovedOrOwner`).
+- **Bribes deposited after Wednesday 23:00 UTC miss the normal voting window for the current epoch.** Time it correctly.
+- **`claimFees` / `claimBribes` are called on the Voter, with reward-contract arrays and `tokenId`.** The exact pattern is `Voter.claimFees(feeContracts[], tokens[][], tokenId)` — note the nested arrays. `tokens[i]` is the list of reward tokens to pull from `feeContracts[i]`. Mismatched lengths revert.
+- **You must own (or be approved for) the veNFT** to call `claimBribes`/`claimFees` for it (the Voter checks `isApprovedOrOwner`). `Voter.claimRewards(gauges)` is for the caller's own v2 gauge stakes.
 
 ## Rebase
 

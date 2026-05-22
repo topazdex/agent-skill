@@ -47,8 +47,8 @@ The bribe accrues to **the current epoch's** voter set. Concretely:
 
 | When you call `notifyRewardAmount(token, amount)` | Who receives the bribe |
 |---|---|
-| Anywhere between Thursday 00:00 UTC and Thursday 23:00 UTC | Voters of epoch [Thu, next Thu) |
-| Outside that window (last hour before flip is reserved) | The Voter contract still accepts the call mid-flip in practice, but for safety bribe **before Thu 22:00 UTC** to be guaranteed in the current epoch |
+| Anywhere between Thursday 00:00 UTC and Wednesday 23:00 UTC | Voters of epoch [Thu, next Thu) |
+| After Wednesday 23:00 UTC, during the whitelist-only final hour | Normal veNFT voting is already closed; for safety, bribe **before Wednesday 23:00 UTC** to target the current epoch's normal voter set |
 
 When the next epoch begins, this epoch's voter set is fixed and the pool's voters can claim their proportional share via `Voter.claimBribes`. New bribes posted after the flip belong to the *new* epoch.
 
@@ -109,6 +109,7 @@ Higher `bribeReturnPerVote` = more attractive to voters. Used in voting strategi
 | Operation | Where |
 |---|---|
 | Check whitelist + reward set | `scripts/src/read/gauges.ts` — `getBribeInfo(pool)` returns bribeContract, rewardTokens, perEpochAmounts |
+| Build approval + bribe calldata | `scripts/src/lib/actionBuilders.ts` — `buildBribeDepositTx({ pool, token, amount })` |
 | Deposit bribe | `scripts/src/write/bribe.ts` — `depositBribe({ pool, token, amount })` |
 | CLI | `yarn tsx src/cli/bribe.ts deposit --pool 0xPOOL --token 0xUSDT --amount 5000` |
 

@@ -8,7 +8,21 @@
 - Bribe token: USDC (`0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d`), 18 dec on BSC
 - Amount: 5000 USDC
 
-The bribe must be posted **before Thursday 23:00 UTC** to count toward voters of the current epoch. If you miss the window, it rolls to next week's voters.
+The bribe should be posted **before Wednesday 23:00 UTC** to target the normal voter set for the current Thursday-start epoch. If you miss the window, it rolls to next week's voters.
+
+For a no-broadcast wallet flow, prefer the builder:
+
+```ts
+import { buildBribeDepositTx } from "../scripts/src/index.js";
+
+const built = await buildBribeDepositTx({
+  pool: "0xPOOL",
+  token: "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+  amount: "5000",
+});
+// built.approval -> USDC.approve(bribe, amount)
+// built.deposit  -> BribeVotingReward.notifyRewardAmount(USDC, amount)
+```
 
 ## 1. Resolve the bribe contract
 
@@ -80,7 +94,7 @@ yarn tsx src/cli/bribe.ts deposit \
   --amount 5000
 ```
 
-The CLI runs the pre-checks above, prints the bribe contract address, the current epoch start (Thursday 00:00 UTC), and how long is left in the voting window. It requires your `PRIVATE_KEY` in `.env`.
+The CLI runs the pre-checks above and broadcasts once invoked with a configured `PRIVATE_KEY`. Use it only after the user has explicitly authorized execution. For wallet-ready calldata, use `buildBribeDepositTx` instead.
 
 ## Reading existing bribes on a pool
 
@@ -109,7 +123,7 @@ Bribe density: $5.81 per 1k vote weight   (compare across pools to pick where to
 Bribers want maximum vote flow. Some heuristics:
 
 1. **Bribe what voters already want to vote for.** Adding a bribe to a pool with strong organic momentum compounds vote share, where adding to a fundamentally unwanted pool just rewards a small clique.
-2. **Time at the start of the epoch (Thursday 00:00–02:00 UTC).** Voters check Wednesday/early Thursday to plan; bribes posted later get less attention.
+2. **Time early in the epoch.** Voters check Wednesday/early Thursday to plan; bribes posted late in the epoch get less attention and must land before the Wednesday 23:00 UTC normal-voting cutoff.
 3. **Bribe density matters.** Voters rationally allocate to maximize `bribesUsd / voteWeight`. Make sure your `(amount * tokenUsd) / currentWeight` is competitive with comparable pools.
 4. **Variety helps narratives** — posting multiple smaller reward tokens (rather than one big stable) can attract more voter attention and create more memorable allocations, even at the same USD value.
 

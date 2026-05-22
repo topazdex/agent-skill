@@ -12,6 +12,32 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- **`buildBribeDepositTx({ pool, token, amount, payer? })`** in `scripts/src/lib/actionBuilders.ts` — wallet-ready bribe calldata builder. Resolves gauge via `Voter.gauges`, asserts `isAlive`, looks up `BribeVotingReward` via `gaugeToBribe`, checks the token is either already a reward token of the bribe contract or `Voter.isWhitelistedToken == true`, then returns `{ approval?, deposit, gauge, bribe, amount, epochStart, epochVoteEnd, builtAt }`. Approval is omitted when an optional `payer` already has enough `allowance(token, payer, bribe)`. Re-exported from `scripts/src/index.ts` and `scripts/package.json` (`./action-builders` entry point). 7 new tests in `src/lib/actionBuilders.test.ts` cover happy path, allowance skip, already-registered reward token, missing gauge, killed gauge, non-whitelisted token, and zero amount. Total: 116 tests.
+
+### Fixed
+
+- **Bribe / voting timing docs corrected to Wednesday 23:00 UTC.** `references/bribes-deposit.md`, `references/epoch-timing.md`, `references/pitfalls.md`, and `examples/deposit-bribe.md` previously said the normal voting window closes at "Thu 23:00 UTC". The actual cutoff is **Wednesday 23:00 UTC** — `scripts/src/lib/epoch.ts` defines `epochVoteEnd = epochNext - HOUR`, and since the epoch flip is Thursday 00:00 UTC the final hour (Wed 23:00 → Thu 00:00) is the distribute / whitelist-only window where normal veNFT voting is already closed. Bribes deposited during that final hour still record against the current epoch, but no new voters can react to them; docs now disambiguate "normal voting closes Wed 23:00" from "bribe still recorded in epoch E".
+- **`Gauge.getReward(address)` is gated, not permissionless** (`references/pitfalls.md`). `Gauge.sol` reverts with `NotAuthorized` unless `msg.sender == _account || msg.sender == voter`. Old doc said "permissionless — anyone can call it" — factual error.
+- **`CLGauge.getReward(uint256)` must be called by the original depositor** (`references/pitfalls.md`). The contract checks `_stakes[msg.sender].contains(tokenId)`. The NFT's actual owner is the gauge contract itself; only the depositor is tracked in `_stakes`. Wording corrected from "position owner".
+- **`Voter.claimRewards(gauges)` does not take a tokenId** (`references/pitfalls.md`, `references/rewards-claiming.md`). It claims v2 gauge emissions for `msg.sender` with no veNFT check, separate from `claimBribes`/`claimFees` which require `isApprovedOrOwner(msg.sender, tokenId)`. Old text conflated the three.
+- **`claimFees` / `claimBribes` are called on the Voter** (`references/pitfalls.md`). Old text claimed they were called "on the contracts (not Voter)" but the very next line showed `Voter.claimFees(...)` — the actual ABI. Corrected.
+- **`decreaseLiquidity` slippage hole** (`scripts/src/write/liquidityV3.ts`). Previously broadcast with `amount0Min = 0, amount1Min = 0` — caller's slippage was silently dropped. Now `staticCall`s `decreaseLiquidity` first to get the expected `(amount0, amount1)`, then applies `slip(amount, slippageBps)` to each. Matches `mintPosition` / `increaseLiquidity`.
+- **`quoteHuman` precision loss for large bigints** (`scripts/src/read/quotes.ts`). Replaced `Number(best.amountOut) / 10**decOut` with `formatUnits(best.amountOut, decOut)`. Floats lose precision above 2^53; `formatUnits` is bigint-safe.
+- **Stale helper names removed from docs.** `references/swapping-v2.md`, `references/swapping-v3.md`, `references/swapping-mixed.md`, `references/rewards-claiming.md`, and `examples/swap-v3-single-hop.md` referenced helpers that no longer exist (`findBestCLPool`, `bestV2Quote`, `bestV2MultiHopQuote`, `bestMixedQuote`, `claimableBribes`, `claimableGaugeRewards`, `myStakedGauges`, `myVotedGauges`, `tokensForGauges`, `activeBribeTokens`). All replaced with currently-exported names (`bestQuote`, `topRoutes`, `claimableSummary`, `v2StakedGaugesForAccount`, `v3StakedGaugesForAccount`, `getVote`).
+- **Outdated `swapV2` signature in `references/swapping-v2.md`.** Doc table claimed `swapV2({ routes, amountIn, slippageBps, deadlineSec })`; actual `SwapV2Args` is `{ tokenIn, tokenOut, amountIn, stable, slippageBps?, recipient?, deadline?, useBnb? }`. Corrected. Doc table also now distinguishes "build calldata" (`buildV2SwapTx` / `buildBestSwapTx`) from "broadcast" (`swapV2`).
+- **`claimFees` / `claimBribes` builder signatures.** Doc table in `references/rewards-claiming.md` now shows `claimFees({ tokenId, pools })` and `claimBribes({ tokenId, pools })`, matching `scripts/src/write/claim.ts` — the previous `{ tokenId, gauges }` entries did not match the deployed signatures.
+
+### Changed
+
+- **`SKILL.md` operating principles** now point agents at both `scripts/src/lib/txBuilders.ts` and `scripts/src/lib/actionBuilders.ts` for wallet-ready calldata, with `references/abis/*.json` as the fallback for write flows not yet covered by a builder.
+- **Slippage rule in `SKILL.md`** sharpened. `sqrtPriceLimitX96 = 0` is acceptable for normal v3 swaps when `amountOutMinimum` enforces slippage; only set a nonzero price limit for advanced price-bound trades. `amount{0,1}Min = 0` only forbidden for legs whose expected amount is nonzero.
+- **`developers/quote-widget.md`** now passes `allowMixed: false` to `bestQuote` for executable widgets and adds a Staleness section pointing at `buildBestSwapTx` + `quotedAt` for the refresh-before-sign pattern.
+- **`evals/06-deposit-bribe.md`** updated to mention `buildBribeDepositTx` as the preferred path over manual ABI encoding.
+- **`README.md` builder section** now lists `buildBribeDepositTx` alongside the swap builders, describes `bestQuote` as a single `Multicall3.aggregate3` (the v2.0.0 architecture, replacing the older "bounded-concurrency default 10" framing that was still in the file), and bumps the test count to 116.
+- **`skill.json` install notes** rewritten to match the actual installer behavior (auto-detect among supported skill dirs, fall back to `~/.local/share/topaz-skill`), aligning with the v2.1.0 install-flow fixes.
+
 
 ## [2.2.0] — 2026-05-21
 

@@ -4,6 +4,7 @@ export * from "./config/chain.js";
 export * from "./config/tokens.js";
 
 export * from "./lib/abis.js";
+export * from "./lib/actionBuilders.js";
 export * from "./lib/client.js";
 export * from "./lib/erc20.js";
 export * from "./lib/epoch.js";

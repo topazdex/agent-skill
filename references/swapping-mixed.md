@@ -102,7 +102,7 @@ Use it whenever:
 
 ## Heuristic candidate sets
 
-A reasonable practical heuristic (used by `scripts/src/read/quotes.ts:bestMixedQuote`):
+A reasonable practical heuristic (used by `scripts/src/read/quotes.ts:bestQuote` / `topRoutes`):
 
 1. Direct pools first: `quoteV2(tokenIn, tokenOut, false)`, `quoteV2(..., true)`, and `quoteV3Single(...)` for each enabled tick spacing where the pool exists.
 2. 2-hop via WBNB: enumerate `(stack1, stack2)` ∈ {v2-volatile, v2-stable, v3-ts1, v3-ts50, v3-ts100, v3-ts200, v3-ts2000}² where both legs have a deployed pool.
@@ -118,6 +118,6 @@ Take the best `amountOut` across all candidates.
 | Best route search | `bestQuote(tokenIn, tokenOut, amountIn)` — tries all of the above |
 | CLI | `yarn tsx src/cli/swap.ts best --in <addr> --out <addr> --amount <n>` — quotes only, prints chosen route |
 
-For execution, after picking a route, the CLI prompts for confirmation and dispatches the appropriate `swapV2` / `swapV3*` / two-leg combo from `scripts/src/write/swap.ts`.
+For execution, use `buildBestSwapTx(...)`, which filters out mixed routes by default, or call `buildFromExecRoute` only for executable `v2`, `v3-single`, or `v3-path` routes. Mixed routes are quote-only until an atomic mixed executor exists.
 
 See `examples/swap-mixed-route.md`.

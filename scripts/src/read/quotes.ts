@@ -1,4 +1,4 @@
-import { Contract, Interface, ZeroAddress, getAddress, parseUnits } from "ethers";
+import { Contract, Interface, ZeroAddress, formatUnits, getAddress, parseUnits } from "ethers";
 import { ABIS } from "../lib/abis.js";
 import { provider } from "../lib/client.js";
 import { ADDR, TICK_SPACINGS } from "../config/addresses.js";
@@ -430,6 +430,6 @@ export async function quoteHuman(
   const decOut = await getDecimals(tokenOut);
   const amountIn = parseUnits(amountHuman, decIn);
   const best = await bestQuote(tokenIn, tokenOut, amountIn, opts);
-  const amountOutHuman = (Number(best.amountOut) / 10 ** decOut).toString();
+  const amountOutHuman = formatUnits(best.amountOut, decOut);
   return { best, amountOutHuman, decimalsOut: decOut };
 }

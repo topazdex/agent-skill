@@ -154,5 +154,5 @@ This runs a read-only sequence: reads several known addresses on-chain, queries 
 ## Safety
 
 - Write functions throw if `PRIVATE_KEY` is missing — they don't silently degrade.
-- Every CLI write command prints a confirmation prompt with the parsed parameters before broadcasting, unless `--yes` is passed (intended for scripts).
+- CLI write commands broadcast once invoked with a configured `PRIVATE_KEY`; use them only after the user has explicitly authorized execution. For no-broadcast wallet flows, use the builders in `src/lib/txBuilders.ts` and `src/lib/actionBuilders.ts`.
 - ABIs are loaded from `../references/abis/*.json` so they stay in sync with the documentation.

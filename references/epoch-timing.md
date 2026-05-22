@@ -56,8 +56,8 @@ Voters can `claim` for epoch E **starting in epoch E+1** (rewards become claimab
 
 | If you want to earn the bribe / fee for epoch E | You must … |
 |---|---|
-| As a voter | Have an active vote for that gauge during epoch E. Cast the vote any time **before Thu 23:00 UTC** of epoch E. |
-| As a briber | Call `notifyRewardAmount` on the bribe contract **before Thu 23:00 UTC** of epoch E. Bribes posted after the window roll into epoch E+1's voter set, **not** E's. |
+| As a voter | Have an active vote for that gauge during epoch E. Cast the vote any time **before Wednesday 23:00 UTC** of epoch E for normal veNFTs. |
+| As a briber | Call `notifyRewardAmount` on the bribe contract **before Wednesday 23:00 UTC** if you want normal voters to still react in epoch E. Bribes posted later are still recorded in epoch E, but the normal voting window has closed. |
 
 `scripts/src/lib/epoch.ts` exposes:
 

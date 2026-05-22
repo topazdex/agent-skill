@@ -185,13 +185,20 @@ export async function decreaseLiquidity(args: DecreaseLiquidityArgs) {
   }
   if (liquidity === 0n) throw new Error("nothing to decrease");
 
-  // Slippage 0 on min amounts since slippage on principal is the caller's concern;
-  // calling .decreaseLiquidity returns tokensOwed{0,1} which collect() then withdraws.
-  return await npmC().decreaseLiquidity({
+  const quoted = await npmC().decreaseLiquidity.staticCall({
     tokenId: args.tokenId,
     liquidity,
     amount0Min: 0n,
     amount1Min: 0n,
+    deadline,
+  });
+  const [amount0, amount1] = quoted as [bigint, bigint];
+
+  return await npmC().decreaseLiquidity({
+    tokenId: args.tokenId,
+    liquidity,
+    amount0Min: slip(amount0, slippageBps),
+    amount1Min: slip(amount1, slippageBps),
     deadline,
   });
 }

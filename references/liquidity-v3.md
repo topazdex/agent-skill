@@ -164,6 +164,8 @@ await npm.collect({ tokenId, recipient: user, amount0Max: MAX_U128, amount1Max: 
 await npm.burn(tokenId);    // optional: delete the empty NFT
 ```
 
+Set `amount0Min` / `amount1Min` from a fresh quote or `staticCall` result with slippage applied. A zero min is only acceptable for a leg whose expected amount is actually zero.
+
 `burn(tokenId)` requires `liquidity == 0 && tokensOwed0 == 0 && tokensOwed1 == 0`.
 
 ## BNB handling

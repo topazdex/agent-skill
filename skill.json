@@ -19,7 +19,7 @@
     "type": "git",
     "command": "git clone https://github.com/topazdex/agent-skill.git <dest>",
     "script": "https://raw.githubusercontent.com/topazdex/agent-skill/main/install.sh",
-    "notes": "Any directory works as <dest>. install.sh defaults to ~/.claude/skills/topaz when invoked with no argument, but the skill is runtime-neutral — pick whatever path your agent reads skills from.",
+    "notes": "Any directory works as <dest>. With no argument, install.sh auto-detects an existing supported skill directory and falls back to ~/.local/share/topaz-skill; pick any path your agent reads skills from.",
     "conventional_destinations": {
       "claude-code-user": "~/.claude/skills/topaz",
       "claude-code-project": ".claude/skills/topaz",
