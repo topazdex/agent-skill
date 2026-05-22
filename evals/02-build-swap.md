@@ -12,7 +12,7 @@
 
 ## Expected reads
 
-- [ ] `bestQuote(WBNB, TOPAZ, 5n * 10n ** 17n, { allowMixed: false })` (executable routes only).
+- [ ] `bestQuote(WBNB, TOPAZ, 5n * 10n ** 17n)` (or `bestQuoteBundle(...)` to see v2 and v3 side-by-side — routes are always executable, the default search never returns a mixed v2/v3 route).
 
 ## Expected writes
 

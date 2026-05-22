@@ -124,4 +124,4 @@ const best = withLiq.sort((a, b) => (b.liquidity > a.liquidity ? 1 : -1))[0];
 console.log(`Best CL pool for TOPAZ/WBNB: tickSpacing=${best.ts}`);
 ```
 
-`scripts/src/read/quotes.ts:topRoutes(tokenA, tokenB, amountIn, { allowMixed: false })` does this and additionally quotes each executable candidate to pick by output amount, not just by raw liquidity.
+`scripts/src/read/quotes.ts:bestV3Quote(tokenA, tokenB, amountIn)` does this — it enumerates every direct + multi-hop v3 candidate (up to 3 hops through `USDT, WBNB, BTCB, ETH, TOPAZ, USDC`) and quotes each, returning the one with the highest output. v2 is never mixed into the v3 search.

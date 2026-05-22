@@ -254,11 +254,17 @@ async function cmdSmoke() {
       TOKENS.WBNB.address,
       TOKENS.TOPAZ.address,
       amountIn,
-      { allowMixed: false },
     );
     if (best.amountOut <= 0n) throw new Error("amountOut=0");
-    if (best.exec.type !== "v3-single" && best.exec.type !== "v3-path") {
-      throw new Error(`route type ${best.exec.type}, expected v3-single|v3-path`);
+    // The v2/v3 winner depends on live pool depth — either stack is acceptable
+    // as long as the route is atomically executable (not "mixed", which the
+    // current enumerator never emits anyway).
+    if (
+      best.exec.type !== "v2" &&
+      best.exec.type !== "v3-single" &&
+      best.exec.type !== "v3-path"
+    ) {
+      throw new Error(`route type ${best.exec.type}, expected v2|v3-single|v3-path`);
     }
     ok(
       "bestQuote WBNB→TOPAZ (0.1)",

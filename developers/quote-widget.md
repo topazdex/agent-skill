@@ -15,7 +15,7 @@ A useful quote widget usually needs:
 
 ```ts
 import { parseUnits, formatUnits } from "ethers";
-import { bestQuote, getDecimals } from "../scripts/src/index.js";
+import { bestQuoteBundle, getDecimals } from "../scripts/src/index.js";
 
 export async function quoteSwap(tokenIn: string, tokenOut: string, amountHuman: string) {
   const [decIn, decOut] = await Promise.all([
@@ -24,13 +24,16 @@ export async function quoteSwap(tokenIn: string, tokenOut: string, amountHuman: 
   ]);
 
   const amountIn = parseUnits(amountHuman, decIn);
-  const quote = await bestQuote(tokenIn, tokenOut, amountIn, { allowMixed: false });
+  const { v2, v3, best } = await bestQuoteBundle(tokenIn, tokenOut, amountIn);
 
+  // `v2` and `v3` let the UI show "basic" vs "concentrated" side-by-side;
+  // `best` is the winner you'd execute. Each may be `null` when no route
+  // exists on that stack.
   return {
-    route: quote.route,
-    amountOut: quote.amountOut,
-    amountOutHuman: formatUnits(quote.amountOut, decOut),
-    exec: quote.exec,
+    v2,
+    v3,
+    best,
+    amountOutHumanBest: best ? formatUnits(best.amountOut, decOut) : null,
   };
 }
 ```
@@ -51,30 +54,29 @@ For wallet-ready calldata, call `buildBestSwapTx(...)` after the user chooses sl
 
 ## Route labels
 
-`bestQuote` returns human labels such as:
+`bestQuoteBundle` / `bestQuote` returns human labels such as:
 
 - `v2 volatile direct`
 - `v2 stable direct`
+- `v2 volatile → stable via 0xabcd…` (2-hop)
+- `v2 volatile → stable → volatile via 0xabcd… → 0xef12…` (3-hop)
 - `v3 direct ts=200`
-- `v3 ts=200 → ts=100 via 0x…` (note the Unicode arrow `→` and ellipsis emitted by `bestQuote`)
-- `mixed v3 ts=200 → v2 volatile via 0x…`
+- `v3 ts=200 → ts=100 via 0xabcd…` (2-hop, note the Unicode arrow `→` and ellipsis)
+- `v3 ts=1 → ts=200 → ts=2000 via 0xabcd… → 0xef12…` (3-hop)
 
 For polished UI, map these to icons/badges:
 
 - `v2 volatile`: v2 volatile pool
 - `v2 stable`: v2 stable pool
 - `v3 ts=N`: concentrated liquidity pool with tick spacing `N`
-- `mixed`: route uses both Topaz v2 and v3 stacks
 
-## Important caveat: mixed execution
+## Mixed v2/v3 routes
 
-The mixed quoter (`MixedRouteQuoterV1`) prices v2↔v3 paths accurately, but Topaz has no atomic mixed-route executor today. `bestQuote` returns mixed candidates by default so analytics consumers can see the true best price; pass `{ allowMixed: false }` when the quote will feed a wallet:
-
-```ts
-const quote = await bestQuote(tokenIn, tokenOut, amountIn, { allowMixed: false });
-```
-
-`buildBestSwapTx` does this internally, so it will never return a mixed route. If you want to surface "best economic price (mixed)" alongside "best executable price", call `bestQuote` twice — once with each value of `allowMixed`.
+Default routing never produces a mixed route — v2 and v3 are searched as
+separate stacks. `MixedRouteQuoterV1` is still available for analytics or
+off-protocol pricing via `quoteMixed(pathBytes, amountIn)`, but Topaz has no
+atomic mixed-route executor, so a wallet-facing flow cannot deliver a mixed
+quote as a single signature. See `references/swapping-mixed.md` for details.
 
 ## Thin-liquidity warnings
 
@@ -86,3 +88,18 @@ Warn users when the trade size is large compared with pool liquidity. Good heuri
 - amount in exceeds 5-10% of the paired token reserve
 
 For long-tail tokens, this warning is more important than the exact price-impact number.
+
+## Price impact and the broken-pool filter
+
+`bestQuoteBundle` and `topRoutes` fetch USD spot prices for `tokenIn` / `tokenOut`
+from the subgraph (`Token.derivedETH × Bundle.ethPriceUSD`, v3 first, v2 fallback)
+and drop any candidate where `(usdIn - usdOut) / usdIn > 0.5` — the broken-pool
+guard. A second always-on filter drops anything under 50% of the best
+candidate's `amountOut` on the same stack, so even when subgraph prices are
+missing for a long-tail asset the search still rejects stale-pool nonsense.
+
+Each surviving route carries a `priceImpactPct?: number` (0–1) when prices
+were known — surface it next to the route label so users see whether they're
+about to eat 20% of their trade. Tune via `BestQuoteOptions.maxPriceImpactPct`
+and `BestQuoteOptions.minRelativeToBest`; set `skipPriceFilter: true` to bypass
+the subgraph call entirely.

@@ -89,3 +89,83 @@ export async function globalDailyV3(n = 30): Promise<{ date: number; volumeUSD: 
   const r = await v3Client.request<{ uniswapDayDatas: any[] }>(GLOBAL_DAILY_V3, { n });
   return r.uniswapDayDatas;
 }
+
+// Both subgraphs price tokens as `derivedETH × bundle.ethPriceUSD`. The bundle
+// has id "1" on both. v3 names the field `ethPriceUSD`; v2 names it `ethPrice`
+// (always USD-denominated despite the name).
+const TOKEN_PRICES_V3 = gql`
+  query($ids: [Bytes!]!) {
+    bundle(id: "1") { ethPriceUSD }
+    tokens(where: { id_in: $ids }) {
+      id
+      derivedETH
+    }
+  }
+`;
+
+const TOKEN_PRICES_V2 = gql`
+  query($ids: [String!]!) {
+    bundle(id: "1") { ethPrice }
+    tokens(where: { id_in: $ids }) {
+      id
+      derivedETH
+    }
+  }
+`;
+
+/**
+ * Fetch USD spot prices for the given token addresses from the v3 subgraph,
+ * falling back to v2 for any token the v3 subgraph doesn't price (e.g. tokens
+ * with no concentrated-liquidity pool but a live v2 pair).
+ *
+ * Returns a map keyed by lowercased address. Tokens absent from both subgraphs
+ * are simply absent from the result — the caller should treat "no entry" as
+ * "price unknown" and skip USD-based heuristics for that token.
+ *
+ * Best-effort: any subgraph error is swallowed and the corresponding entries
+ * are omitted from the returned map. Routing should never break because a
+ * pricing endpoint is slow or down.
+ */
+export async function tokenPricesUSD(
+  addresses: string[],
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (addresses.length === 0) return out;
+  const lowered = Array.from(new Set(addresses.map((a) => a.toLowerCase())));
+
+  try {
+    const r = await v3Client.request<{
+      bundle: { ethPriceUSD: string } | null;
+      tokens: Array<{ id: string; derivedETH: string }>;
+    }>(TOKEN_PRICES_V3, { ids: lowered });
+    const eth = Number(r.bundle?.ethPriceUSD ?? "0");
+    if (eth > 0) {
+      for (const t of r.tokens) {
+        const px = Number(t.derivedETH) * eth;
+        if (px > 0) out.set(t.id.toLowerCase(), px);
+      }
+    }
+  } catch {
+    // best-effort
+  }
+
+  const missing = lowered.filter((a) => !out.has(a));
+  if (missing.length === 0) return out;
+
+  try {
+    const r = await v2Client.request<{
+      bundle: { ethPrice: string } | null;
+      tokens: Array<{ id: string; derivedETH: string }>;
+    }>(TOKEN_PRICES_V2, { ids: missing });
+    const eth = Number(r.bundle?.ethPrice ?? "0");
+    if (eth > 0) {
+      for (const t of r.tokens) {
+        const px = Number(t.derivedETH) * eth;
+        if (px > 0) out.set(t.id.toLowerCase(), px);
+      }
+    }
+  } catch {
+    // best-effort
+  }
+  return out;
+}

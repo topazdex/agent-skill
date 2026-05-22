@@ -12,6 +12,62 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Changed
+
+- **Route search is now v2-only or v3-only — never mixed.** `bestQuote`,
+  `bestQuoteBundle`, `bestV2Quote`, `bestV3Quote`, and `topRoutes` enumerate v2
+  (volatile + stable, up to 3 hops) and v3 (every tick-spacing combination, up
+  to 3 hops) **separately**. The two stacks are never combined in a single
+  route, because Topaz has no atomic mixed-route executor — a "best mixed"
+  quote could not be delivered as a single wallet signature. `MixedRouteQuoterV1`
+  is still callable directly via `quoteMixed(pathBytes, amountIn)` for
+  analytics or off-protocol pricing.
+- **`HOP_TOKENS` expanded** to `USDT, WBNB, BTCB, ETH, TOPAZ, USDC` (was
+  `WBNB, USDT, USDC, BTCB`). ETH and TOPAZ catch routes like
+  `SOL → ETH → USDT → X` and `X → TOPAZ → WBNB → Y` that the previous list
+  missed.
+- **3-hop coverage on both stacks.** Beyond direct and 2-hop, the enumerator
+  now searches every distinct 3-hop chain through two intermediaries (e.g.
+  `USDC → USDT → BNB → SOL` for v2, same path at any tick-spacing combination
+  for v3). Bounded at 3 because (a) candidate counts explode beyond that and
+  (b) each hop pays another swap fee.
+
+### Added
+
+- **`bestQuoteBundle(tokenIn, tokenOut, amountIn)` → `{ v2, v3, best }`.**
+  Single-call helper that returns the best executable v2 route and the best
+  executable v3 route side by side, plus the overall winner. UI can show
+  "basic" and "concentrated" without re-quoting.
+- **`bestV2Quote` / `bestV3Quote`.** One-stack helpers, returning `BestRoute |
+  null`. Re-introduced (last removed in 2.0.0 alongside `bestMixedQuote`).
+- **`detectPoolInventory(tokens)`.** Probes `PoolFactory.getPool` and
+  `CLFactory.getPool` for every distinct edge in one `Multicall3.aggregate3`,
+  so the quoter sweep only sees routes through real pools. Cuts the candidate
+  count by an order of magnitude on typical pairs.
+- **`aggregate3Chunked(calls, chunkSize?)`.** Splits large multicall batches
+  across parallel round-trips so the v3 3-hop layer fits inside the eth_call
+  gas cap.
+- **`MAX_ROUTE_HOPS = 3` constant** and a `maxHops?` option on
+  `BestQuoteOptions` so callers can dial the search down for snappier UIs.
+- **Broken-pool filter.** Route search now drops candidates with > 50%
+  price impact (computed from subgraph USD spot prices for tokenIn /
+  tokenOut, fetched in parallel with the inventory probe). Subgraph prices
+  come from `Token.derivedETH × Bundle.ethPriceUSD` (v3 subgraph first, v2
+  fallback). When a token has no subgraph price, the filter falls back to
+  a relative-to-best guard — anything under 50% of the best route's output
+  on the same stack is dropped. Tunable via `maxPriceImpactPct` and
+  `minRelativeToBest` on `BestQuoteOptions`; set
+  `skipPriceFilter: true` to disable. New `BestRoute.priceImpactPct?`
+  field exposes the impact for UI display. New `tokenPricesUSD(addresses)`
+  helper in `scripts/src/read/subgraphQueries.ts`.
+- **`yarn tsx src/cli/swap.ts quote|best`** now prints both the best v2 and
+  best v3 route side by side, with price impact %. `best --execute --prefer v2|v3`
+  picks the preferred stack to broadcast.
+
+### Deprecated
+
+- **`allowMixed`** on `BestQuoteOptions` is a no-op. The default search never
+  emits mixed routes regardless of the flag.
 
 ## [2.3.1] — 2026-05-22
 

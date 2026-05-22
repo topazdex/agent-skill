@@ -38,6 +38,9 @@ import {
   ADDR,
   TOKENS,
   bestQuote,
+  bestQuoteBundle,
+  bestV2Quote,
+  bestV3Quote,
   buildBestSwapTx,
   buildV3SwapTx,
   getPoolV3,
@@ -72,12 +75,18 @@ The most commonly used addresses are:
 
 ### Quotes and route selection
 
-Use `bestQuote(tokenIn, tokenOut, amountIn)` from `scripts/src/read/quotes.ts` to compare:
+Use `bestQuoteBundle(tokenIn, tokenOut, amountIn)` from `scripts/src/read/quotes.ts`
+to compare:
 
-- direct v2 volatile/stable pools
-- direct v3 tick spacings
-- 2-hop routes through common intermediaries
-- mixed v2/v3 routes
+- best v2 route (volatile + stable, up to 3 hops through `USDT, WBNB, BTCB, ETH, TOPAZ, USDC`)
+- best v3 route (every tick-spacing combination, up to 3 hops through the same intermediaries)
+- the overall winner
+
+The two stacks are searched independently — the default flow **never returns a
+mixed v2/v3 route** (Topaz has no atomic mixed-route executor). If you only
+need the overall winner, call `bestQuote(...)`; for one stack at a time, call
+`bestV2Quote(...)` or `bestV3Quote(...)`. For analytics-only mixed pricing,
+call `quoteMixed(pathBytes, amountIn)` against `MixedRouteQuoterV1` directly.
 
 For simple UX, show:
 

@@ -12,7 +12,7 @@
 
 ## Expected reads
 
-- [ ] `quoteHuman(WBNB, TOPAZ, "0.5")` **or** `bestQuote(WBNB, TOPAZ, 5n * 10n ** 17n, { allowMixed: true })` followed by human formatting.
+- [ ] `quoteHuman(WBNB, TOPAZ, "0.5")` **or** `bestQuoteBundle(WBNB, TOPAZ, 5n * 10n ** 17n)` (returns best v2 + best v3, plus overall winner) followed by human formatting.
 - [ ] No write-side calls, no `signer()`, no CLI under `scripts/src/write/`.
 
 ## Expected writes
@@ -21,7 +21,7 @@
 
 ## Final answer MUST include
 
-- [ ] Winning route description (e.g. "v3 direct ts=200", "v2 → v3 via USDT").
+- [ ] Winning route description (e.g. "v3 direct ts=200", "v2 volatile → stable via USDT", "v3 ts=1 → ts=200 via USDT").
 - [ ] `amountOut` in human units (TOPAZ, 18 decimals).
 - [ ] Slippage caveat — at the skill's default of 1% for v3 (0.5% for v2 direct), the `amountOutMin` the user would actually receive.
 - [ ] Note that this is a **quote**, not a built tx.

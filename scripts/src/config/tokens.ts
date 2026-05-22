@@ -176,10 +176,21 @@ export const TOKENS: Record<string, TokenMeta> = {
   },
 };
 
-// Default intermediaries used by best-route search. Ordered by liquidity depth
-// observed on Topaz at deploy: WBNB is the dominant hop, USDT/USDC for stable
-// legs, BTCB for bluechip legs.
-export const HOP_TOKENS: TokenMeta[] = [TOKENS.WBNB, TOKENS.USDT, TOKENS.USDC, TOKENS.BTCB];
+// Default intermediaries used by best-route search. These are the tokens that
+// the v2 and v3 enumerators will try as 1st- and 2nd-hop midpoints when
+// searching 2- and 3-hop paths.
+//
+// Order is not load-bearing — every combination is enumerated and quoted in a
+// single multicall — but USDT/WBNB lead because they account for the deepest
+// liquidity across the protocol, so quote labels tend to read in their order.
+export const HOP_TOKENS: TokenMeta[] = [
+  TOKENS.USDT,
+  TOKENS.WBNB,
+  TOKENS.BTCB,
+  TOKENS.ETH,
+  TOKENS.TOPAZ,
+  TOKENS.USDC,
+];
 
 // Look up by symbol (case-insensitive), by alias (e.g. BNB → WBNB), or by
 // address (checksummed or lowercase).

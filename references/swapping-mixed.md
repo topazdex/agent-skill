@@ -1,12 +1,21 @@
 # Swapping — Mixed Routes (v2 + v3)
 
-When the best price for a pair requires hops through both v2 stable/volatile pools and v3 CL pools, use the `MixedRouteQuoterV1`:
+> **The default routing pipeline never produces a mixed route.** `bestQuote`,
+> `bestQuoteBundle`, `bestV2Quote`, `bestV3Quote`, and `topRoutes` enumerate v2
+> (volatile + stable, up to 3 hops) and v3 (every tick-spacing combination, up
+> to 3 hops) **separately**. The two stacks are never combined in a single
+> route because Topaz has no atomic mixed-route executor today, so a "best
+> mixed" quote could not be delivered as a single wallet signature.
+>
+> This page documents `MixedRouteQuoterV1` for analytics or off-protocol
+> pricing use cases that genuinely need a cross-stack quote.
+
+When you want to price (not execute) a path that crosses pool types — e.g.,
+`TOPAZ → WBNB (v3 CL) → USDT (v2 stable)` — use the `MixedRouteQuoterV1`:
 
 ```
 MixedRouteQuoterV1: 0x47c3570b90e7234FE695Ad5F1bE69E21fe1a9ee2
 ```
-
-This contract was developed for the case where the optimal route crosses pool types — e.g., `TOPAZ → WBNB (v3 CL) → USDT (v2 stable)`.
 
 ## Path encoding
 
@@ -100,24 +109,37 @@ Use it whenever:
 - Your input or output token is a long-tail asset only listed against WBNB in a v2 volatile pool, while the *other* side has good v3 liquidity against USDT.
 - You're routing a large size and want to check if a hybrid path reduces price impact.
 
-## Heuristic candidate sets
+## Default candidate set (no mixing)
 
-A reasonable practical heuristic (used by `scripts/src/read/quotes.ts:bestQuote` / `topRoutes`):
+`scripts/src/read/quotes.ts` enumerates v2 and v3 independently:
 
-1. Direct pools first: `quoteV2(tokenIn, tokenOut, false)`, `quoteV2(..., true)`, and `quoteV3Single(...)` for each enabled tick spacing where the pool exists.
-2. 2-hop via WBNB: enumerate `(stack1, stack2)` ∈ {v2-volatile, v2-stable, v3-ts1, v3-ts50, v3-ts100, v3-ts200, v3-ts2000}² where both legs have a deployed pool.
-3. 2-hop via USDT and BTCB for tokens that don't pair with WBNB.
+- **v2 (basic)** — direct (volatile + stable), plus every 2- and 3-hop combination
+  of volatile/stable legs through the common intermediaries
+  `USDT, WBNB, BTCB, ETH, TOPAZ, USDC` (see `HOP_TOKENS` in `scripts/src/config/tokens.ts`).
+  Each candidate is one `Router.getAmountsOut(amountIn, Route[])` call.
+- **v3 (concentrated)** — direct at every enabled tick spacing, plus every 2-
+  and 3-hop combination of tick spacings through the same intermediaries.
+  Each candidate is one `QuoterV2.quoteExactInput(path, amountIn)` call.
 
-Take the best `amountOut` across all candidates.
+A single pool-existence probe (`PoolFactory.getPool` + `CLFactory.getPool` per
+edge, multicall) prunes routes that would step through a non-existent pool,
+then the surviving quoter calls are dispatched in chunked multicalls.
+
+`bestQuoteBundle(tokenIn, tokenOut, amountIn)` returns `{ v2, v3, best }` so a
+UI can show "basic" and "concentrated" side by side without re-quoting.
 
 ## Scripts
 
 | Operation | Where |
 |---|---|
-| Quote mixed path | `scripts/src/read/quotes.ts` — `quoteMixed(pathBytes, amountIn)` |
-| Best route search | `bestQuote(tokenIn, tokenOut, amountIn)` — tries all of the above |
-| CLI | `yarn tsx src/cli/swap.ts best --in <addr> --out <addr> --amount <n>` — quotes only, prints chosen route |
+| Quote a single mixed path | `scripts/src/read/quotes.ts` — `quoteMixed(pathBytes, amountIn)` (off-protocol analytics only) |
+| Best v2 + v3 routes | `bestQuoteBundle(tokenIn, tokenOut, amountIn)` — returns both stacks |
+| Best overall route | `bestQuote(tokenIn, tokenOut, amountIn)` — winner of v2 vs v3 |
+| Best on one stack | `bestV2Quote(...)` / `bestV3Quote(...)` |
+| CLI | `yarn tsx src/cli/swap.ts best --in <addr> --out <addr> --amount <n>` — prints both v2 and v3 routes |
 
-For execution, use `buildBestSwapTx(...)`, which filters out mixed routes by default, or call `buildFromExecRoute` only for executable `v2`, `v3-single`, or `v3-path` routes. Mixed routes are quote-only until an atomic mixed executor exists.
+For execution, use `buildBestSwapTx(...)` or `buildFromExecRoute` — both only
+accept `v2`, `v3-single`, or `v3-path` exec routes. Mixed routes are quote-only
+until an atomic mixed executor exists.
 
 See `examples/swap-mixed-route.md`.

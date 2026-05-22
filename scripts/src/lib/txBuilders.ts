@@ -427,12 +427,9 @@ export async function buildBestSwapTx(args: BuildBestSwapTxArgs): Promise<BuiltS
   // Validate up front so a bad input fails before we eat hundreds of RPC quotes.
   const v = normalizeAndValidate({ ...args, defaultSlippageBps: 100n });
   const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
-  // Builders are wallet-facing and have no atomic mixed-route executor yet,
-  // so we ask bestQuote for executable candidates only. Use `bestQuote` directly
-  // (or `buildFromExecRoute`) if you want the raw best route, mixed included.
-  const best = await bestQuote(v.tokenIn, v.tokenOut!, amountIn, {
-    allowMixed: false,
-  });
+  // bestQuote searches v2 and v3 independently and never emits a mixed route,
+  // so every result is executable as a single wallet signature.
+  const best = await bestQuote(v.tokenIn, v.tokenOut!, amountIn);
   return buildFromExecRoute({
     exec: best.exec,
     tokenIn: v.tokenIn,

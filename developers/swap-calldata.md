@@ -126,7 +126,15 @@ Native BNB-in routes do not require ERC20 approval. ERC20-in routes do.
 
 ## Why builders skip some routes
 
-`buildBestSwapTx` quotes with `allowMixed: false` and therefore only ever picks a route whose `exec.type` is `v2`, `v3-single`, or `v3-path`. Mixed v2/v3 routes are returned by `bestQuote` (with `allowMixed: true`, the default) because the on-chain `MixedRouteQuoterV1` can price them accurately, but Topaz does not currently expose an atomic mixed-route executor, so a builder would otherwise have to broadcast leg-by-leg with extra MEV / partial-fill risk. If you want to inspect or display the raw best route — including mixed — call `bestQuote(...)` directly and only hand the result to `buildFromExecRoute(...)` after you confirm the leg you are willing to execute.
+`buildBestSwapTx` always picks a route whose `exec.type` is `v2`, `v3-single`,
+or `v3-path`. Mixed v2/v3 routes are not part of the default search at all —
+`bestQuote`, `bestQuoteBundle`, `bestV2Quote`, `bestV3Quote`, and `topRoutes`
+all search v2 and v3 independently. Topaz has no atomic mixed-route executor,
+so a mixed quote could not be delivered as a single wallet signature.
+
+If you need a mixed price for analytics, call `quoteMixed(pathBytes, amountIn)`
+directly against `MixedRouteQuoterV1` and treat the result as price discovery,
+not as something to execute.
 
 ## Production checklist
 

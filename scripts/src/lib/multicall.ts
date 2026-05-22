@@ -89,6 +89,37 @@ export async function aggregate3(
 }
 
 /**
+ * Like `aggregate3`, but splits `calls` into fixed-size chunks and dispatches
+ * each chunk as its own multicall in parallel. Use this when the total set is
+ * large enough that a single eth_call would exceed the provider's gas cap —
+ * notably the v3 quoter sweep, where enumerating every 3-hop tick-spacing
+ * combination produces thousands of candidates and one call easily blows past
+ * 100M gas.
+ *
+ * Results are concatenated in the original input order so callers can index
+ * back into their plan list without reordering. Retry policy and `allowFailure`
+ * defaults are inherited from `aggregate3`.
+ *
+ * Default `chunkSize` of 200 is the empirical sweet spot for BSC public RPCs:
+ * roughly 60–80M gas worth of quoter calls, well under the typical 100M cap.
+ */
+export async function aggregate3Chunked(
+  calls: MulticallRequest[],
+  chunkSize = 200,
+  opts: Aggregate3Options = {},
+): Promise<MulticallResult[]> {
+  if (calls.length === 0) return [];
+  if (chunkSize <= 0) throw new Error("chunkSize must be > 0");
+  if (calls.length <= chunkSize) return aggregate3(calls, opts);
+  const chunks: MulticallRequest[][] = [];
+  for (let i = 0; i < calls.length; i += chunkSize) {
+    chunks.push(calls.slice(i, i + chunkSize));
+  }
+  const settled = await Promise.all(chunks.map((c) => aggregate3(c, opts)));
+  return settled.flat();
+}
+
+/**
  * Helper for callers that want to decode a single result against a target ABI.
  * Returns null when the call failed or the decoded data is malformed.
  */

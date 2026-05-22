@@ -179,7 +179,7 @@ To programmatically pick the better venue, see `references/swapping-mixed.md` �
 |---|---|
 | Single-pool quote | `scripts/src/read/quotes.ts` — `quoteV3Single({ tokenIn, tokenOut, amountIn, tickSpacing })` |
 | Multi-hop quote | `quoteV3Path(pathBytes, amountIn)` |
-| Find best executable CL route | `topRoutes(tokenA, tokenB, amountIn, { allowMixed: false })` — includes direct and multi-hop v3 candidates |
+| Find best executable CL route | `bestV3Quote(tokenA, tokenB, amountIn)` — direct + 2- and 3-hop combinations of tick spacings through common intermediaries. v2 is never mixed in. |
 | Build calldata | `scripts/src/lib/txBuilders.ts` — `buildV3SwapTx(...)`, `buildV3PathSwapTx(...)`, `buildBestSwapTx(...)` |
 | Execute single | `scripts/src/write/swap.ts` — `swapV3Single({ tokenIn, tokenOut, amountIn, tickSpacing, slippageBps })` |
 | Execute multi-hop | `swapV3Path({ tokens, spacings, amountIn, slippageBps })` |
