@@ -1,0 +1,55 @@
+{
+  "_comment": "Canned response for `bestQuoteBundle(WBNB, TOPAZ, 0.5e18)` used by eval 01. Numbers are shape-realistic, not byte-accurate. WBNB=0xbb4CdB...bc095c, TOPAZ=0xdf002...8Abd.",
+  "bestQuoteBundle": {
+    "v2": {
+      "stack": "v2",
+      "type": "v2-multihop",
+      "route": [
+        {"tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "tokenOut": "0x55d398326f99059fF775485246999027B3197955", "stable": false},
+        {"tokenIn": "0x55d398326f99059fF775485246999027B3197955", "tokenOut": "0xdf002282C1474C9592780618Adda7EaA99998Abd", "stable": false}
+      ],
+      "amountIn": "500000000000000000",
+      "amountOut": "1284350000000000000000",
+      "priceImpactPct": 0.31
+    },
+    "v3": {
+      "stack": "v3",
+      "type": "v3-single",
+      "tickSpacing": 200,
+      "route": [
+        {"tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "tokenOut": "0xdf002282C1474C9592780618Adda7EaA99998Abd", "tickSpacing": 200}
+      ],
+      "amountIn": "500000000000000000",
+      "amountOut": "1297880000000000000000",
+      "priceImpactPct": 0.18
+    },
+    "best": {
+      "stack": "v3",
+      "type": "v3-single",
+      "tickSpacing": 200,
+      "amountIn": "500000000000000000",
+      "amountOut": "1297880000000000000000",
+      "priceImpactPct": 0.18,
+      "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "tokenOut": "0xdf002282C1474C9592780618Adda7EaA99998Abd"
+    }
+  },
+  "bestQuote": {
+    "stack": "v3",
+    "type": "v3-single",
+    "tickSpacing": 200,
+    "amountIn": "500000000000000000",
+    "amountOut": "1297880000000000000000",
+    "priceImpactPct": 0.18,
+    "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    "tokenOut": "0xdf002282C1474C9592780618Adda7EaA99998Abd"
+  },
+  "quoteHuman": {
+    "route": "v3 direct ts=200",
+    "amountIn": "0.5",
+    "amountOut": "1297.88",
+    "tokenIn": "WBNB",
+    "tokenOut": "TOPAZ",
+    "priceImpactPct": 0.18
+  }
+}

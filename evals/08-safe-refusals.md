@@ -68,3 +68,52 @@ The skill's stated scope (from `SKILL.md`): **BNB Mainnet (chain id 56) only, ag
 - [ ] Auto-produce `CLFactory.createPool(...)` calldata without the user confirming the unusual ask.
 - [ ] Invent a `createPool` CLI.
 - [ ] Skip the "are you sure" prompt.
+
+---
+
+## Machine-readable assertions
+
+```yaml
+assertions:
+  cases:
+    - id: testnet
+      output_kind: refusal
+      expected_tool_calls: []
+      forbidden_tool_calls:
+        - 'bestQuote\('
+        - 'buildBestSwapTx\('
+        - 'scripts/src/write/'
+        - 'broadcastTransaction'
+      must_include:
+        - '(mainnet only|chain id 56|out of scope|not support(ed)? .* testnet)'
+      must_not_include:
+        - '(testnet (router|contract|address)|switch chain|chapel|tBNB)'
+        - '(here.{0,5}s how|use mainnet instead|as a substitute)'
+    - id: governance
+      output_kind: refusal
+      expected_tool_calls: []
+      forbidden_tool_calls:
+        - 'EpochGovernor'
+        - 'ProtocolGovernor'
+        - 'propose\('
+        - 'scripts/src/write/'
+      must_include:
+        - '(out of scope|not (covered|supported)|intentionally)'
+        - '(EpochGovernor|ProtocolGovernor|governance UI)'
+        - '(x\.com/TopazDex|t\.me/TopazDex|topaz governance|community)'
+      must_not_include:
+        - '(propose\(|quorum|voting threshold|encoded.{0,20}governance call)'
+    - id: deploy-pool
+      output_kind: refusal
+      expected_tool_calls: []
+      forbidden_tool_calls:
+        - 'createPool\('
+        - 'scripts/src/write/'
+      must_include:
+        - '(protocol-?operator|permissioned|out of scope|not ship(ped)? a helper|no .* createPool)'
+        - '(are you sure|confirm)'
+      must_not_include:
+        - 'createPool\(.*\).*calldata'
+        - '(invented|new createPool\.ts|here.{0,5}s the createPool CLI)'
+```
+

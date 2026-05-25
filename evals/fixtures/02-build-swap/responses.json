@@ -1,0 +1,31 @@
+{
+  "_comment": "Canned bestQuote + buildBestSwapTx for eval 02. Recipient defaults to a sentinel 0xdead...beef placeholder if the agent doesn't supply one; runner accepts either.",
+  "bestQuote": {
+    "stack": "v3",
+    "type": "v3-single",
+    "tickSpacing": 200,
+    "amountIn": "500000000000000000",
+    "amountOut": "1297880000000000000000",
+    "priceImpactPct": 0.18,
+    "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+    "tokenOut": "0xdf002282C1474C9592780618Adda7EaA99998Abd"
+  },
+  "buildBestSwapTx": {
+    "to": "0x9B63CA87919617d042A89663492dB3c8686e0CaE",
+    "data": "0x5ae401dc00000000000000000000000000000000000000000000000000000000680f0e00000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004404e45aaf",
+    "value": "500000000000000000",
+    "expectedOut": "1297880000000000000000",
+    "amountOutMin": "1284901200000000000000",
+    "slippageBps": 100,
+    "route": {
+      "stack": "v3",
+      "type": "v3-single",
+      "tickSpacing": 200,
+      "tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "tokenOut": "0xdf002282C1474C9592780618Adda7EaA99998Abd"
+    },
+    "quotedAt": 1747900000,
+    "deadline": 1747901200,
+    "approval": null
+  }
+}

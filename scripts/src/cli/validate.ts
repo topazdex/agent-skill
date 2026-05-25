@@ -19,6 +19,12 @@ import { execSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { getAddress } from "ethers";
 import { BRAND } from "../config/brand.js";
+import {
+  parseEvalSpec,
+  discoverEvalFiles,
+  EvalSpecError,
+  OUTPUT_KINDS,
+} from "../lib/evalSpec.js";
 
 const SELF_FILE = fileURLToPath(import.meta.url);
 const SCRIPTS_DIR = path.resolve(path.dirname(SELF_FILE), "../..");
@@ -609,6 +615,69 @@ const checkBrandUrls = (): void => {
   }
 };
 
+// --- A8. Eval assertion blocks ---
+// Every evals/NN-*.md must have a parseable ```yaml assertions: ...``` block.
+// output_kind must be a comma-separated list of OUTPUT_KINDS values; regex
+// patterns must compile. This is what makes priority-1.G evals runnable
+// without per-merge human review of each YAML block.
+const validateRegex = (file: string, field: string, patterns: string[]): void => {
+  for (const [i, p] of patterns.entries()) {
+    try {
+      new RegExp(p, "i");
+    } catch (e) {
+      error(`evals/${file}`, `\`${field}[${i}]\`: invalid regex — ${(e as Error).message}`);
+    }
+  }
+};
+
+const checkEvalAssertions = (): void => {
+  const evalsDir = path.join(REPO_ROOT, "evals");
+  if (!fs.existsSync(evalsDir)) {
+    error("evals/", "directory missing");
+    return;
+  }
+  const files = discoverEvalFiles(evalsDir);
+  if (files.length === 0) {
+    warn("evals/", "no eval files found (expected evals/NN-*.md)");
+    return;
+  }
+  for (const abs of files) {
+    try {
+      const spec = parseEvalSpec(abs);
+      if (spec.cases.length === 0) {
+        error(`evals/${spec.filename}`, "no cases parsed from assertions block");
+        continue;
+      }
+      for (const c of spec.cases) {
+        if (c.outputKind.length === 0) {
+          error(`evals/${spec.filename}`, `case \`${c.id}\`: output_kind is empty`);
+        }
+        for (const k of c.outputKind) {
+          if (!OUTPUT_KINDS.includes(k)) {
+            error(
+              `evals/${spec.filename}`,
+              `case \`${c.id}\`: unknown output_kind \`${k}\``,
+            );
+          }
+        }
+        if (c.prompt.trim() === "") {
+          error(`evals/${spec.filename}`, `case \`${c.id}\`: empty prompt`);
+        }
+        validateRegex(spec.filename, `cases[${c.id}].expected_tool_calls`, c.expectedToolCalls);
+        validateRegex(spec.filename, `cases[${c.id}].forbidden_tool_calls`, c.forbiddenToolCalls);
+        validateRegex(spec.filename, `cases[${c.id}].must_include`, c.mustInclude);
+        validateRegex(spec.filename, `cases[${c.id}].must_not_include`, c.mustNotInclude);
+      }
+    } catch (e) {
+      if (e instanceof EvalSpecError) {
+        error(`evals/${path.basename(abs)}`, e.message.replace(/^[^:]+:\s*/, ""));
+      } else {
+        error(`evals/${path.basename(abs)}`, `unexpected error: ${(e as Error).message}`);
+      }
+    }
+  }
+};
+
 // --- Run ---
 const sectionHeader = (label: string): void => {
   console.log(`\n— ${label} —`);
@@ -634,6 +703,8 @@ sectionHeader("Manifest (skill.json)");
 checkSkillManifest();
 sectionHeader("Brand URLs");
 checkBrandUrls();
+sectionHeader("Eval assertions");
+checkEvalAssertions();
 
 // --- Report ---
 const errors = FINDINGS.filter((f) => f.severity === "error");

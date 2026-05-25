@@ -1,0 +1,3 @@
+{
+  "_comment": "Eval 05: pure guidance — agent should route to developers/quote-widget.md and produce a code snippet. No on-chain reads expected, so this fixture is intentionally empty. If the agent does call topaz_read, the runner reports fixture-missing and the eval grades that as a soft signal."
+}

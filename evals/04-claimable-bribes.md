@@ -31,3 +31,24 @@
 - [ ] An actual `claimBribes(...)` call (this is a status query).
 - [ ] A claim of "$X claimable" without checking that `Reward.earned()` actually returned non-zero — never invent numbers.
 - [ ] Bribes posted but not yet earned by this veNFT (the eval is about *claimable*, not *exists*).
+
+## Machine-readable assertions
+
+```yaml
+assertions:
+  output_kind: explanation
+  expected_tool_calls:
+    - '(claimableSummary|gaugeToBribe|Reward\.earned|earned\()'
+  forbidden_tool_calls:
+    - 'claimBribes\('
+    - 'scripts/src/write/claim'
+    - 'src/cli/claim\.ts'
+    - 'broadcastTransaction'
+  must_include:
+    - '(claimable|bribes?)'
+    - '(no claimable|none|0|claim\w*)'
+  must_not_include:
+    - '(tx hash|broadcast(ed)?|claimed (on|to))'
+    - 'assumed|approximately \$|roughly \$'
+```
+

@@ -1,0 +1,27 @@
+{
+  "_comment": "Eval 04: tokenId 1234 has two pools with non-zero claimable bribes (USDC on the WBNB/USDT v3 gauge, TOPAZ on the TOPAZ/WBNB v2 gauge).",
+  "claimableSummary": {
+    "tokenId": "1234",
+    "bribes": [
+      {
+        "pool": "0x000000000000000000000000000000000000pool1",
+        "poolSymbol": "WBNB/USDT (v3 ts=200)",
+        "gauge": "0x000000000000000000000000000000000gauge1",
+        "bribe": "0x00000000000000000000000000000000bribecontract1",
+        "rewards": [
+          {"token": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d", "symbol": "USDC", "amount": "12500000000000000000", "human": "12.5", "usd": 12.5}
+        ]
+      },
+      {
+        "pool": "0x000000000000000000000000000000000000pool2",
+        "poolSymbol": "TOPAZ/WBNB (v2 volatile)",
+        "gauge": "0x000000000000000000000000000000000gauge2",
+        "bribe": "0x00000000000000000000000000000000bribecontract2",
+        "rewards": [
+          {"token": "0xdf002282C1474C9592780618Adda7EaA99998Abd", "symbol": "TOPAZ", "amount": "8400000000000000000", "human": "8.4", "usd": 4.62}
+        ]
+      }
+    ],
+    "totalUsd": 17.12
+  }
+}

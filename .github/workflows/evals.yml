@@ -1,0 +1,105 @@
+name: evals
+
+# Nightly agent-behavior evals. Replays each prompt in evals/*.md against
+# Claude with the Topaz skill mounted, grades against the YAML assertions,
+# and opens a GitHub issue on failure. Does NOT block PRs — LLM cost +
+# nondeterminism make per-PR gating the wrong call.
+
+on:
+  schedule:
+    # 07:00 UTC daily — picks up regressions from the previous day's merges.
+    - cron: "0 7 * * *"
+  workflow_dispatch:
+    inputs:
+      single:
+        description: "Run only one eval (e.g. 01, 02, 08)"
+        required: false
+        type: string
+      model:
+        description: "Model override (default: claude-haiku-4-5)"
+        required: false
+        type: string
+
+concurrency:
+  group: evals-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Enable corepack (yarn 4)
+        run: corepack enable
+
+      - name: Install scripts/ dependencies
+        working-directory: scripts
+        run: yarn install --immutable
+
+      - name: Skip if no API key
+        if: ${{ env.ANTHROPIC_API_KEY == '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: echo "ANTHROPIC_API_KEY secret not configured — skipping evals."
+
+      - name: Run evals
+        id: run_evals
+        if: ${{ env.ANTHROPIC_API_KEY != '' }}
+        working-directory: scripts
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          SINGLE: ${{ inputs.single }}
+          MODEL: ${{ inputs.model }}
+        run: |
+          ARGS=""
+          if [ -n "$SINGLE" ]; then ARGS="$ARGS --single $SINGLE"; fi
+          if [ -n "$MODEL" ]; then ARGS="$ARGS --model $MODEL"; fi
+          set +e
+          yarn evals $ARGS | tee /tmp/evals.log
+          STATUS=${PIPESTATUS[0]}
+          set -e
+          echo "status=$STATUS" >> $GITHUB_OUTPUT
+          {
+            echo "log<<EOF"
+            tail -200 /tmp/evals.log
+            echo "EOF"
+          } >> $GITHUB_OUTPUT
+          exit $STATUS
+
+      - name: Open issue on failure
+        if: failure() && steps.run_evals.outputs.status != '' && steps.run_evals.outputs.status != '0'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const log = `${{ steps.run_evals.outputs.log }}`;
+            const date = new Date().toISOString().slice(0, 10);
+            const title = `eval-regression: nightly run ${date}`;
+            const body = [
+              `Nightly eval run failed on \`${context.sha}\`.`,
+              ``,
+              `**Workflow run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`,
+              ``,
+              `<details><summary>Tail of run output</summary>`,
+              ``,
+              "```",
+              log,
+              "```",
+              ``,
+              `</details>`,
+            ].join("\n");
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ["eval-regression"],
+            });

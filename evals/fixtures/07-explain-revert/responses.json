@@ -1,0 +1,29 @@
+{
+  "_comment": "Eval 07: INSUFFICIENT_OUTPUT_AMOUNT diagnosis. Re-quote at current block returns a lower amountOut than the user's amountOutMin — price moved beyond slippage.",
+  "bestQuote": {
+    "stack": "v2",
+    "type": "v2-multihop",
+    "route": [
+      {"tokenIn": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c", "tokenOut": "0x55d398326f99059fF775485246999027B3197955", "stable": false},
+      {"tokenIn": "0x55d398326f99059fF775485246999027B3197955", "tokenOut": "0xdf002282C1474C9592780618Adda7EaA99998Abd", "stable": false}
+    ],
+    "amountIn": "500000000000000000",
+    "amountOut": "1234500000000000000000",
+    "priceImpactPct": 1.42
+  },
+  "quoteHuman": {
+    "route": "v2 volatile → volatile via USDT",
+    "amountIn": "0.5",
+    "amountOut": "1234.5",
+    "tokenIn": "WBNB",
+    "tokenOut": "TOPAZ",
+    "priceImpactPct": 1.42
+  },
+  "txReceipt": {
+    "hash": "0xdeadbeef",
+    "blockNumber": 41250000,
+    "amountOutMin": "1295000000000000000000",
+    "status": "reverted",
+    "revertReason": "Router: INSUFFICIENT_OUTPUT_AMOUNT"
+  }
+}

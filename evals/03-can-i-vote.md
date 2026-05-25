@@ -37,3 +37,24 @@ A clear **yes/no** with the reason. One of:
 - [ ] An actual `Voter.vote(...)` call (this is a status check, not an execution).
 - [ ] A guess if `Voter.lastVoted` returned an unexpected value; ask the user to confirm the tokenId instead.
 - [ ] A claim that voting is open without verifying both `lastVoted < epochStart` AND `epochVoteStart ≤ now < epochVoteEnd`.
+
+## Machine-readable assertions
+
+```yaml
+assertions:
+  output_kind: explanation
+  expected_tool_calls:
+    - 'lastVoted\('
+    - '(epochStart|epochVoteStart|epochVoteEnd)\('
+  forbidden_tool_calls:
+    - 'Voter\.vote\('
+    - 'scripts/src/write/vote'
+    - 'src/cli/vote\.ts'
+    - 'broadcastTransaction'
+  must_include:
+    - '(yes|no|not yet|cannot|can\b|allowed)'
+    - '(epoch|vote window|distribute window|whitelist)'
+  must_not_include:
+    - '(executed|broadcast(ed)?|tx hash|cast (the )?vote)'
+```
+

@@ -1,0 +1,33 @@
+{
+  "_comment": "Eval 06: depositing 100 USDC bribe on a live WBNB/USDT v3 gauge. Gauge exists, isAlive, USDC is already a reward token (so the deposit doesn't depend on the whitelist fallback).",
+  "Voter.gauges": "0x00000000000000000000000000000000eval6gauge",
+  "Voter.isAlive": true,
+  "Voter.gaugeToBribe": "0x00000000000000000000000000eval6bribecontract",
+  "Voter.isWhitelistedToken": true,
+  "BribeVotingReward.isReward": true,
+  "epochVoteEnd": 1747900800,
+  "buildBribeDepositTx": {
+    "approval": {
+      "to": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      "data": "0x095ea7b300000000000000000000000000000000000000000000eval6bribecontract0000000000000000000000000000000000000000000000056bc75e2d63100000",
+      "value": "0",
+      "token": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      "spender": "0x00000000000000000000000000eval6bribecontract",
+      "amount": "100000000000000000000"
+    },
+    "deposit": {
+      "to": "0x00000000000000000000000000eval6bribecontract",
+      "data": "0x9d23c4c70000000000000000000000008ac76a51cc950d9822d68b83fe1ad97b32cd580d0000000000000000000000000000000000000000000000056bc75e2d63100000",
+      "value": "0"
+    },
+    "gauge": "0x00000000000000000000000000000000eval6gauge",
+    "bribe": "0x00000000000000000000000000eval6bribecontract",
+    "amount": "100000000000000000000",
+    "token": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+    "tokenSymbol": "USDC",
+    "amountHuman": "100",
+    "epochStart": 1747699200,
+    "epochVoteEnd": 1747900800,
+    "builtAt": 1747958400
+  }
+}

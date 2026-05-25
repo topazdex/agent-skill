@@ -32,3 +32,23 @@
 - [ ] A code snippet that calls `signer.sendTransaction(...)` inside the widget — widgets quote, wallets sign.
 - [ ] An implementation that hardcodes pool addresses; the widget must resolve them via `findV2Pool` / `findV3Pool` (which the helpers already do).
 - [ ] A claim that a mixed v2/v3 route can be executed atomically today (it cannot — no atomic mixed router exists on Topaz; `quoteMixed` is analytics-only).
+
+## Machine-readable assertions
+
+```yaml
+assertions:
+  output_kind: explanation
+  expected_tool_calls: []
+  forbidden_tool_calls:
+    - 'broadcastTransaction'
+    - 'sendTransaction'
+  must_include:
+    - 'developers/quote-widget\.md'
+    - '(bestQuoteBundle|bestQuote)\('
+    - '(amountOutMin|slippage)'
+    - '(staleness|quotedAt|re-?quote)'
+  must_not_include:
+    - 'signer\.sendTransaction'
+    - '(mixed route .* (executable|atomic)|atomic mixed router)'
+```
+
