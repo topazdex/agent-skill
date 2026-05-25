@@ -83,6 +83,10 @@ await (await bribe.notifyRewardAmount(TOKEN, AMOUNT)).wait();
 
 ## Reading a pool's current and historical bribes
 
+For indexed bribe history with USD values and filtering, the Stats API is simpler: `curl "https://www.topazdex.com/api/stats/bribes?pool=0xPOOL"`. For foundation-only bribes: `/api/stats/foundation/bribes`. See `references/analytics-stats-api.md`.
+
+For on-chain reads of the current epoch's raw amounts:
+
 ```ts
 const length = await bribe.rewardsListLength();
 const rewardTokens = await Promise.all([...Array(Number(length))].map((_, i) => bribe.rewards(i)));

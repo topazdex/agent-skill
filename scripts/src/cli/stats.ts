@@ -24,6 +24,17 @@ import { topV2Pools, topV3Pools } from "../read/subgraphQueries.js";
 import { provider } from "../lib/client.js";
 import { fmtEpoch } from "../lib/epoch.js";
 import { buildBestSwapTx } from "../lib/txBuilders.js";
+import {
+  fetchProtocol,
+  fetchPools as fetchApiPools,
+  fetchGauges as fetchApiGauges,
+  fetchFoundation,
+  fetchFoundationVotes,
+  fetchFoundationBribes,
+  fetchFoundationKpis,
+  fetchDynamicFees,
+  fetchHealth,
+} from "../lib/statsApi.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/stats.ts <command> [options]
@@ -41,6 +52,17 @@ Commands:
   apr --pool <address>          Pool APR breakdown
   quote --in <addr> --out <addr> --amount <human>   Best-route quote
   smoke                         End-to-end sanity check (verifies RPC + subgraphs + ABIs)
+
+Stats API commands (https://www.topazdex.com/api/stats):
+  protocol                      Protocol overview (TVL, volume, fees, TOPAZ price, veTOPAZ)
+  api-pools [--sort tvl|volume24h|fees24h|apr] [--limit N] [--pair BNB-USDT]   Pool list with pre-computed APRs
+  api-gauges                    All gauges with emission/fee/bribe/total APR
+  foundation                    Foundation summary (wallet, votes, bribes, KPIs)
+  foundation-votes [--epoch N]  Foundation vote allocations
+  foundation-bribes [--pool 0x..]  Foundation bribe deposits
+  foundation-kpis [--epoch N] [--pool 0x..]  KPI effectiveness snapshots
+  dynamic-fees                  v3 pools with custom/dynamic fee modules
+  health                        API health and data freshness
 `.trim();
 
 async function cmdPool(argv: any) {
@@ -185,6 +207,125 @@ async function cmdQuote(argv: any) {
     best: { route: q.best.route, amountOut: q.best.amountOut.toString() },
     human: `${argv.amount} → ${q.amountOutHuman}`,
   }, null, 2));
+}
+
+// ---------------------------------------------------------------------------
+// Stats API commands
+// ---------------------------------------------------------------------------
+
+async function cmdProtocol() {
+  const { data, meta } = await fetchProtocol();
+  console.log("Protocol Overview (Stats API)");
+  console.log(`  Snapshot:        ${meta.snapshotAt}`);
+  console.log(`  TVL:             $${fmtNum(data.tvlUsd)}  (v2: $${fmtNum(data.v2TvlUsd)}, v3: $${fmtNum(data.v3TvlUsd)})`);
+  console.log(`  Volume 24h:      $${fmtNum(data.volume24hUsd)}`);
+  console.log(`  Volume 7d:       $${fmtNum(data.volume7dUsd)}`);
+  console.log(`  Fees 24h:        $${fmtNum(data.fees24hUsd)}`);
+  console.log(`  Fees 7d:         $${fmtNum(data.fees7dUsd)}`);
+  console.log(`  Cumulative vol:  $${fmtNum(data.cumulativeVolumeUsd)}`);
+  console.log(`  Cumulative fees: $${fmtNum(data.cumulativeFeesUsd)}`);
+  console.log(`  Pools:           ${data.poolCount}`);
+  console.log(`  Active gauges:   ${data.activeGaugeCount}`);
+  console.log(`  TOPAZ price:     $${parseFloat(data.topazPriceUsd).toFixed(6)}`);
+  console.log(`  Locked TOPAZ:    ${fmtNum(data.totalLockedTopaz)}`);
+  console.log(`  veTOPAZ power:   ${fmtNum(data.totalVetopazPower)}`);
+  console.log(`  Current epoch:   ${data.currentEpochStart}`);
+}
+
+async function cmdApiPools(argv: ReturnType<typeof minimist>) {
+  const sort = argv.sort ?? "tvl";
+  const limit = Number(argv.limit ?? 20);
+  const pair = argv.pair;
+  const { data } = await fetchApiPools({ sort, limit, pair });
+  console.log(`${"pair".padEnd(20)} ${"type".padEnd(12)} ${"TVL".padStart(14)} ${"vol24h".padStart(14)} ${"fees24h".padStart(12)} ${"feeAPR".padStart(8)}`);
+  for (const p of data) {
+    const label = `${p.token0Symbol}/${p.token1Symbol}`;
+    console.log(
+      `${label.padEnd(20)} ${p.poolType.padEnd(12)} ${("$" + fmtNum(p.tvlUsd)).padStart(14)} ${("$" + fmtNum(p.volume24hUsd)).padStart(14)} ${("$" + fmtNum(p.fees24hUsd)).padStart(12)} ${(parseFloat(p.feeApr).toFixed(2) + "%").padStart(8)}`,
+    );
+  }
+}
+
+async function cmdApiGauges() {
+  const { data } = await fetchApiGauges();
+  console.log(`${"pair".padEnd(20)} ${"type".padEnd(12)} ${"stakedTVL".padStart(14)} ${"emAPR".padStart(8)} ${"feeAPR".padStart(8)} ${"totalAPR".padStart(9)} ${"alive".padStart(6)}`);
+  for (const g of data) {
+    const label = `${g.token0Symbol ?? "?"}/${g.token1Symbol ?? "?"}`;
+    const totalApr = g.totalApr ? parseFloat(g.totalApr).toFixed(2) + "%" : "—";
+    console.log(
+      `${label.padEnd(20)} ${g.poolType.padEnd(12)} ${("$" + fmtNum(g.stakedTvlUsd)).padStart(14)} ${(parseFloat(g.emissionApr).toFixed(2) + "%").padStart(8)} ${(parseFloat(g.feeApr).toFixed(2) + "%").padStart(8)} ${totalApr.padStart(9)} ${(g.alive ? "yes" : "no").padStart(6)}`,
+    );
+  }
+}
+
+async function cmdFoundation() {
+  const { data } = await fetchFoundation();
+  console.log("Foundation Summary (Stats API)");
+  console.log(`  Wallet:          ${data.wallet}`);
+  console.log(`  veNFT IDs:       ${data.veNftIds.join(", ")}`);
+  console.log(`  Voting power:    ${fmtNum(data.votingPowerActive)}`);
+  console.log(`  Current epoch:   ${data.currentEpochStart ?? "—"}`);
+  console.log(`  Active votes:    ${data.activeVoteCount} allocations across ${data.activePoolCount} pools`);
+  console.log(`  Lifetime bribes: $${fmtNum(data.lifetimeBribeUsd)} (${data.lifetimeBribeCount} deposits)`);
+  if (data.recentBribeTotals.length > 0) {
+    console.log("  Recent epochs:");
+    for (const e of data.recentBribeTotals) {
+      console.log(`    ${e.epochStart}  $${fmtNum(e.totalUsd)} (${e.count} deposits)`);
+    }
+  }
+}
+
+async function cmdFoundationVotes(argv: ReturnType<typeof minimist>) {
+  const epoch = argv.epoch ? Number(argv.epoch) : undefined;
+  const { data } = await fetchFoundationVotes({ epoch });
+  console.log(JSON.stringify(data, null, 2));
+}
+
+async function cmdFoundationBribes(argv: ReturnType<typeof minimist>) {
+  const pool = argv.pool;
+  const { data } = await fetchFoundationBribes({ pool });
+  console.log(JSON.stringify(data, null, 2));
+}
+
+async function cmdFoundationKpis(argv: ReturnType<typeof minimist>) {
+  const epoch = argv.epoch ? Number(argv.epoch) : undefined;
+  const pool = argv.pool;
+  const { data } = await fetchFoundationKpis({ epoch, pool });
+  for (const k of data) {
+    const pair = k.poolAddress.slice(0, 10) + "…";
+    console.log(`${pair}  class=${k.classification.padEnd(18)} bribeCost=$${fmtNum(k.bribeCostUsd)}  emissions=$${fmtNum(k.emissionsDirectedUsd)}  tvlΔ=${k.tvlDeltaUsd ? "$" + fmtNum(k.tvlDeltaUsd) : "—"}  roi=${k.roiEstimate ?? "—"}`);
+  }
+}
+
+async function cmdDynamicFees() {
+  const { data } = await fetchDynamicFees();
+  console.log(`${"pair".padEnd(20)} ${"pool".padEnd(44)} ${"fee".padStart(8)} ${"custom".padStart(7)} ${"dynamic".padStart(8)}`);
+  for (const p of data) {
+    const pair = `${p.token0Symbol}/${p.token1Symbol}`;
+    console.log(
+      `${pair.padEnd(20)} ${p.poolAddress.padEnd(44)} ${(p.fee + " pips").padStart(8)} ${(p.customFee ? "yes" : "no").padStart(7)} ${(p.dynamicFee ? "yes" : "no").padStart(8)}`,
+    );
+  }
+}
+
+async function cmdHealth() {
+  const { data, meta } = await fetchHealth();
+  console.log("Stats API Health");
+  console.log(`  Healthy:         ${data.healthy}`);
+  console.log(`  Stale:           ${data.stale}`);
+  console.log(`  Last success:    ${data.lastSuccessfulAt ?? "—"} (ID: ${data.lastSuccessfulId ?? "—"})`);
+  console.log(`  Last status:     ${data.lastAttemptStatus ?? "—"}`);
+  console.log(`  Minutes since:   ${data.minutesSinceLastSuccess ?? "—"}`);
+  console.log(`  Stale threshold: ${data.staleThresholdMinutes} min`);
+  console.log(`  Generated at:    ${meta.generatedAt}`);
+}
+
+function fmtNum(v: string): string {
+  const n = parseFloat(v);
+  if (Number.isNaN(n)) return v;
+  if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(2) + "M";
+  if (Math.abs(n) >= 1_000) return (n / 1_000).toFixed(2) + "K";
+  return n.toFixed(2);
 }
 
 async function cmdSmoke() {
@@ -356,6 +497,14 @@ async function cmdSmoke() {
     fail("WBNB/BTCB gauge enumeration", e);
   }
 
+  try {
+    const { data } = await fetchHealth();
+    if (!data.healthy) throw new Error(`unhealthy: stale=${data.stale}, lastStatus=${data.lastAttemptStatus}`);
+    ok("Stats API health", `healthy, last snapshot ${data.minutesSinceLastSuccess}min ago`);
+  } catch (e) {
+    fail("Stats API health", e);
+  }
+
   console.log(out.join("\n"));
   if (failed > 0) {
     console.error(`\n${failed} smoke check(s) failed`);
@@ -393,6 +542,15 @@ async function main() {
     case "bribes": return await cmdBribes(argv);
     case "apr": return await cmdApr(argv);
     case "quote": return await cmdQuote(argv);
+    case "protocol": return await cmdProtocol();
+    case "api-pools": return await cmdApiPools(argv);
+    case "api-gauges": return await cmdApiGauges();
+    case "foundation": return await cmdFoundation();
+    case "foundation-votes": return await cmdFoundationVotes(argv);
+    case "foundation-bribes": return await cmdFoundationBribes(argv);
+    case "foundation-kpis": return await cmdFoundationKpis(argv);
+    case "dynamic-fees": return await cmdDynamicFees();
+    case "health": return await cmdHealth();
     case "smoke": return await cmdSmoke();
     default:
       console.error(`unknown command: ${cmd}\n\n${USAGE}`);

@@ -12,6 +12,32 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- **Stats API integration.** New typed TypeScript client
+  (`scripts/src/lib/statsApi.ts`) with wrappers for all 15 public
+  `/api/stats/*` endpoints: `fetchProtocol`, `fetchPools`, `fetchPool`,
+  `fetchGauges`, `fetchVe`, `fetchFoundation`, `fetchFoundationVotes`,
+  `fetchFoundationBribes`, `fetchFoundationKpis`, `fetchVotes`,
+  `fetchBribes`, `fetchDynamicFees`, `fetchLiveDynamicFees`, `fetchHealth`,
+  `fetchConfig`. Full response types, `StatsApiRequestError` for error
+  handling, env-overridable base URL via `TOPAZ_STATS_API_URL`.
+- **10 new CLI commands** in `stats.ts`: `protocol`, `api-pools`,
+  `api-gauges`, `foundation`, `foundation-votes`, `foundation-bribes`,
+  `foundation-kpis`, `dynamic-fees`, `health`. Foundation data (wallet,
+  veNFT IDs, vote allocations, bribe deposits, KPI effectiveness) is
+  surfaced for the first time.
+- **Stats API health check** added to `yarn smoke`.
+- **New reference doc** `references/analytics-stats-api.md` — decision
+  table for when to prefer Stats API vs subgraph vs on-chain, endpoint
+  catalog with curl + TypeScript examples, foundation-only data callout.
+- **SKILL.md**: Stats API base URL, navigation table entry, and operating
+  principle for preferring the Stats API for aggregated reads and
+  foundation data.
+- **Cross-references** added to `analytics-onchain.md`,
+  `analytics-subgraph.md`, `examples/query-pool-stats.md`,
+  `developers/gauges-and-apr.md`, `developers/subgraph-recipes.md`, and
+  `references/bribes-deposit.md`.
 
 ## [2.4.0] — 2026-05-22
 

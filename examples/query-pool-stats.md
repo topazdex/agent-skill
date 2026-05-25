@@ -156,6 +156,33 @@ yarn tsx src/cli/stats.ts gauges --limit 50 --sort-by emissionApr
 
 Iterates every gauge from `Voter.length()` / `Voter.pools(i)`, batches the reads with multicall, and prints a sortable table. Use `--csv` to emit machine-readable output for downstream analysis.
 
+## Simpler alternative: Stats API
+
+If you just need pre-computed numbers (no custom APR formulas), the Stats API returns everything above in a single call:
+
+```bash
+# Single pool with 7d history (168 snapshots at 15-min intervals)
+curl https://www.topazdex.com/api/stats/pools/0xPOOL | jq .data
+
+# Top pools sorted by APR
+curl "https://www.topazdex.com/api/stats/pools?sort=apr&limit=10" | jq .data
+
+# All gauges with emission/fee/bribe/total APR
+curl https://www.topazdex.com/api/stats/gauges | jq .data
+```
+
+Or via the TypeScript client:
+
+```ts
+import { fetchPool, fetchPools, fetchGauges } from "../scripts/src/index.js";
+
+const { data: detail } = await fetchPool("0xPOOL");
+const { data: topPools } = await fetchPools({ sort: "apr", limit: 10 });
+const { data: gauges } = await fetchGauges();
+```
+
+The Stats API snapshots every 15 minutes. For block-accurate state or custom APR windows, use the on-chain + subgraph approach above. See `references/analytics-stats-api.md` for the full decision table.
+
 ## Where the heuristics live
 
 All of the logic above is in `scripts/src/read/pools.ts` and `scripts/src/read/apr.ts`. If you want different APR formulas (e.g. 1-day vs 7-day window, different price sources), edit those files. The CLI just composes them.

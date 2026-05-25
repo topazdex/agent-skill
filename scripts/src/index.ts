@@ -10,6 +10,7 @@ export * from "./lib/erc20.js";
 export * from "./lib/epoch.js";
 export * from "./lib/path.js";
 export * from "./lib/pricing.js";
+export * from "./lib/statsApi.js";
 export * from "./lib/subgraph.js";
 export * from "./lib/tickMath.js";
 export * from "./lib/txBuilders.js";

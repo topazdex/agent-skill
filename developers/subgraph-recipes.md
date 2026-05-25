@@ -82,6 +82,10 @@ query TokenSearch {
 
 v2 token entities use `totalLiquidity`; v3 token entities use `totalValueLockedUSD`.
 
+## Stats API alternative
+
+For pre-aggregated pool lists, gauge APRs, protocol totals, and foundation data, the Stats API at `https://www.topazdex.com/api/stats` is often simpler than composing subgraph queries. It returns pre-computed numbers in a single REST call. See `references/analytics-stats-api.md` for the full endpoint catalog and when to prefer each source.
+
 ## Limitations
 
 - Subgraphs may lag by a few blocks.

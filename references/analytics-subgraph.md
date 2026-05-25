@@ -2,6 +2,8 @@
 
 Topaz indexes two subgraphs on Goldsky — a v2 (Solidly) subgraph and a v3 (Slipstream) subgraph. The entity catalogs below are the canonical reference for query authoring.
 
+> **For pre-aggregated pool lists, gauge APRs, and protocol totals**, the Stats API (`analytics-stats-api.md`) is often simpler — one REST call with pre-computed numbers. Use subgraphs below when you need historical day-data beyond 7 days, flexible token-level searches, or per-transaction event data.
+
 ## Endpoints
 
 ```

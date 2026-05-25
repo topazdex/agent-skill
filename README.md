@@ -1,6 +1,6 @@
 # Topaz Skill
 
-Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (chain id 56)** combining Solidly-style v2 pools (volatile + stable) with Uniswap-v3-style concentrated liquidity (Slipstream). The skill teaches Claude how to swap, manage liquidity (both v2 LP and v3 NFT positions), stake in gauges, manage veTOPAZ locks, vote, claim rewards, deposit bribes, and query analytics via on-chain reads and the official subgraphs.
+Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (chain id 56)** combining Solidly-style v2 pools (volatile + stable) with Uniswap-v3-style concentrated liquidity (Slipstream). The skill teaches Claude how to swap, manage liquidity (both v2 LP and v3 NFT positions), stake in gauges, manage veTOPAZ locks, vote, claim rewards, deposit bribes, and query analytics via on-chain reads, the official subgraphs, and the public Stats API.
 
 Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
 
@@ -394,7 +394,22 @@ Validator, unit tests, live smoke, goldens, agent evals, PR checklist. Land in o
 - [x] `developers/*.md` links resolve.
 - [x] Eval prompts reviewed (manual until automation).
 
-With 1.A–1.F complete and the `SKILL.md` broadcast/labeling rule patched, the foundational quality work is done. Remaining work is feature-side (priority 2) and polish (priority 3).
+With 1.A–1.F complete and the `SKILL.md` broadcast/labeling rule patched, the foundational quality work is done. Remaining work is feature-side (priority 2), an automated eval harness (priority 1.G — closes the manual-review hole left by 1.E), and polish (priority 3).
+
+**G. Automated eval harness** ([`scripts/src/cli/evals.ts`](./scripts/src/cli/evals.ts), [`evals/`](./evals/), [`.github/workflows/evals.yml`](./.github/workflows/evals.yml) — run via `yarn evals`):
+
+The 1.E checklists in `evals/*.md` are reviewed manually today. That leaves agent-behavior regressions invisible between releases. This slice lifts them into machine-readable assertions and an automated runner.
+
+- [x] **YAML assertion schema** documented in [`evals/README.md`](./evals/README.md). Six output kinds (`quote` / `built calldata` / `approval-needed` / `broadcast tx-hash` / `refusal` / `explanation`) plus four regex lists (`expected_tool_calls`, `forbidden_tool_calls`, `must_include`, `must_not_include`). Single-case and multi-case (`cases:`) shapes both supported.
+- [x] **Assertion blocks added to all 8 evals** ([`01-quote.md`](./evals/01-quote.md) through [`08-safe-refusals.md`](./evals/08-safe-refusals.md)). The existing markdown prose stays as human-readable docs; the trailing YAML is canonical for the runner.
+- [x] **Spec parser** ([`scripts/src/lib/evalSpec.ts`](./scripts/src/lib/evalSpec.ts)) — extracts the prompt from the first `> ` blockquote (single-case) or per-section blockquote (multi-case), parses YAML via `js-yaml`, validates `output_kind` against the six allowed values, and returns typed `EvalSpec[]`. Shared by validator + runner.
+- [x] **Validator extension** — `yarn validate` now parses every `evals/*.md`, confirms the YAML block is well-formed, each regex compiles, and `output_kind` is recognized. Added as the 11th validator section.
+- [x] **RPC fixture system** ([`scripts/src/lib/evalFixtures.ts`](./scripts/src/lib/evalFixtures.ts), `evals/fixtures/<case-id>/responses.json`) — frozen, shape-realistic JSON keyed by helper function name. Deterministic, free, replayable. Refusal evals get empty fixtures so any tool call surfaces as `fixture-missing` (and is graded against `forbidden_tool_calls`).
+- [x] **Runner CLI** ([`scripts/src/cli/evals.ts`](./scripts/src/cli/evals.ts)) — `yarn evals` mounts `SKILL.md` plus a short eval-environment note as the system prompt, exposes two tools (`topaz_read({function, args})` served from fixtures; `read_file({path})` served from the tracked repo), runs the conversation loop until `end_turn`, records every `tool_use` input, and grades the trace + final answer against each case's assertions. Flags: `--single`, `--dry-run`, `--model`, `--verbose`, `--max-turns`. Default model: `claude-haiku-4-5`. Without `ANTHROPIC_API_KEY`, prints a skip notice and exits 0.
+- [x] **Nightly CI** ([`.github/workflows/evals.yml`](./.github/workflows/evals.yml)) — `cron: 0 7 * * *` plus `workflow_dispatch` with optional `single` / `model` inputs. Skips cleanly when no API key is configured. On failure, opens a GitHub issue tagged `eval-regression` rather than blocking PRs (LLM cost + nondeterminism make per-PR gating the wrong call).
+- [x] **README + evals/README.md updated** to describe the schema, the runner, and the CI cadence.
+
+The harness can be re-targeted: the YAML schema is runtime-agnostic, and any agent runtime that can record `tool_use` blocks + final text could grade the same assertions. Today's runner uses the Anthropic SDK; an external runner (Hermes, OpenCode, Codex) could consume the same `evalSpec.ts` parser.
 
 ### TODO — priority 2: feature gaps surfaced by the robustness review
 

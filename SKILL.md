@@ -66,6 +66,8 @@ Subgraphs (Goldsky):
 - v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn`
 - v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn`
 
+Stats API (public, no auth): `https://www.topazdex.com/api/stats`
+
 ## Project links
 
 Use these when a user asks where to go or you need to direct them outside the agent flow. Full catalog + brand assets: `references/brand.md`. Typed in `scripts/src/config/brand.ts` as `BRAND.*`.
@@ -104,6 +106,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Build pool/position/gauge dashboards | `developers/user-positions.md`, `developers/gauges-and-apr.md` |
 | Map a revert to a user-friendly UI string | `developers/error-cookbook.md` |
 | On-chain reads for live stats | `references/analytics-onchain.md` |
+| Protocol overview, pool/gauge APRs, foundation data via REST | `references/analytics-stats-api.md` |
 | Compute gauge / fee / voting APRs | `references/apr-calculations.md` |
 | Epoch boundaries, voting window, distribute() | `references/epoch-timing.md` |
 | Common mistakes & gotchas | `references/pitfalls.md` |
@@ -150,5 +153,7 @@ CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is
 - **Bribes are paid for votes _in the same epoch_.** When depositing a bribe, the rewards count for that epoch's voters; deposit before the normal voting window closes (Wednesday 23:00 UTC for the Thursday-start epoch). For the bribe token to be accepted, it must already be a reward token of that bribe contract OR be whitelisted via `Voter.isWhitelistedToken(token)`.
 - **CL positions must be in-range to earn emissions.** Out-of-range liquidity is staked but receives no `CLGauge` rewards.
 - **NFT approvals.** Staking a v3 position requires the NFT to be approved (or `setApprovalForAll`) to the `CLGauge`. Voting/claiming requires `VotingEscrow.isApprovedOrOwner(msg.sender, tokenId)`.
+
+- **Prefer the Stats API for aggregated reads.** When the user asks for protocol totals (TVL, volume, fees, TOPAZ price), pool lists, gauge APR rankings, or foundation data (votes, bribes, KPI effectiveness), use the public Stats API at `https://www.topazdex.com/api/stats` — it returns pre-computed numbers in a single call. Foundation data (wallet, veNFT IDs, vote allocations, bribe deposits, KPI snapshots) is **only** available through the Stats API. Reserve subgraph queries for historical day-data beyond 7 days and flexible token-level searches. Reserve on-chain reads for user-specific state (balances, positions, claimable), block-accurate data for time-sensitive operations (voting, bribe deposits), and transaction construction. See `references/analytics-stats-api.md` for the decision table and endpoint catalog.
 
 When unsure, re-read the relevant `references/*.md`. When the user asks for something unusual (governance proposals, BSC testnet, deploying new pools as a protocol operator), it is out of scope for this skill — say so and stop.

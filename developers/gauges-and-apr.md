@@ -65,6 +65,18 @@ Suggested display:
 | Voting APR | `votingApr(pool)` | veTOPAZ holders allocating votes |
 | Rebase APR | `rebaseApr()` | all veTOPAZ holders |
 
+### Pre-computed APRs via Stats API
+
+If you don't need custom APR formulas, the Stats API returns all four APR types pre-computed:
+
+```ts
+import { fetchGauges } from "../scripts/src/index.js";
+const { data: gauges } = await fetchGauges();
+// Each gauge has: emissionApr, feeApr, bribeApr, totalApr, stakedTvlUsd
+```
+
+This is simpler for dashboards — no manual calculation, no subgraph + on-chain dance. Snapshots every 15 min. See `references/analytics-stats-api.md`.
+
 ### Caveats every APR display must respect
 
 - **`emissionApr` uses `stakedTvlUsd`, not pool TVL.** For v3 it scales by `stakedLiquidity / liquidity`. Out-of-range CL positions are staked but earn nothing; if your dashboard shows "earnings per $", divide by `stakedTvlUsd`, not headline TVL, or you'll mislead users.

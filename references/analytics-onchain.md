@@ -2,6 +2,8 @@
 
 When subgraph data is stale, missing (gauges/votes/bribes/locks aren't indexed), or you need block-accurate state, read directly from the chain.
 
+> **For aggregated protocol metrics, pre-computed APRs, and foundation data**, prefer the Stats API (`analytics-stats-api.md`) — it returns the same numbers in a single REST call. Use on-chain reads below when you need user-specific state (balances, positions, claimable), block-accurate data for time-sensitive ops, or transaction construction.
+
 ## Multicall
 
 BSC has the canonical Multicall3 at `0xcA11bde05977b3631167028862bE2a173976CA11`. Use it to batch any of the read functions below into one RPC call. `scripts/src/lib/client.ts` exposes a multicall helper that wraps `ethers.Contract` calls.
