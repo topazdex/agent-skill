@@ -1,84 +1,87 @@
 # APR Calculations
 
-There are three APR figures in the Topaz UI; we compute them the same way the frontend does.
+There are four APR types in the Topaz UI. The formulas here match the production frontend.
 
 ## Conventions
 
 - All amounts are in **wei** (1e18 unless noted). Divide by `10^decimals` to get human-readable.
 - `SECONDS_PER_YEAR = 365 * 24 * 60 * 60 = 31,536,000`. (We deliberately don't use 365.25 — match the frontend.)
 - `topazPriceUsd` = USD value of 1 TOPAZ. Source: DexScreener (`scripts/src/lib/pricing.ts:getTopazUsdPrice`), or fall back to the v3 subgraph: `TOPAZ.derivedETH * Bundle.ethPriceUSD`.
-- `stakedTvlUsd` = USD value of the stake **currently earning emissions**. For v2 this is the staked LP's underlying value; for v3 it's the *staked, in-range* liquidity's underlying value.
 
 ## 1) Gauge emission APR
 
-```
-annualEmissionsTopazWei = rewardRate * SECONDS_PER_YEAR              (TOPAZ wei)
-annualEmissionsUsd      = (annualEmissionsTopazWei / 1e18) * topazPriceUsd
+Both `poolApr()` and `positionApr()` check `gauge.periodFinish()` before computing emissions. If `periodFinish > 0` and `periodFinish <= now`, the reward period has expired and emission APR is 0. This matches the production frontend's `isRewardPeriodActive` guard.
 
-emissionApr = annualEmissionsUsd / stakedTvlUsd * 100
-```
+### v2 pools (pool-wide average)
 
-### v2 staked TVL
-
-```ts
-const poolTvlUsd = (r0 / 10**dec0) * price0Usd + (r1 / 10**dec1) * price1Usd;
-const stakedShare = Number(gauge.totalSupply()) / Number(pool.totalSupply());   // LP token totalSupply
-const stakedTvlUsd = poolTvlUsd * stakedShare;
-```
-
-### v3 staked TVL
-
-```ts
-const poolTvlUsd = await subgraphPoolTvlUsd(pool);    // from v3 subgraph
-const liquidity = Number(pool.liquidity());
-const stakedLiquidity = Number(pool.stakedLiquidity());
-const stakedTvlUsd = liquidity > 0
-  ? poolTvlUsd * (stakedLiquidity / liquidity)
-  : 0;
-```
-
-> **Caveat for v3**: this formula assumes staked liquidity has the same distribution across ticks as total liquidity. In practice, in-range staked positions tend to be tighter — so the *actual* emission APR for a tight-range position is **higher** than this average. The frontend exposes a "concentrated APR" multiplier; the simple version above is the conservative pool-wide average.
-
-### Concentration multiplier (v3)
-
-For a position spanning ticks `[tickLower, tickUpper]`, the share of pool liquidity it represents is:
+v2 pools have fungible LP tokens, so all stakers earn the same rate.
 
 ```
-positionLiquidityShare = position.liquidity / pool.liquidity     // only meaningful when in-range
+stakedShare    = gauge.totalSupply() / pool.totalSupply()
+stakedTvlUsd   = poolTvlUsd * stakedShare
+emissionApr    = (rewardRate / 1e18) * SECONDS_PER_YEAR * topazPriceUsd / stakedTvlUsd * 100
 ```
 
-But the emission per unit liquidity is `pool.rewardRate / pool.stakedLiquidity` (when in range). So position's annual TOPAZ:
+### v3 pools (position-specific formula)
+
+In CL pools, a position's share of emissions depends on its liquidity relative to total staked liquidity, and its USD value depends on how concentrated the range is. The core formula:
 
 ```
-positionAnnualTopazWei = pool.rewardRate * SECONDS_PER_YEAR * (position.liquidity / pool.stakedLiquidity)
-positionAnnualUsd      = (positionAnnualTopazWei / 1e18) * topazPriceUsd
-
-positionTvlUsd         = position's actual amount0 + amount1 in USD (from SugarHelper.principal or local math)
-positionApr            = positionAnnualUsd / positionTvlUsd * 100
+APR = (positionLiquidity / stakedLiquidity) * (rewardRate / 1e18) * SECONDS_PER_YEAR * topazPriceUsd / positionValueUsd * 100
 ```
 
-This is what makes tight ranges so attractive: less `positionTvlUsd` per unit `position.liquidity`. See `scripts/src/read/apr.ts:positionApr(tokenId)`.
+Where:
+- `stakedLiquidity` = `pool.stakedLiquidity()` — total in-range staked liquidity from the pool contract
+- `positionLiquidity` = the position's liquidity units
+- `positionValueUsd` = the position's token amounts converted to USD
+
+A tighter range puts more liquidity per dollar of capital, so the same dollar amount earns a higher share of emissions.
+
+### Gauge listing APR (preset position)
+
+For pool tables / gauge listings, `poolApr()` simulates a representative $1,000 deposit at a preset spread:
+
+| Pair type | Spread |
+|---|---|
+| Volatile | ±3% |
+| Stable–stable | ±0.1% |
+| tickSpacing = 1 | ±0.05% |
+
+The algorithm (matches the production frontend `computeV3GaugeApr`):
+
+1. Convert spread percentage to tick bounds aligned to `tickSpacing`.
+2. Compute token amounts for a reference liquidity (1e15) in that range.
+3. Derive individual token USD prices from the pool's subgraph TVL data.
+4. Scale the reference liquidity so the position is worth $1,000.
+5. Apply the core formula with `stakedLiquidity + positionLiquidity` as denominator (dilution effect).
+
+### Position-level APR
+
+For an existing staked position, `positionApr(tokenId)` uses the position's actual liquidity and tick range:
+
+```
+positionAnnualUsd = (position.liquidity / pool.stakedLiquidity) * (rewardRate / 1e18) * SECONDS_PER_YEAR * topazPriceUsd
+positionTvlUsd    = position's actual amount0 + amount1 in USD
+positionApr       = positionAnnualUsd / positionTvlUsd * 100
+```
+
+No dilution adjustment (the position is already staked). Out-of-range positions return 0.
 
 ## 2) LP fee APR
 
-Approximate from recent volume:
+Uses **realized** 7-day fees from the subgraph (not `volume * feeRate`), because Topaz v3 pools support `DynamicSwapFeeModule` and `CustomSwapFeeModule`.
 
 ```
-days = 1 | 7 | 30                                    // averaging window
-volumeUsdInWindow = subgraph PoolDayData / PairDayData sum(volumeUSD) for last `days`
-avgDailyVolumeUsd = volumeUsdInWindow / days
-annualVolumeUsd   = avgDailyVolumeUsd * 365
-
-feeRate = effective swap fee in decimal (e.g. 0.003 for 30 bps).
-  v2: PoolFactory.getFee(pool, stable) / 10000      (units: bps/10? — actually fee / 10000 = bps; e.g. 30 = 0.30%; so /10000 = 0.003 ✓)
-  v3: CLFactory.getSwapFee(pool) / 1_000_000        (units: pips; e.g. 3000 pips = 0.30%; /1e6 = 0.003 ✓)
-
-annualFeesUsd = annualVolumeUsd * feeRate
-
-feeApr = annualFeesUsd / poolTvlUsd * 100
+feeApr = (fees7d * 52) / poolTvlUsd * 100
 ```
 
-For a v3 position with a **narrow** range, fees are concentrated similarly to emissions — the **in-range fee share** for a position is roughly `position.liquidity / pool.liquidity` (when in-range), so `positionFeeApr ≈ feeApr * (poolTvlUsd / positionTvlUsd) * (positionLiquidity / poolLiquidity)`. Simpler: `positionFeeApr ≈ (annualFeesUsd * positionLiqShare) / positionTvlUsd * 100`, with `positionLiqShare = positionLiquidity / poolLiquidity`.
+For a v3 position with a narrow range, the concentrated fee share is:
+
+```
+positionFeeApr = (annualFeesUsd * positionLiqShare) / positionTvlUsd * 100
+```
+
+where `positionLiqShare = positionLiquidity / poolLiquidity`.
 
 ## 3) Voting APR (bribes + fees per ve-weight)
 
@@ -87,13 +90,10 @@ For a veTOPAZ holder, voting for pool P in epoch E earns a share of:
 - **Trading fees** of pool P during epoch E (flowed into `FeesVotingReward`).
 - **Bribes** posted on P during epoch E (in `BribeVotingReward`).
 
-The per-vote USD earned in epoch E is:
-
 ```
 feesUsdEpoch    = total trading fees that accrued to FeesVotingReward[P] in epoch E, in USD
 bribesUsdEpoch  = sum over reward tokens of (BribeVotingReward[P].tokenRewardsPerEpoch(t, E) * priceUsd(t))
-poolWeightEpoch = supply at epoch E from BribeVotingReward.supplyCheckpoints / FeesVotingReward.supplyCheckpoints
-                  (approximate with current voter.weights(P) for the "this-epoch-so-far" view)
+poolWeightEpoch = approximate with current voter.weights(P)
 
 usdPerVoteEpoch = (feesUsdEpoch + bribesUsdEpoch) / poolWeightEpoch
 ```
@@ -104,17 +104,7 @@ Annualizing (one epoch = 1 week → 52 epochs/yr):
 usdPerVoteAnnualized = usdPerVoteEpoch * 52
 ```
 
-The veTOPAZ holder's effective APR depends on their lock duration (since `balanceOfNFT` decays). A simple representative figure:
-
-```
-yourAnnualUsd = usdPerVoteAnnualized * yourCurrentBalanceOfNFT
-yourLockedTopaz = locked(tokenId).amount
-yourTopazInUsd = (yourLockedTopaz / 1e18) * topazPriceUsd
-
-votingApr = yourAnnualUsd / yourTopazInUsd * 100
-```
-
-A pool with high `usdPerVoteAnnualized / votedWeight` ratio relative to others is **underbribed** — voting there yields more USD per unit ve-weight. Voters maximize income by directing weight at the highest such ratios.
+A pool with high `usdPerVoteAnnualized / votedWeight` ratio is **underbribed** — voting there yields more USD per unit ve-weight.
 
 ## 4) Rebase APR (anti-dilution for ve holders)
 
@@ -122,11 +112,11 @@ A pool with high `usdPerVoteAnnualized / votedWeight` ratio relative to others i
 rebaseWeeklyTopaz = RewardsDistributor.tokensPerWeek(epochStart) / 1e18
 totalVeSupply     = VotingEscrow.totalSupplyAt(epochStart) / 1e18
 
-rebasePerVeAnnual = (rebaseWeeklyTopaz / totalVeSupply) * 52        // TOPAZ per ve-unit per year
-rebaseApr         = rebasePerVeAnnual / 1 * 100                     // assuming 1 TOPAZ ≈ 1 ve-unit at full lock
+rebasePerVeAnnual = (rebaseWeeklyTopaz / totalVeSupply) * 52
+rebaseApr         = rebasePerVeAnnual / 1 * 100     // assuming 1 TOPAZ ≈ 1 ve-unit at full lock
 ```
 
-For a non-permanent lock, scale by `balanceOfNFT / amount`. For a permanent lock that's the full APR.
+For a non-permanent lock, scale by `balanceOfNFT / amount`.
 
 ## Putting it together
 
@@ -139,23 +129,29 @@ yourTotalApr = lpEmissionApr  (gauge stake)
              + rebaseApr
 ```
 
-A v3 LP who stakes a narrow in-range position effectively earns `positionApr (emissions) + positionFeeApr (only if unstaked)`. **A staked position does not collect trading fees** — those flow to the gauge fee voter contract. So staked CL positions trade fee yield for emission yield + voting yield (if the LP also has a veNFT and votes for the pool).
+**A staked position does not collect trading fees** — those flow to the gauge fee voter contract. Staked CL positions trade fee yield for emission yield + voting yield.
 
 ## Scripts
 
-`scripts/src/read/apr.ts`:
+`scripts/src/read/apr.ts` exports:
 
 ```ts
-gaugeEmissionApr(pool: Address): Promise<number>;          // %
-lpFeeApr(pool: Address, days: 1|7|30 = 7): Promise<number>;
-positionApr(tokenId: bigint): Promise<{ emissionApr: number; feeApr: number; totalApr: number }>;
-votingApr(pool: Address): Promise<number>;
-rebaseApr(): Promise<number>;
-poolApr(pool: Address): Promise<{ emission: number; fee: number; voting: number }>;
+// Pure helpers
+computeEmissionApr(rewardRate, topazUsd, stakedTvlUsd, alive): number           // v2 pool-wide %
+computePositionEmissionApr(posLiq, stakedLiq, rate, topazUsd, posValue, alive)   // v3 position-specific %
+computeFeeApr(fees7d, tvlUsd): number
+computeV3PresetApr(poolInfo, sgData, rewardRate, topazUsd, alive)                // v3 gauge listing preset
+isRewardPeriodActive(periodFinish, nowSec?): boolean                             // periodFinish guard
+
+// Async (on-chain + subgraph)
+poolApr(pool): Promise<PoolAprBreakdown>                // v2: pool-wide, v3: preset-range
+positionApr(tokenId): Promise<PositionAprBreakdown>     // individual staked position
+votingApr(pool): Promise<number>
+rebaseApr(): Promise<number>
 ```
 
 CLI:
 
 ```
-yarn tsx src/cli/stats.ts apr --pool 0xPOOL [--position 1234]
+yarn tsx src/cli/stats.ts apr --pool 0xPOOL
 ```
