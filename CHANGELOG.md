@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.6.0] — 2026-05-26
+
 ### Changed
 
 - **v3 gauge emission APR now uses the position-specific preset formula**, matching
@@ -38,6 +41,7 @@ Version semantics for this skill:
 - `references/apr-calculations.md` listed phantom function signatures
   (`gaugeEmissionApr`, `lpFeeApr`) that never existed in code — replaced with
   actual exports.
+
 
 ## [2.5.2] — 2026-05-26
 
@@ -303,7 +307,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.5.2...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/topazdex/agent-skill/compare/v2.5.2...v2.6.0
 [2.5.2]: https://github.com/topazdex/agent-skill/compare/v2.5.0...v2.5.2
 [2.5.0]: https://github.com/topazdex/agent-skill/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/topazdex/agent-skill/compare/v2.3.1...v2.4.0
