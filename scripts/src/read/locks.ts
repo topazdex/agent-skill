@@ -36,7 +36,7 @@ export async function listUserLocks(owner: string): Promise<bigint[]> {
   const count: bigint = await v.balanceOf(owner);
   const tokenIds: bigint[] = [];
   for (let i = 0n; i < count; i++) {
-    tokenIds.push(await v.tokenOfOwnerByIndex(owner, i));
+    tokenIds.push(await v.ownerToNFTokenIdList(owner, i));
   }
   return tokenIds;
 }

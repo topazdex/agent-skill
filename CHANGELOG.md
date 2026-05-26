@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed
+
+- **`listUserLocks` called non-existent `tokenOfOwnerByIndex` on VotingEscrow.** The Topaz VotingEscrow contract exposes `ownerToNFTokenIdList(address, uint256)`, not the ERC721Enumerable `tokenOfOwnerByIndex` name. Calling the old name reverted at runtime. Fixed in `scripts/src/read/locks.ts` and corrected the documented signature in `references/ve-locks.md` and `references/analytics-onchain.md`.
 
 ## [2.5.0] — 2026-05-25
 

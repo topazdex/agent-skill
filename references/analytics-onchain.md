@@ -87,7 +87,7 @@ function totalSupply() view returns (uint256);                    // current tot
 function totalSupplyAt(uint256 t) view returns (uint256);
 function ownerOf(uint256 tokenId) view returns (address);
 function balanceOf(address owner) view returns (uint256);
-function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256);
+function ownerToNFTokenIdList(address owner, uint256 index) view returns (uint256);
 function escrowType(uint256 tokenId) view returns (uint8);
 ```
 

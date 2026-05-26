@@ -23,7 +23,7 @@ function totalSupply() external view returns (uint256);                         
 function totalSupplyAt(uint256 _t) external view returns (uint256);
 function ownerOf(uint256 _tokenId) external view returns (address);
 function balanceOf(address _owner) external view returns (uint256);             // # of NFTs the address owns
-function tokenOfOwnerByIndex(address _owner, uint256 _index) external view returns (uint256);
+function ownerToNFTokenIdList(address _owner, uint256 _index) external view returns (uint256);
 function escrowType(uint256 _tokenId) external view returns (EscrowType);
 function isApprovedOrOwner(address _spender, uint256 _tokenId) external view returns (bool);
 ```
