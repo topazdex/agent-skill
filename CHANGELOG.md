@@ -12,9 +12,17 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+
+## [2.5.2] — 2026-05-26
+
+
+## [2.5.1] — 2026-05-26
+
 ### Fixed
 
 - **`listUserLocks` called non-existent `tokenOfOwnerByIndex` on VotingEscrow.** The Topaz VotingEscrow contract exposes `ownerToNFTokenIdList(address, uint256)`, not the ERC721Enumerable `tokenOfOwnerByIndex` name. Calling the old name reverted at runtime. Fixed in `scripts/src/read/locks.ts` and corrected the documented signature in `references/ve-locks.md` and `references/analytics-onchain.md`.
+
 
 ## [2.5.0] — 2026-05-25
 
@@ -273,7 +281,9 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.5.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.5.2...HEAD
+[2.5.2]: https://github.com/topazdex/agent-skill/compare/v2.5.1...v2.5.2
+[2.5.1]: https://github.com/topazdex/agent-skill/compare/v2.5.0...v2.5.1
 [2.5.0]: https://github.com/topazdex/agent-skill/compare/v2.4.0...v2.5.0
 [2.4.0]: https://github.com/topazdex/agent-skill/compare/v2.3.1...v2.4.0
 [2.3.1]: https://github.com/topazdex/agent-skill/compare/v2.3.0...v2.3.1
