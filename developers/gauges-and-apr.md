@@ -46,14 +46,15 @@ Use `scripts/src/read/claimable.ts:claimableSummary(tokenId, address)` for examp
 
 ## APR recipe
 
-`scripts/src/read/apr.ts` exports four numbers you can wire straight into a dashboard. They use the on-chain `rewardRate` for emission math, the v2/v3 subgraph for 7-day fees/volume, and the TOPAZ USD price helper for normalization.
+`scripts/src/read/apr.ts` exports pool-level and position-level APR helpers. For v3 pools, `poolApr` uses a position-specific formula (simulating a preset-range $1,000 deposit) matching the production frontend — not a simple pool-wide average.
 
 ```ts
-import { poolApr, votingApr, rebaseApr } from "../scripts/src/read/apr.js";
+import { poolApr, positionApr, votingApr, rebaseApr } from "../scripts/src/read/apr.js";
 
-const breakdown = await poolApr(pool);   // { emissionApr, feeApr, tvlUsd, stakedTvlUsd, ... }
-const voteApr   = await votingApr(pool); // annualized USD value of one epoch's bribes+fees / pool weight
-const rebase    = await rebaseApr();     // veTOPAZ-wide anti-dilution APR
+const breakdown = await poolApr(pool);     // { emissionApr, feeApr, tvlUsd, stakedTvlUsd, ... }
+const posApr    = await positionApr(123n); // { emissionApr, feeApr, positionValueUsd, inRange }
+const voteApr   = await votingApr(pool);   // annualized USD value of one epoch's bribes+fees / pool weight
+const rebase    = await rebaseApr();       // veTOPAZ-wide anti-dilution APR
 ```
 
 Suggested display:
@@ -61,6 +62,7 @@ Suggested display:
 | Field | Source | Audience |
 |---|---|---|
 | Gauge / Emission APR | `poolApr().emissionApr` | LPs deciding whether to stake |
+| Position APR | `positionApr(tokenId).emissionApr` | Staked CL position holders |
 | Fee APR | `poolApr().feeApr` | LPs and voters |
 | Voting APR | `votingApr(pool)` | veTOPAZ holders allocating votes |
 | Rebase APR | `rebaseApr()` | all veTOPAZ holders |
@@ -79,7 +81,7 @@ This is simpler for dashboards — no manual calculation, no subgraph + on-chain
 
 ### Caveats every APR display must respect
 
-- **`emissionApr` uses `stakedTvlUsd`, not pool TVL.** For v3 it scales by `stakedLiquidity / liquidity`. Out-of-range CL positions are staked but earn nothing; if your dashboard shows "earnings per $", divide by `stakedTvlUsd`, not headline TVL, or you'll mislead users.
+- **v3 `emissionApr` is position-specific, not pool-wide.** `poolApr` simulates a ±3% (volatile) or ±0.1% (stable) preset position — the same formula the production frontend shows in gauge listings. For an individual staked position, use `positionApr(tokenId)` instead. Out-of-range CL positions earn nothing.
 - **`votingApr` is a one-epoch annualization** based on this epoch's deposited rewards and the pool's current vote weight. Bribes are typically posted late in the epoch — a Monday snapshot will look much worse than a Wednesday snapshot. Either cache the previous-completed-epoch number or label the freshness explicitly.
 - **Subgraph lag**: APR numbers backed by `volumeUSD`/`feesUSD` lag the chain by a few blocks. Combine with on-chain `slot0` / `getReserves` for "now" pricing.
 - **Dead gauges**: `Voter.isAlive(gauge) === false` means emissions stopped. `poolApr` already returns `emissionApr: 0` in that case but you should label the gauge so users don't expect rewards.

@@ -14,6 +14,35 @@ Version semantics for this skill:
 
 
 
+## [2.6.0] — 2026-05-26
+
+### Changed
+
+- **v3 gauge emission APR now uses the position-specific preset formula**, matching
+  the production frontend and stats API snapshot runner. Previously computed a
+  pool-wide average (`emissions / stakedTvlUsd`); now simulates a $1,000 deposit
+  at a preset spread (±3% volatile, ±0.1% stable, ±0.05% for tickSpacing=1) and
+  computes `(posLiq / stakedLiq) * rewardRate * SECONDS_PER_YEAR * topazPrice /
+  posValueUsd * 100` with dilution. v2 pools are unchanged.
+- **`poolApr()` and `positionApr()` now check `gauge.periodFinish()`** and return
+  0 emission APR when the reward period has expired, matching the frontend's
+  `isRewardPeriodActive` guard.
+
+### Added
+
+- **`positionApr(tokenId)`** — computes emission and fee APR for an individual
+  staked CL position using its actual liquidity and tick range (no dilution).
+- **New pure helpers**: `computePositionEmissionApr`, `computeV3PresetApr`,
+  `isRewardPeriodActive`, `isStablePair`, `getPresetSpreadPercent`,
+  `getTicksForSpread`, `deriveTokenPricesUsd`.
+- **26 new unit tests** covering all new pure functions with frozen golden values.
+
+### Fixed
+
+- `references/apr-calculations.md` listed phantom function signatures
+  (`gaugeEmissionApr`, `lpFeeApr`) that never existed in code — replaced with
+  actual exports.
+
 ## [2.5.2] — 2026-05-26
 
 ### Fixed
