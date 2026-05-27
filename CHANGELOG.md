@@ -13,6 +13,24 @@ Version semantics for this skill:
 ## [Unreleased]
 
 
+## [2.6.1] — 2026-05-27
+
+### Fixed
+
+- **`votingApr()` hardcoded 18 decimals for all bribe/fee reward tokens.** Tokens
+  with non-18 decimals (DOGE = 8, BLUE = 9) produced wildly incorrect USD values.
+  Now reads actual decimals via `getDecimals()` for each reward token.
+- **`votingApr()` did not divide by TOPAZ price**, making the returned number
+  incomparable with emission and fee APRs. Now computes
+  `(usdPerVe * 52) / topazPriceUsd * 100` — a true percentage APR relative to
+  the cost of 1 veTOPAZ at max lock.
+- **Eval fixture `03-can-i-vote` had incorrect epoch timestamps.** `epochStart`
+  landed on a Tuesday instead of Thursday; `now` was Friday but the comment said
+  Monday. All timestamps recomputed to be self-consistent with the epoch math.
+- **`references/apr-calculations.md` section 3** updated to document the corrected
+  voting APR formula (with decimals and TOPAZ price denominator).
+
+
 ## [2.6.0] — 2026-05-26
 
 ### Changed

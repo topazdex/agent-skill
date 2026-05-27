@@ -6,6 +6,7 @@ import { ADDR } from "../config/addresses.js";
 import { detectPoolType, getPoolV3, type PoolInfoV3 } from "./pools.js";
 import { getPosition } from "./positions.js";
 import { getTopazUsdPrice, getUsdPrice } from "../lib/pricing.js";
+import { getDecimals } from "../lib/erc20.js";
 import { v2Client, v3Client } from "../lib/subgraph.js";
 import {
   getSqrtRatioAtTick,
@@ -393,22 +394,22 @@ export async function votingApr(pool: string): Promise<number> {
     const tokens = await Promise.all(
       Array.from({ length: Number(len) }, (_, i) => c.rewards(i) as Promise<string>)
     );
-    const amounts = await Promise.all(
-      tokens.map((t) => c.tokenRewardsPerEpoch(t, epoch) as Promise<bigint>)
-    );
+    const [amounts, decimals] = await Promise.all([
+      Promise.all(tokens.map((t) => c.tokenRewardsPerEpoch(t, epoch) as Promise<bigint>)),
+      Promise.all(tokens.map((t) => getDecimals(t))),
+    ]);
     for (let i = 0; i < tokens.length; i++) {
       if (amounts[i] === 0n) continue;
       const px = tokens[i].toLowerCase() === ADDR.TOPAZ.toLowerCase()
         ? topazUsd
         : await getUsdPrice(tokens[i]).catch(() => 0);
-      // 18 decimal assumption — most BSC tokens are 18; for non-18 the caller should refine.
-      usdEpoch += (Number(amounts[i]) / 1e18) * px;
+      usdEpoch += (Number(amounts[i]) / 10 ** decimals[i]) * px;
     }
   }
 
-  // Convert weight (in ve-units 1e18) and annualize (52 epochs/yr)
-  const usdPerVe = usdEpoch / (Number(weight) / 1e18);
-  return usdPerVe * 52 * 100; // already a fraction; *100 -> percent against 1 ve
+  const weightVe = Number(weight) / 1e18;
+  const usdPerVeAnnual = (usdEpoch / weightVe) * 52;
+  return (usdPerVeAnnual / topazUsd) * 100;
 }
 
 export interface PositionAprBreakdown {

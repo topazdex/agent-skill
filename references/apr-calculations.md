@@ -92,19 +92,19 @@ For a veTOPAZ holder, voting for pool P in epoch E earns a share of:
 
 ```
 feesUsdEpoch    = total trading fees that accrued to FeesVotingReward[P] in epoch E, in USD
-bribesUsdEpoch  = sum over reward tokens of (BribeVotingReward[P].tokenRewardsPerEpoch(t, E) * priceUsd(t))
-poolWeightEpoch = approximate with current voter.weights(P)
+bribesUsdEpoch  = sum over reward tokens of (tokenRewardsPerEpoch(t, E) / 10^decimals(t) * priceUsd(t))
+poolWeightVe    = voter.weights(P) / 1e18
 
-usdPerVoteEpoch = (feesUsdEpoch + bribesUsdEpoch) / poolWeightEpoch
+usdPerVoteEpoch = (feesUsdEpoch + bribesUsdEpoch) / poolWeightVe
 ```
 
-Annualizing (one epoch = 1 week → 52 epochs/yr):
+Annualizing (one epoch = 1 week → 52 epochs/yr) and converting to a percentage APR relative to the cost of 1 veTOPAZ (≈ 1 TOPAZ at max lock):
 
 ```
-usdPerVoteAnnualized = usdPerVoteEpoch * 52
+votingApr = (usdPerVoteEpoch * 52) / topazPriceUsd * 100
 ```
 
-A pool with high `usdPerVoteAnnualized / votedWeight` ratio is **underbribed** — voting there yields more USD per unit ve-weight.
+A pool with high voting APR is **underbribed** — voting there yields more USD per unit ve-weight.
 
 ## 4) Rebase APR (anti-dilution for ve holders)
 

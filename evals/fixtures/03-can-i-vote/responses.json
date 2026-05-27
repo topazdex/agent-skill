@@ -1,10 +1,10 @@
 {
-  "_comment": "Eval 03: tokenId 1234 last voted *before* the current epoch — vote window is open. Timestamps reflect a Mon ~12:00 UTC reading in the middle of the voting window.",
-  "Voter.lastVoted": "1747094400",
-  "epochStart": "1747699200",
-  "epochVoteStart": "1747702800",
-  "epochVoteEnd": "1748300400",
-  "now": "1747958400",
+  "_comment": "Eval 03: tokenId 1234 last voted *before* the current epoch — vote window is open. Timestamps reflect a Mon 12:00 UTC reading in the middle of the voting window.",
+  "Voter.lastVoted": "1747440000",
+  "epochStart": "1747872000",
+  "epochVoteStart": "1747875600",
+  "epochVoteEnd": "1748473200",
+  "now": "1748260800",
   "VotingEscrow.isApprovedOrOwner": true,
   "VotingEscrow.ownerOf": "0xCryptoAaron000000000000000000000000Aaron0"
 }
