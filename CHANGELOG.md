@@ -12,6 +12,41 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- **Full Stats API v2 coverage.** `scripts/src/lib/statsApi.ts` and the `stats`
+  CLI now wrap every published endpoint: protocol history/daily time-series
+  (`/protocol/history`, `/protocol/daily`), long-horizon pool daily candles
+  (`/pools/{addr}/daily`), per-gauge detail/history/rewards
+  (`/gauges/{addr}`, `/gauges/{addr}/rewards`), token prices (`/tokens`,
+  `/tokens/{addr}`), epoch summaries/detail (`/epochs`, `/epochs/{start}`),
+  bribe markets with `$/vote` (`/markets/bribes`), and foundation bribe totals
+  (`/bribes/totals`). New CLI commands: `protocol-history`, `protocol-daily`,
+  `pool-daily`, `api-gauge`, `gauge-rewards`, `bribe-markets`, `bribe-totals`,
+  `tokens`, `token`, `epochs`, `epoch`.
+- **Denormalized gauge APR on pools.** `/pools` now carries `gaugeApr`; the
+  client exposes `sort: "gaugeApr"` plus `token`, `minTvl`, and `incentivized`
+  filters. `/pools/{addr}` now returns the pool's `gauge` and `gaugeHistory`.
+- **veTOPAZ foundation lock details.** `/ve` exposes a nested `foundation` block
+  with per-NFT `locks` (`lockedAmount`, `votingPower`, `lockEnd`, `isPermanent`);
+  legacy top-level `foundation*` fields are marked deprecated.
+
+### Changed
+
+- **API-first guidance across the skill.** SKILL.md, `references/analytics-*.md`,
+  `references/apr-calculations.md`, `references/gauges.md`, `references/tokens.md`,
+  `references/voting.md`, `references/epoch-timing.md`, `references/ve-locks.md`,
+  `references/bribes-deposit.md`, `developers/DEVELOPERS.md`,
+  `developers/gauges-and-apr.md`, and `examples/query-pool-stats.md` now point at
+  the Stats API as the primary source for any data it serves, reserving subgraph
+  and on-chain reads for ad-hoc filtering, history beyond the API window,
+  per-user state, and block-accurate/transaction needs.
+- **OpenAPI spec cited as the source of truth.** `references/analytics-stats-api.md`
+  now references the auto-updating OpenAPI 3.1 spec
+  (`/api/stats/openapi.json`) and Swagger UI (`/api/stats/docs`) as canonical,
+  replacing the internal schema pointer.
+- **Subgraph version bump** to Topaz v2 `v0.0.4` / v3 `v0.0.2` across all docs,
+  config, and `.env.example`.
 
 ## [2.6.1] — 2026-05-27
 

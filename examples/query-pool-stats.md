@@ -1,10 +1,56 @@
 # Example — Query Pool Stats
 
-**Goal:** Get a complete picture of a pool — TVL, 24h volume, fees, current price, emission APR, fee APR, and (if applicable) voting incentive density — using a mix of subgraph queries and on-chain reads.
+**Goal:** Get a complete picture of a pool — TVL, 24h volume, fees, current price, emission/fee/gauge APR, and (if applicable) voting incentive density.
+
+> **Recommended path: the Stats API.** It already returns every number below — TVL, volume, fees, **pre-computed fee APR and gauge APR**, 7-day history, and the pool's gauge — in a single REST call. See [Recommended: Stats API](#recommended-stats-api-default-path) at the top of the workflow. The subgraph + on-chain recipe that follows is for when you need **block-accurate state or a custom APR window**; reach for it only then.
 
 The example uses the WBNB/USDT v3 pool at `tickSpacing=200`, but the script handles either v2 or v3 transparently.
 
-## Pure CLI
+## Recommended: Stats API (default path)
+
+The fastest, most accurate way — no manual APR math:
+
+```bash
+# Single pool: { current, history (≤672 snapshots), gauge, gaugeHistory }
+curl https://www.topazdex.com/api/stats/pools/0xPOOL | jq .data
+
+# Long-horizon daily candles (beyond the 7-day snapshot window)
+curl "https://www.topazdex.com/api/stats/pools/0xPOOL/daily?days=90" | jq .data
+
+# Top pools by gauge APR, incentivized only, min $10k TVL
+curl "https://www.topazdex.com/api/stats/pools?sort=gaugeApr&incentivized=true&minTvl=10000&limit=10" | jq .data
+
+# All gauges with emission/fee/bribe/total APR
+curl https://www.topazdex.com/api/stats/gauges | jq .data
+```
+
+Via the CLI:
+
+```bash
+yarn tsx src/cli/stats.ts api-pools --sort gaugeApr --incentivized --min-tvl 10000 --limit 10
+yarn tsx src/cli/stats.ts pool-daily 0xPOOL --days 90
+yarn tsx src/cli/stats.ts api-gauges
+```
+
+Or the typed client:
+
+```ts
+import { fetchPool, fetchPools, fetchGauges, fetchPoolDaily } from "../scripts/src/index.js";
+
+const { data: detail } = await fetchPool("0xPOOL");        // current + history + gauge + gaugeHistory
+const { data: topPools } = await fetchPools({ sort: "gaugeApr", incentivized: true, minTvl: 10000 });
+const { data: daily } = await fetchPoolDaily("0xPOOL", { days: 90 });
+```
+
+The Stats API snapshots every 15 minutes; its OpenAPI spec (`https://www.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md` for the full decision table.
+
+---
+
+## Manual recipe (block-accurate / custom windows)
+
+When you genuinely need on-chain precision or a bespoke APR window, compute it yourself.
+
+### Pure CLI
 
 ```bash
 yarn tsx src/cli/stats.ts pool 0xPOOL
@@ -155,33 +201,6 @@ yarn tsx src/cli/stats.ts gauges --limit 50 --sort-by emissionApr
 ```
 
 Iterates every gauge from `Voter.length()` / `Voter.pools(i)`, batches the reads with multicall, and prints a sortable table. Use `--csv` to emit machine-readable output for downstream analysis.
-
-## Simpler alternative: Stats API
-
-If you just need pre-computed numbers (no custom APR formulas), the Stats API returns everything above in a single call:
-
-```bash
-# Single pool with 7d history (168 snapshots at 15-min intervals)
-curl https://www.topazdex.com/api/stats/pools/0xPOOL | jq .data
-
-# Top pools sorted by APR
-curl "https://www.topazdex.com/api/stats/pools?sort=apr&limit=10" | jq .data
-
-# All gauges with emission/fee/bribe/total APR
-curl https://www.topazdex.com/api/stats/gauges | jq .data
-```
-
-Or via the TypeScript client:
-
-```ts
-import { fetchPool, fetchPools, fetchGauges } from "../scripts/src/index.js";
-
-const { data: detail } = await fetchPool("0xPOOL");
-const { data: topPools } = await fetchPools({ sort: "apr", limit: 10 });
-const { data: gauges } = await fetchGauges();
-```
-
-The Stats API snapshots every 15 minutes. For block-accurate state or custom APR windows, use the on-chain + subgraph approach above. See `references/analytics-stats-api.md` for the full decision table.
 
 ## Where the heuristics live
 

@@ -2,6 +2,8 @@
 
 These are tokens already routed on Topaz at launch (whitelisted in `Voter.isWhitelistedToken`, allowed as bribe assets without further governance). Decimals matter — always read `IERC20.decimals()` when in doubt. Every symbol/name/decimals value below was cross-verified against the Topaz v2/v3 Goldsky subgraphs and direct `IERC20` calls; the canonical machine-readable copy lives in `scripts/src/config/tokens.ts`.
 
+> **Live USD prices** for any tracked token come from the Stats API: `/tokens` (all tracked tokens, sorted by price) and `/tokens/{address}` (single token + 7-day price history). This is the easiest, fastest, most accurate price source — prefer it over deriving prices from the subgraph or DexScreener. See `references/analytics-stats-api.md`.
+
 ## Native + protocol
 
 | Symbol | Address | Decimals | Notes |

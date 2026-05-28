@@ -28,6 +28,7 @@ src/
 │   ├── tickMath.ts     # sqrtPriceX96 <-> price <-> tick (Uniswap V3 SDK math)
 │   ├── path.ts         # v3 path encode/decode + mixed-route sentinels
 │   ├── pricing.ts      # Token USD price (subgraph or DexScreener)
+│   ├── statsApi.ts     # Typed client for the public Stats API (every endpoint)
 │   └── epoch.ts        # WEEK / epochStart / vote window helpers
 ├── read/               # No-signer reads (RPC + subgraph)
 │   ├── pools.ts        # v2/v3 unified pool info
@@ -74,6 +75,25 @@ yarn tsx src/cli/stats.ts gauges-for-pair WBNB BTCB     # every gauge across all
 yarn tsx src/cli/stats.ts bribes --pool 0xPOOL
 yarn tsx src/cli/stats.ts apr --pool 0xPOOL [--position 1234]
 yarn tsx src/cli/stats.ts smoke                 # quick end-to-end sanity check
+
+# Stats API (https://www.topazdex.com/api/stats) — pre-computed, no RPC needed
+yarn tsx src/cli/stats.ts protocol              # protocol overview
+yarn tsx src/cli/stats.ts protocol-history --days 30
+yarn tsx src/cli/stats.ts protocol-daily --days 30
+yarn tsx src/cli/stats.ts api-pools --sort gaugeApr --incentivized --min-tvl 10000
+yarn tsx src/cli/stats.ts pool-daily 0xPOOL --days 90
+yarn tsx src/cli/stats.ts api-gauges            # all gauges with APRs
+yarn tsx src/cli/stats.ts api-gauge 0xGAUGE     # single gauge detail
+yarn tsx src/cli/stats.ts gauge-rewards 0xGAUGE
+yarn tsx src/cli/stats.ts bribe-markets --min-usd 1   # $/vote per gauge
+yarn tsx src/cli/stats.ts bribe-totals
+yarn tsx src/cli/stats.ts tokens --limit 20     # token prices
+yarn tsx src/cli/stats.ts token 0xTOKEN
+yarn tsx src/cli/stats.ts epochs --limit 12
+yarn tsx src/cli/stats.ts epoch 1748390400
+yarn tsx src/cli/stats.ts foundation            # foundation summary (votes/bribes/KPIs)
+yarn tsx src/cli/stats.ts dynamic-fees
+yarn tsx src/cli/stats.ts health
 
 # Writes — PRIVATE_KEY required
 yarn tsx src/cli/swap.ts v2  --in 0xWBNB --out 0xUSDT --amount 0.5 --slippage 50

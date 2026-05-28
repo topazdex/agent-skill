@@ -123,10 +123,16 @@ See `developers/swap-calldata.md`.
 
 ### Pool and position dashboards
 
-Use subgraphs for historical/indexed data:
+For protocol/pool/gauge stats, **pre-computed APRs**, token prices, epoch/bribe data, and **historical time-series**, prefer the public Stats API — one REST call, no math, and its OpenAPI spec is the canonical contract you can codegen against:
 
-- v2 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn`
-- v3 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn`
+- Base: `https://www.topazdex.com/api/stats` — e.g. `/protocol/history`, `/pools?sort=gaugeApr`, `/pools/{addr}/daily`, `/gauges`, `/tokens`, `/markets/bribes`.
+- Spec (source of truth): `https://www.topazdex.com/api/stats/openapi.json` — `npx openapi-typescript … -o topaz-api.ts`.
+- See `references/analytics-stats-api.md` for the full catalog and decision table.
+
+Use the subgraphs for ad-hoc GraphQL filtering, per-transaction events, or history beyond the API's window:
+
+- v2 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn`
+- v3 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn`
 
 Use on-chain reads for current ownership and live state:
 

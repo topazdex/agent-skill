@@ -2,13 +2,13 @@
 
 Topaz indexes two subgraphs on Goldsky — a v2 (Solidly) subgraph and a v3 (Slipstream) subgraph. The entity catalogs below are the canonical reference for query authoring.
 
-> **For pre-aggregated pool lists, gauge APRs, and protocol totals**, the Stats API (`analytics-stats-api.md`) is often simpler — one REST call with pre-computed numbers. Use subgraphs below when you need historical day-data beyond 7 days, flexible token-level searches, or per-transaction event data.
+> **Try the Stats API first.** For pool lists, gauge APRs, protocol totals, token prices, epoch/bribe data, and **historical time-series** (`/protocol/history`, `/protocol/daily`, `/pools/{addr}/daily`, plus 7-day snapshot history on most detail endpoints), the Stats API (`analytics-stats-api.md`) is the easiest, fastest, and most accurate source — one REST call with pre-computed numbers, and its OpenAPI spec (`https://www.topazdex.com/api/stats/openapi.json`) is the canonical contract. Reach for the subgraphs below only for ad-hoc GraphQL filtering, per-transaction event data (`Mint`/`Burn`/`Swap`), or history beyond the API's window.
 
 ## Endpoints
 
 ```
-V2:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn
-V3:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn
+V2:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn
+V3:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn
 ```
 
 Override via `SUBGRAPH_V2_URL` / `SUBGRAPH_V3_URL` env vars in `scripts/.env`. Both POST JSON to `/`. No auth.

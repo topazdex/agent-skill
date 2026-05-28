@@ -26,8 +26,19 @@ import { fmtEpoch } from "../lib/epoch.js";
 import { buildBestSwapTx } from "../lib/txBuilders.js";
 import {
   fetchProtocol,
+  fetchProtocolHistory,
+  fetchProtocolDaily,
   fetchPools as fetchApiPools,
+  fetchPoolDaily,
   fetchGauges as fetchApiGauges,
+  fetchGauge as fetchApiGauge,
+  fetchGaugeRewards,
+  fetchTokens,
+  fetchToken,
+  fetchEpochs,
+  fetchEpoch,
+  fetchBribeTotals,
+  fetchBribeMarkets,
   fetchFoundation,
   fetchFoundationVotes,
   fetchFoundationBribes,
@@ -55,8 +66,19 @@ Commands:
 
 Stats API commands (https://www.topazdex.com/api/stats):
   protocol                      Protocol overview (TVL, volume, fees, TOPAZ price, veTOPAZ)
-  api-pools [--sort tvl|volume24h|fees24h|apr] [--limit N] [--pair BNB-USDT]   Pool list with pre-computed APRs
+  protocol-history [--days N]   Protocol TVL/volume/fees/price time-series (snapshot resolution)
+  protocol-daily [--days N]     Daily volume/fee rollups (one row per UTC day)
+  api-pools [--sort tvl|volume24h|fees24h|apr|gaugeApr] [--limit N] [--pair BNB-USDT] [--token 0x..] [--min-tvl N] [--incentivized]   Pool list with pre-computed fee + gauge APRs
+  pool-daily <pool> [--days N]  Long-horizon daily candles for one pool (beyond the 7d snapshot window)
   api-gauges                    All gauges with emission/fee/bribe/total APR
+  api-gauge <gaugeAddress>      Single gauge detail (current APR breakdown + vote weights)
+  gauge-rewards <gaugeAddress> [--limit N]   Per-epoch reward-token breakdown (bribe + fee, USD-priced)
+  bribe-markets [--epoch N] [--min-usd N] [--limit N]   Current bribe markets with $/vote
+  bribe-totals                  Foundation bribe spend per epoch
+  tokens [--limit N]            Tracked tokens with USD price
+  token <address>               Single token price + 7d history summary
+  epochs [--limit N]            Recent epoch summaries (bribes, vote share, top gauges)
+  epoch <unixSeconds>           Single epoch detail (votes, bribes, KPIs, totals)
   foundation                    Foundation summary (wallet, votes, bribes, KPIs)
   foundation-votes [--epoch N]  Foundation vote allocations
   foundation-bribes [--pool 0x..]  Foundation bribe deposits
@@ -236,14 +258,154 @@ async function cmdApiPools(argv: ReturnType<typeof minimist>) {
   const sort = argv.sort ?? "tvl";
   const limit = Number(argv.limit ?? 20);
   const pair = argv.pair;
-  const { data } = await fetchApiPools({ sort, limit, pair });
-  console.log(`${"pair".padEnd(20)} ${"type".padEnd(12)} ${"TVL".padStart(14)} ${"vol24h".padStart(14)} ${"fees24h".padStart(12)} ${"feeAPR".padStart(8)}`);
+  const token = argv.token;
+  const minTvl = argv["min-tvl"] !== undefined ? Number(argv["min-tvl"]) : undefined;
+  const incentivized = argv.incentivized ? true : undefined;
+  const { data } = await fetchApiPools({ sort, limit, pair, token, minTvl, incentivized });
+  console.log(`${"pair".padEnd(20)} ${"type".padEnd(12)} ${"TVL".padStart(14)} ${"vol24h".padStart(14)} ${"fees24h".padStart(12)} ${"feeAPR".padStart(8)} ${"gaugeAPR".padStart(9)}`);
   for (const p of data) {
     const label = `${p.token0Symbol}/${p.token1Symbol}`;
+    const gaugeApr = p.gaugeApr ? parseFloat(p.gaugeApr).toFixed(2) + "%" : "—";
     console.log(
-      `${label.padEnd(20)} ${p.poolType.padEnd(12)} ${("$" + fmtNum(p.tvlUsd)).padStart(14)} ${("$" + fmtNum(p.volume24hUsd)).padStart(14)} ${("$" + fmtNum(p.fees24hUsd)).padStart(12)} ${(parseFloat(p.feeApr).toFixed(2) + "%").padStart(8)}`,
+      `${label.padEnd(20)} ${p.poolType.padEnd(12)} ${("$" + fmtNum(p.tvlUsd)).padStart(14)} ${("$" + fmtNum(p.volume24hUsd)).padStart(14)} ${("$" + fmtNum(p.fees24hUsd)).padStart(12)} ${(parseFloat(p.feeApr).toFixed(2) + "%").padStart(8)} ${gaugeApr.padStart(9)}`,
     );
   }
+}
+
+async function cmdProtocolHistory(argv: ReturnType<typeof minimist>) {
+  const days = argv.days ? Number(argv.days) : undefined;
+  const { data } = await fetchProtocolHistory({ days });
+  console.log(`${"snapshot".padEnd(26)} ${"TVL".padStart(14)} ${"vol24h".padStart(14)} ${"fees24h".padStart(12)} ${"TOPAZ".padStart(10)}`);
+  for (const p of data) {
+    console.log(
+      `${p.snapshotAt.padEnd(26)} ${("$" + fmtNum(p.tvlUsd)).padStart(14)} ${("$" + fmtNum(p.volume24hUsd)).padStart(14)} ${("$" + fmtNum(p.fees24hUsd)).padStart(12)} ${("$" + parseFloat(p.topazPriceUsd).toFixed(5)).padStart(10)}`,
+    );
+  }
+  console.log(`\n${data.length} snapshots`);
+}
+
+async function cmdProtocolDaily(argv: ReturnType<typeof minimist>) {
+  const days = argv.days ? Number(argv.days) : undefined;
+  const { data } = await fetchProtocolDaily({ days });
+  console.log(`${"day (UTC)".padEnd(26)} ${"volume".padStart(16)} ${"fees".padStart(14)}`);
+  for (const d of data) {
+    const tag = d.partial ? "  (partial)" : "";
+    console.log(`${d.dayStartUtc.padEnd(26)} ${("$" + fmtNum(d.volumeUsd)).padStart(16)} ${("$" + fmtNum(d.feesUsd)).padStart(14)}${tag}`);
+  }
+}
+
+async function cmdPoolDaily(argv: ReturnType<typeof minimist>) {
+  const addr = argv._[1];
+  if (!addr) throw new Error("usage: pool-daily <pool> [--days N]");
+  const days = argv.days ? Number(argv.days) : undefined;
+  const { data } = await fetchPoolDaily(String(addr), { days });
+  console.log(`${"day (UTC)".padEnd(26)} ${"volume".padStart(16)} ${"fees".padStart(14)} ${"tvlClose".padStart(14)}`);
+  for (const d of data) {
+    console.log(`${d.dayStartUtc.padEnd(26)} ${("$" + fmtNum(d.volumeUsd)).padStart(16)} ${("$" + fmtNum(d.feesUsd)).padStart(14)} ${("$" + fmtNum(d.tvlUsdClose)).padStart(14)}`);
+  }
+}
+
+async function cmdApiGauge(argv: ReturnType<typeof minimist>) {
+  const addr = argv._[1];
+  if (!addr) throw new Error("usage: api-gauge <gaugeAddress>");
+  const { data } = await fetchApiGauge(String(addr));
+  const g = data.current;
+  if (!g) {
+    console.log("No current snapshot for that gauge.");
+    return;
+  }
+  console.log("Gauge (Stats API)");
+  console.log(`  Pair:            ${g.token0Symbol ?? "?"}/${g.token1Symbol ?? "?"} (${g.poolType})`);
+  console.log(`  Gauge:           ${g.gaugeAddress}  ${g.alive ? "(alive)" : "(KILLED)"}`);
+  console.log(`  Pool:            ${g.poolAddress}`);
+  console.log(`  Staked TVL:      $${fmtNum(g.stakedTvlUsd)}`);
+  console.log(`  Emission APR:    ${parseFloat(g.emissionApr).toFixed(2)}%`);
+  console.log(`  Fee APR:         ${parseFloat(g.feeApr).toFixed(2)}%`);
+  console.log(`  Bribe APR:       ${g.bribeApr ? parseFloat(g.bribeApr).toFixed(2) + "%" : "—"}`);
+  console.log(`  Total APR:       ${g.totalApr ? parseFloat(g.totalApr).toFixed(2) + "%" : "—"}`);
+  console.log(`  Total votes:     ${fmtNum(g.totalVoteWeight)} (foundation: ${fmtNum(g.foundationVoteWeight)})`);
+  console.log(`  History points:  ${data.history.length}`);
+}
+
+async function cmdGaugeRewards(argv: ReturnType<typeof minimist>) {
+  const addr = argv._[1];
+  if (!addr) throw new Error("usage: gauge-rewards <gaugeAddress> [--limit N]");
+  const limit = argv.limit ? Number(argv.limit) : undefined;
+  const { data } = await fetchGaugeRewards(String(addr), { limit });
+  console.log(`${"epoch".padEnd(26)} ${"kind".padEnd(6)} ${"token".padEnd(10)} ${"amount".padStart(18)} ${"USD".padStart(12)}`);
+  for (const r of data) {
+    console.log(`${r.epochStart.padEnd(26)} ${r.kind.padEnd(6)} ${r.tokenSymbol.padEnd(10)} ${fmtNum(r.amountDecimal).padStart(18)} ${("$" + fmtNum(r.amountUsd)).padStart(12)}`);
+  }
+}
+
+async function cmdBribeMarkets(argv: ReturnType<typeof minimist>) {
+  const epoch = argv.epoch ? Number(argv.epoch) : undefined;
+  const minUsd = argv["min-usd"] !== undefined ? Number(argv["min-usd"]) : undefined;
+  const limit = argv.limit ? Number(argv.limit) : undefined;
+  const { data } = await fetchBribeMarkets({ epoch, minUsd, limit });
+  console.log(`${"pair".padEnd(20)} ${"bribes".padStart(12)} ${"fees".padStart(12)} ${"reward".padStart(12)} ${"$/vote".padStart(12)}`);
+  for (const m of data) {
+    const label = `${m.token0Symbol ?? "?"}/${m.token1Symbol ?? "?"}`;
+    console.log(
+      `${label.padEnd(20)} ${("$" + fmtNum(m.totalBribesUsd)).padStart(12)} ${("$" + fmtNum(m.totalFeesUsd)).padStart(12)} ${("$" + fmtNum(m.totalRewardUsd)).padStart(12)} ${("$" + parseFloat(m.dollarPerVote).toFixed(4)).padStart(12)}`,
+    );
+  }
+}
+
+async function cmdBribeTotals() {
+  const { data } = await fetchBribeTotals();
+  console.log(`${"epoch".padEnd(26)} ${"foundation spend".padStart(18)} ${"deposits".padStart(9)}`);
+  for (const t of data) {
+    console.log(`${t.epochStart.padEnd(26)} ${("$" + fmtNum(t.totalUsd)).padStart(18)} ${String(t.count).padStart(9)}`);
+  }
+}
+
+async function cmdTokens(argv: ReturnType<typeof minimist>) {
+  const limit = argv.limit ? Number(argv.limit) : undefined;
+  const { data } = await fetchTokens({ limit });
+  console.log(`${"symbol".padEnd(12)} ${"address".padEnd(44)} ${"priceUsd".padStart(18)}`);
+  for (const t of data) {
+    console.log(`${t.symbol.padEnd(12)} ${t.address.padEnd(44)} ${("$" + parseFloat(t.priceUsd).toPrecision(6)).padStart(18)}`);
+  }
+}
+
+async function cmdToken(argv: ReturnType<typeof minimist>) {
+  const addr = argv._[1];
+  if (!addr) throw new Error("usage: token <address>");
+  const { data } = await fetchToken(String(addr));
+  const t = data.current;
+  if (!t) {
+    console.log("No current snapshot for that token.");
+    return;
+  }
+  console.log("Token (Stats API)");
+  console.log(`  Symbol:          ${t.symbol} (${t.decimals} decimals)`);
+  console.log(`  Address:         ${t.address}`);
+  console.log(`  Price:           $${parseFloat(t.priceUsd).toPrecision(8)}`);
+  console.log(`  History points:  ${data.history.length}`);
+}
+
+async function cmdEpochs(argv: ReturnType<typeof minimist>) {
+  const limit = argv.limit ? Number(argv.limit) : undefined;
+  const { data } = await fetchEpochs({ limit });
+  console.log(`${"epochStart".padEnd(26)} ${"bribes".padStart(12)} ${"foundation".padStart(12)} ${"voteShare".padStart(10)} ${"gauges".padStart(7)} ${"cur".padStart(4)}`);
+  for (const e of data) {
+    const share = (parseFloat(e.foundationVoteShare) * 100).toFixed(1) + "%";
+    console.log(
+      `${e.epochStart.padEnd(26)} ${("$" + fmtNum(e.totalBribesUsd)).padStart(12)} ${("$" + fmtNum(e.foundationBribesUsd)).padStart(12)} ${share.padStart(10)} ${String(e.gaugeCount).padStart(7)} ${(e.isCurrent ? "yes" : "no").padStart(4)}`,
+    );
+  }
+}
+
+async function cmdEpoch(argv: ReturnType<typeof minimist>) {
+  const epochStart = argv._[1];
+  if (!epochStart) throw new Error("usage: epoch <unixSeconds>");
+  const { data } = await fetchEpoch(Number(epochStart));
+  console.log("Epoch (Stats API)");
+  console.log(`  Window:          ${data.epochStart} → ${data.epochEnd}${data.isCurrent ? "  (current)" : ""}`);
+  console.log(`  Total bribes:    $${fmtNum(data.totals.totalBribesUsd)} (${data.totals.bribeCount} deposits)`);
+  console.log(`  Foundation:      $${fmtNum(data.totals.foundationBribesUsd)} bribes, ${data.totals.foundationVoteCount} vote allocations`);
+  console.log(`  Votes:           ${data.votes.length}  Bribes: ${data.bribes.length}  KPIs: ${data.kpis.length}`);
 }
 
 async function cmdApiGauges() {
@@ -523,7 +685,7 @@ function serialize(value: unknown): unknown {
 
 async function main() {
   const argv = minimist(process.argv.slice(2), {
-    string: ["_", "in", "out", "pool", "gauge", "address", "amount"],
+    string: ["_", "in", "out", "pool", "gauge", "address", "amount", "token"],
   });
   const cmd = String(argv._[0] ?? "");
   if (!cmd || cmd === "help" || argv.h || argv.help) {
@@ -543,8 +705,19 @@ async function main() {
     case "apr": return await cmdApr(argv);
     case "quote": return await cmdQuote(argv);
     case "protocol": return await cmdProtocol();
+    case "protocol-history": return await cmdProtocolHistory(argv);
+    case "protocol-daily": return await cmdProtocolDaily(argv);
     case "api-pools": return await cmdApiPools(argv);
+    case "pool-daily": return await cmdPoolDaily(argv);
     case "api-gauges": return await cmdApiGauges();
+    case "api-gauge": return await cmdApiGauge(argv);
+    case "gauge-rewards": return await cmdGaugeRewards(argv);
+    case "bribe-markets": return await cmdBribeMarkets(argv);
+    case "bribe-totals": return await cmdBribeTotals();
+    case "tokens": return await cmdTokens(argv);
+    case "token": return await cmdToken(argv);
+    case "epochs": return await cmdEpochs(argv);
+    case "epoch": return await cmdEpoch(argv);
     case "foundation": return await cmdFoundation();
     case "foundation-votes": return await cmdFoundationVotes(argv);
     case "foundation-bribes": return await cmdFoundationBribes(argv);

@@ -67,17 +67,30 @@ Suggested display:
 | Voting APR | `votingApr(pool)` | veTOPAZ holders allocating votes |
 | Rebase APR | `rebaseApr()` | all veTOPAZ holders |
 
-### Pre-computed APRs via Stats API
+### Pre-computed APRs via Stats API (recommended for dashboards)
 
-If you don't need custom APR formulas, the Stats API returns all four APR types pre-computed:
+For dashboards and gauge listings, **prefer the Stats API** — it returns every APR pre-computed, plus history and bribe markets, with no manual calculation or subgraph + on-chain dance:
 
 ```ts
-import { fetchGauges } from "../scripts/src/index.js";
+import { fetchGauges, fetchGauge, fetchPools, fetchGaugeRewards, fetchBribeMarkets } from "../scripts/src/index.js";
+
+// All gauges: emissionApr, feeApr, bribeApr, totalApr, stakedTvlUsd, vote weights
 const { data: gauges } = await fetchGauges();
-// Each gauge has: emissionApr, feeApr, bribeApr, totalApr, stakedTvlUsd
+
+// Pool list with denormalized gauge APR — sort/filter on it directly
+const { data: pools } = await fetchPools({ sort: "gaugeApr", incentivized: true, minTvl: 10000 });
+
+// Single gauge APR-breakdown history (≤672 snapshots, ~7 days)
+const { data: gauge } = await fetchGauge("0xGAUGE");          // { current, history }
+
+// Per-epoch reward-token breakdown (bribe + fee, USD-priced)
+const { data: rewards } = await fetchGaugeRewards("0xGAUGE");
+
+// Current bribe markets with derived $/vote — best signal for vote routing
+const { data: markets } = await fetchBribeMarkets({ minUsd: 1 });
 ```
 
-This is simpler for dashboards — no manual calculation, no subgraph + on-chain dance. Snapshots every 15 min. See `references/analytics-stats-api.md`.
+Snapshots every 15 min; the OpenAPI spec (`https://www.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md`. Drop to the on-chain `apr.ts` helpers below only for block-accurate or custom-window/position-specific APRs.
 
 ### Caveats every APR display must respect
 

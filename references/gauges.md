@@ -7,6 +7,8 @@ Both gauge types support the same conceptual API: deposit, withdraw, getReward, 
 - **v2 `Gauge`** stakes the pool's ERC20 LP token, takes a `uint256` amount.
 - **v3 `CLGauge`** stakes the position NFT, takes a `uint256` tokenId. Emissions accrue only while the position is **in range**.
 
+> **Reading gauge analytics (APR, vote weights, staked TVL, rewards)?** Use the Stats API — `/gauges` lists every gauge with `emissionApr`/`feeApr`/`bribeApr`/`totalApr` and vote weights, `/gauges/{addr}` adds 7-day history, and `/gauges/{addr}/rewards` breaks down per-epoch reward tokens. The on-chain calls below are for staking/claiming and block-accurate state. See `references/analytics-stats-api.md`.
+
 ## Voter API — exact function names
 
 The Topaz `Voter` contract (`0x2F80F810a114223AC69E34E84E735CaD515dAD67`) exposes these mappings. Use the function **names below verbatim** — they are the deployed selectors. There is no `gaugeForPool`, no `gaugesByPool`, no `getGauge` on this contract; those names belong to Velodrome / Aerodrome / other Solidly forks and calling them on Topaz reverts with no data.

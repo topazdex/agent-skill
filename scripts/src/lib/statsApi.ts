@@ -58,6 +58,9 @@ export interface PoolSnapshot {
   fees24hUsd: string;
   fees7dUsd: string;
   feeApr: string;
+  /** Total gauge APR (%), denormalized from `gauge_snapshots.totalApr`. Null if no live gauge. */
+  gaugeApr: string | null;
+  createdAt?: string;
 }
 
 export interface GaugeSnapshot {
@@ -79,7 +82,10 @@ export interface GaugeSnapshot {
   foundationVoteWeight: string;
   token0Symbol: string | null;
   token1Symbol: string | null;
+  token0Address: string | null;
+  token1Address: string | null;
   tvlUsd: string | null;
+  createdAt?: string;
 }
 
 export interface VoteSnapshot {
@@ -112,6 +118,7 @@ export interface BribeEvent {
   amountDecimal: string;
   amountUsd: string;
   isFoundationFunded: boolean;
+  createdAt?: string;
 }
 
 export interface KpiSnapshot {
@@ -146,6 +153,7 @@ export interface KpiSnapshot {
     | "reduce"
     | "stop"
     | "insufficient_data";
+  createdAt?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -175,16 +183,43 @@ export interface ProtocolData {
 
 export interface PoolDetailData {
   current: PoolSnapshot | null;
+  /** Up to 672 snapshots (~7 days at 15-min cadence). */
   history: PoolSnapshot[];
+  /** Latest gauge snapshot for the pool, or null if the pool has no gauge. */
+  gauge: GaugeSnapshot | null;
+  /** Up to 672 gauge snapshots (~7 days). */
+  gaugeHistory: GaugeSnapshot[];
+}
+
+export interface VeLock {
+  tokenId: number;
+  owner: string;
+  ownedByFoundation: boolean;
+  lockedAmount: string;
+  votingPower: string;
+  lockEnd: string | null;
+  isPermanent: boolean;
+}
+
+export interface VeFoundation {
+  wallet: string;
+  venftIds: number[];
+  activeVotingPower: string;
+  /** Per-NFT lock details fetched live from BNB RPC; omitted if the RPC fetch failed. */
+  locks?: VeLock[];
 }
 
 export interface VeData {
   totalLockedTopaz: string;
   totalVetopazPower: string;
-  foundationWallet: string;
-  foundationVeNftIds: number[];
-  foundationVotingPowerActive: string;
+  foundation: VeFoundation;
   currentEpochStart: string | null;
+  /** @deprecated Use `foundation.wallet`. */
+  foundationWallet: string;
+  /** @deprecated Use `foundation.venftIds`. */
+  foundationVeNftIds: number[];
+  /** @deprecated Use `foundation.activeVotingPower`. */
+  foundationVotingPowerActive: string;
 }
 
 export interface FoundationData {
@@ -253,15 +288,185 @@ export interface LiveDynamicFeesData {
   }>;
 }
 
+export interface ProtocolHistoryPoint {
+  snapshotAt: string;
+  tvlUsd: string;
+  v2TvlUsd: string;
+  v3TvlUsd: string;
+  volume24hUsd: string;
+  fees24hUsd: string;
+  topazPriceUsd: string;
+}
+
+export interface ProtocolDailyPoint {
+  dayStartUtc: string;
+  volumeUsd: string;
+  feesUsd: string;
+  /** `true` if this is the current (in-progress) UTC day. */
+  partial: boolean;
+}
+
+export interface PoolDailyRow {
+  id: number;
+  poolAddress: string;
+  poolType: "v2-volatile" | "v2-stable" | "v3-cl";
+  dayStartUtc: string;
+  volumeUsd: string;
+  feesUsd: string;
+  tvlUsdClose: string;
+  txCount: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GaugeDetailData {
+  current: GaugeSnapshot | null;
+  /** Up to 672 historical snapshots (~7 days at 15-min cadence). */
+  history: GaugeSnapshot[];
+}
+
+export interface GaugeRewardRow {
+  id: number;
+  snapshotId: number;
+  snapshotAt: string;
+  epochStart: string;
+  gaugeAddress: string;
+  poolAddress: string;
+  tokenAddress: string;
+  tokenSymbol: string;
+  kind: "bribe" | "fee";
+  amountRaw: string;
+  amountDecimal: string;
+  amountUsd: string;
+  createdAt: string;
+}
+
+export interface TokenSnapshot {
+  id: number;
+  snapshotId: number;
+  snapshotAt: string;
+  address: string;
+  symbol: string;
+  decimals: number;
+  priceUsd: string;
+  derivedEth: string | null;
+  createdAt: string;
+}
+
+export interface TokenDetailData {
+  current: TokenSnapshot | null;
+  /** Up to 672 historical points (~7 days at 15-min cadence). */
+  history: TokenSnapshot[];
+}
+
+export interface EpochTopGauge {
+  gaugeAddress: string;
+  poolAddress: string;
+  token0Symbol: string | null;
+  token1Symbol: string | null;
+  voteWeight: string;
+  bribesUsd: string;
+}
+
+export interface EpochSummary {
+  epochStart: string;
+  epochEnd: string;
+  isCurrent: boolean;
+  totalBribesUsd: string;
+  bribeCount: number;
+  foundationBribesUsd: string;
+  totalVoteWeight: string;
+  foundationVoteWeight: string;
+  foundationVoteShare: string;
+  gaugeCount: number;
+  topGauges: EpochTopGauge[];
+}
+
+export interface EpochDetailData {
+  epochStart: string;
+  epochEnd: string;
+  isCurrent: boolean;
+  votes: VoteSnapshot[];
+  bribes: BribeEvent[];
+  kpis: KpiSnapshot[];
+  totals: {
+    totalBribesUsd: string;
+    foundationBribesUsd: string;
+    bribeCount: number;
+    foundationVoteCount: number;
+  };
+}
+
+export interface BribeTotal {
+  epochStart: string;
+  totalUsd: string;
+  count: number;
+}
+
+export interface BribeMarketRow {
+  gaugeAddress: string;
+  poolAddress: string;
+  poolType: string | null;
+  token0Symbol: string | null;
+  token1Symbol: string | null;
+  epochStart: string;
+  totalBribesUsd: string;
+  totalFeesUsd: string;
+  totalRewardUsd: string;
+  bribes: Array<{ tokenSymbol: string; tokenAddress: string; amountUsd: string }>;
+  voteWeight: string;
+  /** `totalBribesUsd / (voteWeight / 1e18)`. */
+  dollarPerVote: string;
+}
+
 // ---------------------------------------------------------------------------
 // Query parameter types
 // ---------------------------------------------------------------------------
 
 export interface FetchPoolsParams {
   type?: "v2" | "v3" | "all";
-  sort?: "tvl" | "volume24h" | "fees24h" | "apr";
+  sort?: "tvl" | "volume24h" | "fees24h" | "apr" | "gaugeApr";
   limit?: number;
+  /** Token-symbol pair, e.g. `"WBNB-USDT"` (case-insensitive, either order). */
   pair?: string;
+  /** Filter to pools where this token address sits on either side. */
+  token?: string;
+  /** Drop pools below this TVL (USD). */
+  minTvl?: number;
+  /** Only pools whose gauge is alive and currently emitting TOPAZ. */
+  incentivized?: boolean;
+}
+
+export interface FetchDaysParams {
+  /** Lookback window, 1–365. */
+  days?: number;
+}
+
+export interface FetchPoolBribesParams {
+  limit?: number;
+  epoch?: number;
+  foundationOnly?: boolean;
+}
+
+export interface FetchGaugeRewardsParams {
+  /** 1–200. */
+  limit?: number;
+}
+
+export interface FetchTokensParams {
+  /** 1–500. */
+  limit?: number;
+}
+
+export interface FetchEpochsParams {
+  /** 1–52. */
+  limit?: number;
+}
+
+export interface FetchBribeMarketsParams {
+  epoch?: number;
+  minUsd?: number;
+  limit?: number;
 }
 
 export interface FetchVotesParams {
@@ -412,6 +617,139 @@ export async function fetchHealth(): Promise<StatsApiOk<HealthData>> {
 
 export async function fetchConfig(): Promise<StatsApiOk<ConfigData>> {
   return fetchApi<ConfigData>("/config");
+}
+
+// ---------------------------------------------------------------------------
+// Historical & time-series
+// ---------------------------------------------------------------------------
+
+export async function fetchProtocolHistory(
+  params?: FetchDaysParams,
+): Promise<StatsApiOk<ProtocolHistoryPoint[]>> {
+  return fetchApi<ProtocolHistoryPoint[]>(
+    "/protocol/history",
+    params as Record<string, number | undefined>,
+  );
+}
+
+export async function fetchProtocolDaily(
+  params?: FetchDaysParams,
+): Promise<StatsApiOk<ProtocolDailyPoint[]>> {
+  return fetchApi<ProtocolDailyPoint[]>(
+    "/protocol/daily",
+    params as Record<string, number | undefined>,
+  );
+}
+
+export async function fetchPoolDaily(
+  poolAddress: string,
+  params?: FetchDaysParams,
+): Promise<StatsApiOk<PoolDailyRow[]>> {
+  return fetchApi<PoolDailyRow[]>(
+    `/pools/${poolAddress.toLowerCase()}/daily`,
+    params as Record<string, number | undefined>,
+  );
+}
+
+export async function fetchPoolBribes(
+  poolAddress: string,
+  params?: FetchPoolBribesParams,
+): Promise<StatsApiOk<BribeEvent[]>> {
+  return fetchApi<BribeEvent[]>(
+    `/pools/${poolAddress.toLowerCase()}/bribes`,
+    params as Record<string, string | number | boolean | undefined>,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Per-gauge detail
+// ---------------------------------------------------------------------------
+
+export async function fetchGauge(
+  gaugeAddress: string,
+): Promise<StatsApiOk<GaugeDetailData>> {
+  return fetchApi<GaugeDetailData>(`/gauges/${gaugeAddress.toLowerCase()}`);
+}
+
+export async function fetchGaugeBribes(
+  gaugeAddress: string,
+  params?: FetchPoolBribesParams,
+): Promise<StatsApiOk<BribeEvent[]>> {
+  return fetchApi<BribeEvent[]>(
+    `/gauges/${gaugeAddress.toLowerCase()}/bribes`,
+    params as Record<string, string | number | boolean | undefined>,
+  );
+}
+
+export async function fetchGaugeKpis(
+  gaugeAddress: string,
+  params?: FetchKpisParams,
+): Promise<StatsApiOk<KpiSnapshot[]>> {
+  return fetchApi<KpiSnapshot[]>(
+    `/gauges/${gaugeAddress.toLowerCase()}/kpis`,
+    params as Record<string, string | number | boolean | undefined>,
+  );
+}
+
+export async function fetchGaugeRewards(
+  gaugeAddress: string,
+  params?: FetchGaugeRewardsParams,
+): Promise<StatsApiOk<GaugeRewardRow[]>> {
+  return fetchApi<GaugeRewardRow[]>(
+    `/gauges/${gaugeAddress.toLowerCase()}/rewards`,
+    params as Record<string, number | undefined>,
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Tokens
+// ---------------------------------------------------------------------------
+
+export async function fetchTokens(
+  params?: FetchTokensParams,
+): Promise<StatsApiOk<TokenSnapshot[]>> {
+  return fetchApi<TokenSnapshot[]>(
+    "/tokens",
+    params as Record<string, number | undefined>,
+  );
+}
+
+export async function fetchToken(
+  address: string,
+): Promise<StatsApiOk<TokenDetailData>> {
+  return fetchApi<TokenDetailData>(`/tokens/${address.toLowerCase()}`);
+}
+
+// ---------------------------------------------------------------------------
+// Epochs & bribe markets
+// ---------------------------------------------------------------------------
+
+export async function fetchEpochs(
+  params?: FetchEpochsParams,
+): Promise<StatsApiOk<EpochSummary[]>> {
+  return fetchApi<EpochSummary[]>(
+    "/epochs",
+    params as Record<string, number | undefined>,
+  );
+}
+
+export async function fetchEpoch(
+  epochStart: number,
+): Promise<StatsApiOk<EpochDetailData>> {
+  return fetchApi<EpochDetailData>(`/epochs/${epochStart}`);
+}
+
+export async function fetchBribeTotals(): Promise<StatsApiOk<BribeTotal[]>> {
+  return fetchApi<BribeTotal[]>("/bribes/totals");
+}
+
+export async function fetchBribeMarkets(
+  params?: FetchBribeMarketsParams,
+): Promise<StatsApiOk<BribeMarketRow[]>> {
+  return fetchApi<BribeMarketRow[]>(
+    "/markets/bribes",
+    params as Record<string, number | undefined>,
+  );
 }
 
 export const STATS_API_BASE_URL = BASE_URL;

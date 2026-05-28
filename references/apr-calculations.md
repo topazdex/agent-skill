@@ -1,5 +1,7 @@
 # APR Calculations
 
+> **Want a number, not the math?** The Stats API already serves every APR pre-computed and is the easiest, fastest, most accurate source: `/gauges` (emission/fee/bribe/total APR per gauge), `/pools` (denormalized `gaugeApr` + `feeApr`, sortable via `sort=gaugeApr`), and `/gauges/{addr}` (7-day APR history). Use the formulas below only when you need a custom window, a position-specific APR, or block-accurate state. See `references/analytics-stats-api.md`.
+
 There are four APR types in the Topaz UI. The formulas here match the production frontend.
 
 ## Conventions

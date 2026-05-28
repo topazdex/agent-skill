@@ -4,7 +4,7 @@ Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (
 
 Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
 
-**Current version:** `2.6.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
+**Current version:** `2.6.1` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
 The Topaz website auto-mirrors this version: `https://topazdex.com/agents`, `https://topazdex.com/skill.md`, and `https://topazdex.com/skill.json` all pull from `main` on a 1-hour ISR cycle. Pushing a new version here propagates without any website-side changes — see [`docs/RELEASING.md`](./docs/RELEASING.md) for details.
 
@@ -176,8 +176,8 @@ In this skill, addresses are canonical in `scripts/src/config/addresses.ts` and 
 ## Subgraph endpoints (Goldsky)
 
 ```
-v2: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn
-v3: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn
+v2: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn
+v3: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn
 ```
 
 Entity catalogs and example queries: `references/analytics-subgraph.md`.

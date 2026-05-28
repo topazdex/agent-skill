@@ -63,8 +63,8 @@ Core contracts (BNB Mainnet):
 Full list (incl. governance/airdrop/fee modules): `references/addresses.md` or `README.md`.
 
 Subgraphs (Goldsky):
-- v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.3/gn`
-- v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.1/gn`
+- v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn`
+- v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn`
 
 Stats API (public, no auth): `https://www.topazdex.com/api/stats`
 
@@ -106,7 +106,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Build pool/position/gauge dashboards | `developers/user-positions.md`, `developers/gauges-and-apr.md` |
 | Map a revert to a user-friendly UI string | `developers/error-cookbook.md` |
 | On-chain reads for live stats | `references/analytics-onchain.md` |
-| Protocol overview, pool/gauge APRs, foundation data via REST | `references/analytics-stats-api.md` |
+| Protocol/pool/gauge stats, gauge APRs, history, tokens, epochs, bribe markets, foundation data via REST | `references/analytics-stats-api.md` |
 | Compute gauge / fee / voting APRs | `references/apr-calculations.md` |
 | Epoch boundaries, voting window, distribute() | `references/epoch-timing.md` |
 | Common mistakes & gotchas | `references/pitfalls.md` |
@@ -154,6 +154,6 @@ CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is
 - **CL positions must be in-range to earn emissions.** Out-of-range liquidity is staked but receives no `CLGauge` rewards.
 - **NFT approvals.** Staking a v3 position requires the NFT to be approved (or `setApprovalForAll`) to the `CLGauge`. Voting/claiming requires `VotingEscrow.isApprovedOrOwner(msg.sender, tokenId)`.
 
-- **Prefer the Stats API for aggregated reads.** When the user asks for protocol totals (TVL, volume, fees, TOPAZ price), pool lists, gauge APR rankings, or foundation data (votes, bribes, KPI effectiveness), use the public Stats API at `https://www.topazdex.com/api/stats` — it returns pre-computed numbers in a single call. Foundation data (wallet, veNFT IDs, vote allocations, bribe deposits, KPI snapshots) is **only** available through the Stats API. Reserve subgraph queries for historical day-data beyond 7 days and flexible token-level searches. Reserve on-chain reads for user-specific state (balances, positions, claimable), block-accurate data for time-sensitive operations (voting, bribe deposits), and transaction construction. See `references/analytics-stats-api.md` for the decision table and endpoint catalog.
+- **Prefer the Stats API for any read it can serve — it is the easiest, fastest, and most accurate source.** Use the public Stats API at `https://www.topazdex.com/api/stats` for protocol totals (TVL, volume, fees, TOPAZ price), **historical time-series** (`/protocol/history`, `/protocol/daily`, `/pools/{addr}/daily`), pool lists with **pre-computed fee + gauge APR** (`/pools` carries `gaugeApr`; sort/filter by `gaugeApr`, `incentivized`, `minTvl`, `token`, `pair`), per-gauge APR breakdowns and reward tokens (`/gauges/{addr}`, `/gauges/{addr}/rewards`), token prices (`/tokens`), epoch summaries and bribe markets with $/vote (`/epochs`, `/markets/bribes`), veTOPAZ supply and foundation veNFT lock details (`/ve`), and foundation data (votes, bribes, KPI effectiveness). Foundation data and veNFT lock details are **only** available through the Stats API. The API's **OpenAPI spec at `https://www.topazdex.com/api/stats/openapi.json` is the canonical, auto-updating contract** — fetch it when you need an exact current schema. Reserve subgraph queries for ad-hoc GraphQL filtering or history beyond the API's window; reserve on-chain reads for user-specific state (balances, positions, claimable), block-accurate data for time-sensitive operations (voting, bribe deposits), and transaction construction. See `references/analytics-stats-api.md` for the decision table and endpoint catalog.
 
 When unsure, re-read the relevant `references/*.md`. When the user asks for something unusual (governance proposals, BSC testnet, deploying new pools as a protocol operator), it is out of scope for this skill — say so and stop.

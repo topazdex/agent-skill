@@ -2,6 +2,8 @@
 
 Topaz's emission and voting cycle is **weekly**. All state transitions snap to a 1-week boundary anchored at the Unix epoch (1970-01-01 00:00 UTC), so each epoch starts at **Thursday 00:00:00 UTC**.
 
+> **Per-epoch analytics** (bribe totals, foundation vote share, top gauges, votes/bribes/KPIs) are pre-aggregated by the Stats API: `/epochs` for recent summaries and `/epochs/{unixSeconds}` for a single epoch's detail. The boundary math below is for computing epoch timestamps on-chain. See `references/analytics-stats-api.md`.
+
 ## Boundaries
 
 `Voter` exposes pure helpers (see `Voter.sol` lines 107–122 / `ProtocolTimeLibrary.sol`):

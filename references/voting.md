@@ -2,6 +2,8 @@
 
 `Voter` at `0x2F80F810a114223AC69E34E84E735CaD515dAD67` is the gauge controller. veTOPAZ holders allocate their NFT's voting power across gauges (= pools); allocations determine each pool's share of the weekly TOPAZ emission and entitle the voter to that pool's trading fees + any external bribes.
 
+> **Deciding where to vote?** The Stats API ranks the opportunity for you: `/markets/bribes` gives per-gauge reward USD and a derived **`dollarPerVote`** (highest = most underbid), `/gauges` gives `bribeApr`/`totalApr` and current vote weights, and `/epochs` summarizes bribe totals and top gauges per epoch. Reserve the on-chain reads below for casting the vote and block-accurate, time-sensitive checks. See `references/analytics-stats-api.md`.
+
 ## Voting
 
 ```solidity
