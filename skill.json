@@ -83,7 +83,17 @@
     "agent": "SKILL.md",
     "human": "README.md",
     "developer": "developers/DEVELOPERS.md",
+    "developer_id_connect": "developers/topaz-id-connect.md",
     "operator_scripts": "scripts/README.md"
+  },
+  "topaz_id": {
+    "description": "Topaz ID is the Topaz ecosystem account/identity layer — a self-custodial BNB Chain global wallet. The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
+    "profile_host": "https://id.topazdex.com",
+    "npm": "https://www.npmjs.com/package/@topazdex/id-connect",
+    "package": "@topazdex/id-connect",
+    "demo_repo": "https://github.com/topazdex/topaz-id-connect-demo",
+    "demo_live": "https://topaz-id-demo.vercel.app",
+    "guide": "developers/topaz-id-connect.md"
   },
   "social": {
     "twitter": "https://x.com/TopazDex",
@@ -112,6 +122,10 @@
     "venft",
     "bribes",
     "voting",
-    "rewards"
+    "rewards",
+    "topaz-id",
+    "id-connect",
+    "wallet-login",
+    "identity"
   ]
 }

@@ -8,8 +8,22 @@ Topaz Dex runs on **BNB Chain mainnet (chain id 56)** and combines:
 - **v3 / Slipstream pools**: concentrated liquidity pools keyed by tick spacing.
 - **ve(3,3) incentives**: TOPAZ emissions, gauges, veTOPAZ voting, bribes, fees, and rebases.
 
+## Topaz ID integration
+
+If you are building a partner dApp and want users to connect with the Topaz
+account layer, use the **Topaz ID Wallet Connector** via `@topazdex/id-connect`.
+Topaz ID is a self-custodial BNB Chain global wallet — users sign in with their
+existing Topaz ID account (email/Google, no seed phrase) and your app gets a
+standard wagmi wallet back, plus their Topaz ID name and avatar.
+
+This is **separate from the protocol calldata builders**: the connector handles
+account/login/identity, while the DEX builders handle swaps, liquidity, gauges,
+votes, and rewards. Most apps use both. See
+[`topaz-id-connect.md`](topaz-id-connect.md).
+
 ## Choose the right integration surface
 
+- **Topaz ID / wallet login integration**: use `@topazdex/id-connect` when a partner app wants to offer "Connect with Topaz ID", show Topaz ID profile identity, or let users sign through the Topaz ID consent flow. See [`topaz-id-connect.md`](topaz-id-connect.md).
 - **Frontend or wallet integration**: use transaction builders from `scripts/src/lib/txBuilders.ts`. These return `{ to, data, value }` plus quote metadata so your app can show a confirmation screen and let the user's wallet sign.
 - **Backend bots / ops agents**: use CLI wrappers under `scripts/src/cli/` or write modules under `scripts/src/write/`, which broadcast with an env-provided `PRIVATE_KEY`.
 - **Analytics / dashboards**: use the Goldsky subgraphs for indexed pool/volume/TVL data, and on-chain reads for gauges, votes, claimables, and real-time pool state.

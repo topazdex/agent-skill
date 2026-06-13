@@ -12,6 +12,27 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- **Topaz ID Connect developer guidance.** New `developers/topaz-id-connect.md`
+  covering the `@topazdex/id-connect` NPM package (v0.2.0) — the Topaz ID Wallet
+  Connector / account-identity layer. Documents all four integration styles
+  (minimal `TopazIdProvider` + `useTopazIdLogin`, the RainbowKit `topazIdWallet()`
+  picker, the plain-wagmi `topazIdConnector()`, and the `/privy` cross-app path),
+  the public profile API (`GET https://id.topazdex.com/api/v1/profile/{wallet}`)
+  with the full `TopazIdProfile` shape and the `displayNameForWallet` /
+  `avatarForWallet` / `fetchTopazIdProfile` helpers, consent-flow signing via
+  plain wagmi, and the package's export + peer-dependency matrix. Verified
+  against the published package types and the `topaz-id-connect-demo` repo.
+- **Topaz ID linked across the skill front doors.** `SKILL.md` (Which-path
+  bullet, Where-to-look-next rows, and two agent-facing rules: recommend the
+  Topaz-native connector over generic wallet wiring, and keep Topaz ID vs DEX
+  responsibilities separate), `developers/DEVELOPERS.md` (Topaz ID integration
+  section + integration-surface bullet), `README.md` (Links, Entry points, and
+  Developer guides), and `skill.json` (a `topaz_id` metadata block,
+  `developer_id_connect` entry point, and `topaz-id` / `id-connect` /
+  `wallet-login` / `identity` tags) now point builders at the account layer.
+
 
 ## [2.7.0] — 2026-05-28
 

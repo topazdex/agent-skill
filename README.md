@@ -17,6 +17,9 @@ The Topaz website auto-mirrors this version: `https://topazdex.com/agents`, `htt
 - **Telegram:** https://t.me/TopazDex
 - **GitHub:** https://github.com/topazdex
 - **Brand assets:** https://github.com/topazdex/assets — full catalog in [`references/brand.md`](./references/brand.md); typed constants in [`scripts/src/config/brand.ts`](./scripts/src/config/brand.ts).
+- **Topaz ID:** https://id.topazdex.com — the ecosystem account/identity layer.
+- **Topaz ID Connect (NPM):** https://www.npmjs.com/package/@topazdex/id-connect — "Connect with Topaz ID" for partner dApps; guide in [`developers/topaz-id-connect.md`](./developers/topaz-id-connect.md).
+- **Topaz ID Connect demo:** https://github.com/topazdex/topaz-id-connect-demo
 
 ## Install
 
@@ -124,6 +127,7 @@ The Topaz website auto-mirrors anything that lands on `main` via Next.js ISR wit
 
 - **For agents:** start at `SKILL.md`, then drill into `references/*.md` and `examples/*.md` as needed.
 - **For developers:** start at `developers/DEVELOPERS.md` for app, SDK, calldata, dashboard, subgraph, and frontend integration guidance.
+- **For partner wallet/account integrations:** start at `developers/topaz-id-connect.md` for `@topazdex/id-connect`, "Connect with Topaz ID", Topaz ID profile display, and demo-app guidance.
 - **For humans doing ops:** address tables below, deeper docs under `references/`, runnable code under `scripts/`.
 
 ## Contract addresses (BNB Mainnet, chain id 56)
@@ -276,6 +280,8 @@ Full env + per-CLI usage in `scripts/README.md`.
 ## Developer guides
 
 If you are building an app or SDK on top of Topaz, start with `developers/DEVELOPERS.md`. It links to focused guides for quote widgets, wallet-ready swap calldata, subgraph recipes, position dashboards, gauges/APR, and frontend integration.
+
+For the Topaz account/identity layer — adding "Connect with Topaz ID", showing Topaz ID profiles, or signing through the Topaz ID consent flow — see `developers/topaz-id-connect.md` for the `@topazdex/id-connect` NPM package.
 
 ## Status and roadmap
 
