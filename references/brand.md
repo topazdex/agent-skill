@@ -36,11 +36,11 @@ in `scripts/src/config/brand.ts` exposes the same URLs.
 
 | Asset | URL | Suggested use |
 |---|---|---|
-| Full logo (PNG, 18.9 KB) | https://raw.githubusercontent.com/topazdex/assets/main/logo.png | Embeds, README headers, light-bg surfaces |
-| Full logo (SVG, 695 B) | https://raw.githubusercontent.com/topazdex/assets/main/logo.svg | Frontends, infinite-scaling, theme-recolorable |
-| TOPAZ token logo (PNG, 11.6 KB) | https://raw.githubusercontent.com/topazdex/assets/main/token-logo.png | Token-list entries, wallet icons |
-| TOPAZ 100×100 (PNG, 6.6 KB) | https://raw.githubusercontent.com/topazdex/assets/main/topaz100.png | Small avatars, Twitter cards |
-| Social preview (JPG, 45.1 KB) | https://raw.githubusercontent.com/topazdex/assets/main/preview.jpg | Open Graph / Twitter card `og:image` |
+| Full logo (PNG) | https://raw.githubusercontent.com/topazdex/assets/main/logo.png | Embeds, README headers, light-bg surfaces |
+| Full logo (SVG) | https://raw.githubusercontent.com/topazdex/assets/main/logo.svg | Frontends, infinite-scaling, theme-recolorable |
+| TOPAZ token logo (PNG) | https://raw.githubusercontent.com/topazdex/assets/main/token-logo.png | Token-list entries, wallet icons |
+| TOPAZ 100×100 (PNG) | https://raw.githubusercontent.com/topazdex/assets/main/topaz100.png | Small avatars, social cards |
+| Social preview (JPG) | https://raw.githubusercontent.com/topazdex/assets/main/preview.jpg | Open Graph / social card `og:image` |
 
 ### Embedding examples
 

@@ -12,6 +12,16 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Changed
+
+- **Brand asset catalog refreshed for the 2026 rebrand.** `references/brand.md`
+  drops the hardcoded byte-size annotations from the asset table (they drift every
+  time the artwork changes) and updates the "Twitter card" wording to "social card"
+  for the X rebrand. Asset URLs, filenames, and the `BRAND.assets` keys are
+  unchanged — the rebranded logos ship at the same
+  `raw.githubusercontent.com/topazdex/assets/main/*` paths, so downstream embeds
+  keep working with no edits.
+
 
 ## [2.8.0] — 2026-06-13
 
