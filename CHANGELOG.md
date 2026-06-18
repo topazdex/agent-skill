@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.8.1] — 2026-06-18
+
 ### Changed
 
 - **Brand asset catalog refreshed for the 2026 rebrand.** `references/brand.md`
@@ -398,7 +401,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.8.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.8.1...HEAD
+[2.8.1]: https://github.com/topazdex/agent-skill/compare/v2.8.0...v2.8.1
 [2.8.0]: https://github.com/topazdex/agent-skill/compare/v2.7.0...v2.8.0
 [2.7.0]: https://github.com/topazdex/agent-skill/compare/v2.6.0...v2.7.0
 [2.6.0]: https://github.com/topazdex/agent-skill/compare/v2.5.2...v2.6.0
