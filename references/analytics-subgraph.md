@@ -7,11 +7,13 @@ Topaz indexes two subgraphs on Goldsky — a v2 (Solidly) subgraph and a v3 (Sli
 ## Endpoints
 
 ```
-V2:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn
-V3:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn
+V2:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn
+V3:  https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn
 ```
 
 Override via `SUBGRAPH_V2_URL` / `SUBGRAPH_V3_URL` env vars in `scripts/.env`. Both POST JSON to `/`. No auth.
+
+These are **tag-based** endpoints (`…/prod/gn`): the `prod` tag always resolves to the latest deployed version, so the URL is stable across redeploys — you no longer pin a `v0.0.x`. The previously pinned `topaz-v3/v0.0.2` URL still serves but carries a since-fixed bug that **inflated `volumeUSD` / `feesUSD`**; `prod` has the correction, so prefer it for any revenue/volume math.
 
 ## V2 schema (high level)
 
@@ -19,7 +21,11 @@ Override via `SUBGRAPH_V2_URL` / `SUBGRAPH_V3_URL` env vars in `scripts/.env`. B
 |---|---|
 | `UniswapFactory` | `id`, `pairCount`, `totalVolumeUSD`, `totalLiquidityUSD`, `totalFeesUSD`, `txCount` |
 | `Token` | `id`, `symbol`, `name`, `decimals`, `tradeVolumeUSD`, `totalLiquidity`, `derivedETH` |
-| `Pair` | `id`, `token0`, `token1`, `reserve0`, `reserve1`, `totalSupply`, `stable`, `fee`, `customFee`, `reserveUSD`, `token0Price`, `token1Price`, `volumeUSD`, `feesUSD`, `txCount`, `liquidityProviderCount`, `createdAtTimestamp` |
+| `Pair` | `id`, `token0`, `token1`, `reserve0`, `reserve1`, `totalSupply`, `stable`, `fee`, `customFee`, `reserveUSD`, `token0Price`, `token1Price`, `volumeUSD`, `feesUSD`, `gauge`, `txCount`, `liquidityProviderCount`, `createdAtTimestamp` |
+| `LiquidityPosition` | `id`, `user`, `pair`, `unstakedBalance`, `stakedBalance`, `totalBalance` — per-user LP balance, incl. the portion staked in the gauge |
+| `Gauge` | `id`, `pair`, `isAlive`, `totalStaked`, `rewardToken` — v2 staking gauge for the pair |
+| `GaugeLookup` | `id` — pair↔gauge lookup helper |
+| `User` | `id` — account; resolves to its `LiquidityPosition`s |
 | `Mint`, `Burn`, `Swap` | Per-tx events with `pair`, `amount0/1`, `amountUSD`, `from`/`to`/`sender`/`recipient` |
 | `Bundle` (id=`1`) | `ethPrice` — USD per BNB |
 | `UniswapDayData` | Global daily rollups (`dailyVolumeUSD`, `dailyFeesUSD`, `totalLiquidityUSD`, `txCount`) |
@@ -35,15 +41,19 @@ Override via `SUBGRAPH_V2_URL` / `SUBGRAPH_V3_URL` env vars in `scripts/.env`. B
 | `Factory` | `id`, `poolCount`, `totalVolumeUSD`, `totalValueLockedUSD`, `totalFeesUSD` |
 | `Bundle` (id=`1`) | `ethPriceUSD` |
 | `Token` | `id`, `symbol`, `name`, `decimals`, `volume`, `volumeUSD`, `feesUSD`, `poolCount`, `totalValueLockedUSD`, `derivedETH`, `whitelistPools` |
-| `Pool` | `id`, `token0`, `token1`, `tickSpacing`, `fee`, `feeTier`, `customFee`, `dynamicFee`, `dynamicFeeCap`, `dynamicScalingFactor`, `liquidity`, `sqrtPrice`, `tick`, `token0Price`, `token1Price`, `volumeUSD`, `feesUSD`, `totalValueLockedUSD`, `collectedFeesUSD`, `txCount`, `liquidityProviderCount`, `createdAtTimestamp` |
+| `Pool` | `id`, `token0`, `token1`, `tickSpacing`, `fee`, `feeTier`, `customFee`, `dynamicFee`, `dynamicFeeCap`, `dynamicScalingFactor`, `liquidity`, `sqrtPrice`, `tick`, `token0Price`, `token1Price`, `volumeUSD`, `feesUSD`, `totalValueLockedUSD`, `collectedFeesUSD`, `gauge`, `txCount`, `liquidityProviderCount`, `createdAtTimestamp` |
 | `Tick` | `id`, `pool`, `tickIdx`, `liquidityGross`, `liquidityNet`, `price0`, `price1` |
+| `Position` | `id` (NFT tokenId), `owner`, `pool`, `tickLower`, `tickUpper`, `liquidity`, `staked`, `gauge` — CL position, incl. whether it is staked in the CLGauge |
+| `Gauge` | `id`, `pool`, `isAlive`, `stakedLiquidity`, `stakedPositionCount`, `rewardToken` — v3 CLGauge |
+| `GaugeLookup` | `id` — pool↔gauge lookup helper |
+| `User` | `id` — account; resolves to its `Position`s |
 | `Mint`, `Burn`, `Swap`, `Collect` | Per-tx events with `pool`, `tickLower`/`tickUpper` (where applicable), amounts |
 | `Transaction` | Container for the above |
 | `UniswapDayData` | Global daily (`volumeUSD`, `feesUSD`, `tvlUSD`, `txCount`) |
 | `PoolDayData`, `PoolHourData` | OHLC + volume/fees/tvl |
 | `TokenDayData`, `TokenHourData` | OHLC + volume + price |
 
-**Important** — both subgraphs **do not** currently index gauges/votes/bribes/locks. Those entities are read directly from chain (see `analytics-onchain.md`). Don't search for `Gauge`/`Vote` types in these schemas.
+**Important** — both subgraphs now index the **gauge + staking layer**: `Gauge` (per-pool staking gauge), `GaugeLookup`, `User`, and per-user staked/unstaked LP balances (`LiquidityPosition` on v2, `Position` on v3). They still **do not** index **votes, bribes, or ve-locks** — read those directly from chain (see `analytics-onchain.md`). Don't search for `Vote`/`Bribe`/`veNFT` types in these schemas.
 
 ## Example queries
 
@@ -213,7 +223,7 @@ const { pools } = await v3.request<{ pools: any[] }>(TOP_V3);
 ## Limitations & caveats
 
 - **Indexing lag**: Goldsky typically lags 1–2 blocks behind chain head. For things that need real-time freshness (current pool price, current voting weight, pending claims), use on-chain reads via `analytics-onchain.md`.
-- **No gauge / vote data in subgraphs** as noted above. There is a placeholder for a future gauges subgraph but it's not currently live.
+- **Gauge + staking are now indexed; votes/bribes/locks are not.** As noted above, `Gauge` / `GaugeLookup` and per-user staked balances are queryable directly from these subgraphs. Voting weights, bribe markets, and ve-lock state remain on-chain only (`analytics-onchain.md`) or via the Stats API.
 - **`fee` vs `feeTier`** in v3: `feeTier` is the tickSpacing default; `fee` is the effective fee at index time (could be overridden by a fee module). Use `fee` for revenue calcs.
 - **`customFee` and `dynamicFee` booleans** indicate non-default fee state — surface these in any "pool detail" UI so users understand why the fee changed.
 - **`derivedETH` is the token's price in WBNB**; multiply by `bundle.ethPrice(USD)` to get USD.

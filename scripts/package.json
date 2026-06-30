@@ -12,7 +12,9 @@
     "./tokens": "./src/config/tokens.ts",
     "./quotes": "./src/read/quotes.ts",
     "./action-builders": "./src/lib/actionBuilders.ts",
-    "./tx-builders": "./src/lib/txBuilders.ts"
+    "./tx-builders": "./src/lib/txBuilders.ts",
+    "./relay-builders": "./src/lib/relayBuilders.ts",
+    "./relays": "./src/config/relays.ts"
   },
   "engines": {
     "node": ">=20.0.0"

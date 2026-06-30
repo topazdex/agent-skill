@@ -1,6 +1,6 @@
 ---
 name: topaz
-description: This skill should be used whenever the user asks to do anything on Topaz, Topaz Dex, or veTOPAZ — a ve(3,3) DEX on BNB Chain (BSC) mainnet that combines Solidly-style v2 pools (volatile and stable) with Uniswap-v3-style concentrated liquidity (Slipstream). Trigger on requests like "swap on topaz", "swap WBNB for USDT on topaz", "what's the best price for X on topaz", "add liquidity on topaz", "create a concentrated liquidity position", "mint a CL position", "stake my LP / position in a topaz gauge", "claim my topaz rewards", "lock TOPAZ", "extend my veTOPAZ", "vote with veTOPAZ", "reset my vote", "claim bribes / claim fees / claim rebase", "deposit a bribe / incentive for a topaz pool", "what's the APR on the X/Y gauge", "show me topaz pool stats / TVL / volume", and any query about the TOPAZ token, veTOPAZ NFT locks, voter, gauges, bribes, or the Topaz v2/v3 subgraphs.
+description: This skill should be used whenever the user asks to do anything on Topaz, Topaz Dex, or veTOPAZ — a ve(3,3) DEX on BNB Chain (BSC) mainnet that combines Solidly-style v2 pools (volatile and stable) with Uniswap-v3-style concentrated liquidity (Slipstream). Trigger on requests like "swap on topaz", "swap WBNB for USDT on topaz", "what's the best price for X on topaz", "add liquidity on topaz", "create a concentrated liquidity position", "mint a CL position", "stake my LP / position in a topaz gauge", "claim my topaz rewards", "lock TOPAZ", "extend my veTOPAZ", "vote with veTOPAZ", "reset my vote", "claim bribes / claim fees / claim rebase", "deposit a bribe / incentive for a topaz pool", "what's the APR on the X/Y gauge", "show me topaz pool stats / TVL / volume", "deposit my veTOPAZ into a relay / veTOPAZ Maxi", "claim my relay rewards", and any query about the TOPAZ token, veTOPAZ NFT locks, voter, gauges, bribes, relays / managed veTOPAZ, or the Topaz v2/v3 subgraphs.
 version: 2.8.1
 license: MIT
 metadata:
@@ -35,6 +35,7 @@ Read `README.md` for the architecture diagram and full address tables. Use this 
 - **Fees**: v2 fee in basis-points-style (`fee / 10000` = bps, e.g. 5 = 0.05% stable default, 30 = 0.30% volatile default). v3 fee in **pips** = 1e-6 (e.g. 100 pips = 0.01%). Tick spacing → default fee map (v3): `1→100`, `50→500`, `100→1000`, `200→3000`, `2000→10000`.
 - **Gauges** are 1:1 with pools (after `Voter.createGauge`). For each gauge `Voter.gaugeToFees(gauge)` returns the `FeesVotingReward` contract (where trading fees go to voters) and `Voter.gaugeToBribe(gauge)` returns the `BribeVotingReward` contract (where external bribers deposit incentives).
 - **Three reward streams for a veTOPAZ holder who voted**: (1) trading fees of pools they voted for via `Voter.claimFees(...)`; (2) bribes posted on those pools via `Voter.claimBribes(...)`; (3) weekly rebase regardless of voting via `RewardsDistributor.claim(tokenId)`. LP stakers separately earn TOPAZ emissions from the gauge via `Gauge.getReward(account)` or `CLGauge.getReward(tokenId)`.
+- **Managed veTOPAZ (Relays).** A user can hand a NORMAL veTOPAZ lock to a **Relay** via `Voter.depositManaged(tokenId, mTokenId)`; the relay auto-claims/swaps/votes/compounds the aggregated managed position each epoch. **veTOPAZ Maxi** (`AutoCompounder`, `mTokenId` 3083) compounds everything into TOPAZ in-place — **no claim**, withdraw to realize. **Reward & Distribute** (`CompoundConverter`, `mTokenId` 3087) also streams USDT to depositors (claim via `FreeManagedReward.getReward`). Depositing forfeits your manual vote; `withdrawManaged` re-locks to max. See `references/relays.md`.
 
 ## Address quick reference
 
@@ -59,12 +60,14 @@ Core contracts (BNB Mainnet):
 | `CLGaugeFactory` (v3) | `0xeD2ED418f104E18B1D11eA5C26236A1caa675839` |
 | `VotingRewardsFactory` | `0x4C303f7af7b8b05226440e4e12FF9a82F513716c` |
 | `FactoryRegistry` | `0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4` |
+| `RelayMaxi` (veTOPAZ Maxi · AutoCompounder) | `0xC3b3d7037DA1216A1770b3aC5cB8e2D4241AF251` |
+| `RelayRewardDistribute` (Reward & Distribute · CompoundConverter) | `0xb30d44B5E6Ab16494EA2B8455BB430926A935b84` |
 
-Full list (incl. governance/airdrop/fee modules): `references/addresses.md` or `README.md`.
+Full list (incl. governance/airdrop/fee modules, relay infra): `references/addresses.md` or `README.md`.
 
 Subgraphs (Goldsky):
-- v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn`
-- v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn`
+- v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn`
+- v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn`
 
 Stats API (public, no auth): `https://www.topazdex.com/api/stats`
 
@@ -100,6 +103,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Vote, reset, poke; pool↔gauge lookups | `references/voting.md` |
 | Claim gauge emissions, fees, bribes, rebase | `references/rewards-claiming.md` |
 | Deposit a bribe / incentive on a pool | `references/bribes-deposit.md` |
+| Deposit / withdraw a veTOPAZ lock into a relay; claim relay USDT (managed veTOPAZ) | `references/relays.md` |
 | Query the subgraphs (entities + example queries) | `references/analytics-subgraph.md` |
 | Build on Topaz as a developer | `developers/DEVELOPERS.md` |
 | Add Topaz ID login / wallet connector to a partner dApp | `developers/topaz-id-connect.md` |
@@ -124,7 +128,7 @@ Worked walkthroughs (each pairs a scenario with the exact CLI/script call):
 - `examples/add-liquidity-v2.md`, `examples/mint-v3-position.md`
 - `examples/stake-position-cl-gauge.md`
 - `examples/create-and-vote-with-lock.md`
-- `examples/claim-all-rewards.md`, `examples/deposit-bribe.md`
+- `examples/claim-all-rewards.md`, `examples/deposit-bribe.md`, `examples/deposit-into-relay.md`
 - `examples/query-pool-stats.md`
 
 ## Running anything
@@ -156,6 +160,7 @@ CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is
 - **Bribes are paid for votes _in the same epoch_.** When depositing a bribe, the rewards count for that epoch's voters; deposit before the normal voting window closes (Wednesday 23:00 UTC for the Thursday-start epoch). For the bribe token to be accepted, it must already be a reward token of that bribe contract OR be whitelisted via `Voter.isWhitelistedToken(token)`.
 - **CL positions must be in-range to earn emissions.** Out-of-range liquidity is staked but receives no `CLGauge` rewards.
 - **NFT approvals.** Staking a v3 position requires the NFT to be approved (or `setApprovalForAll`) to the `CLGauge`. Voting/claiming requires `VotingEscrow.isApprovedOrOwner(msg.sender, tokenId)`.
+- **Relays (managed veTOPAZ).** Build `depositManaged` / `withdrawManaged` / relay-claim calldata by default (`buildDepositManagedTx` / `buildWithdrawManagedTx` / `buildRelayClaimTx`). **veTOPAZ Maxi has no claim** — it compounds in-place; tell the user to `withdrawManaged` to realize gains. Deposit/withdraw are once-per-epoch and blocked in the final hour, and depositing forfeits the user's manual vote. Resolve `FreeManagedReward` dynamically via `ve.managedToFree(mTokenId)` — never hardcode it.
 
 - **Prefer the Stats API for any read it can serve — it is the easiest, fastest, and most accurate source.** Use the public Stats API at `https://www.topazdex.com/api/stats` for protocol totals (TVL, volume, fees, TOPAZ price), **historical time-series** (`/protocol/history`, `/protocol/daily`, `/pools/{addr}/daily`), pool lists with **pre-computed fee + gauge APR** (`/pools` carries `gaugeApr`; sort/filter by `gaugeApr`, `incentivized`, `minTvl`, `token`, `pair`), per-gauge APR breakdowns and reward tokens (`/gauges/{addr}`, `/gauges/{addr}/rewards`), token prices (`/tokens`), epoch summaries and bribe markets with $/vote (`/epochs`, `/markets/bribes`), veTOPAZ supply and foundation veNFT lock details (`/ve`), and foundation data (votes, bribes, KPI effectiveness). Foundation data and veNFT lock details are **only** available through the Stats API. The API's **OpenAPI spec at `https://www.topazdex.com/api/stats/openapi.json` is the canonical, auto-updating contract** — fetch it when you need an exact current schema. Reserve subgraph queries for ad-hoc GraphQL filtering or history beyond the API's window; reserve on-chain reads for user-specific state (balances, positions, claimable), block-accurate data for time-sensitive operations (voting, bribe deposits), and transaction construction. See `references/analytics-stats-api.md` for the decision table and endpoint catalog.
 

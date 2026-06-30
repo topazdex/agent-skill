@@ -22,6 +22,7 @@ import NonfungiblePositionManagerJson from "../../../references/abis/Nonfungible
 import PoolJson from "../../../references/abis/Pool.json" with { type: "json" };
 import PoolFactoryJson from "../../../references/abis/PoolFactory.json" with { type: "json" };
 import QuoterV2Json from "../../../references/abis/QuoterV2.json" with { type: "json" };
+import RelayJson from "../../../references/abis/Relay.json" with { type: "json" };
 import RewardJson from "../../../references/abis/Reward.json" with { type: "json" };
 import RewardsDistributorJson from "../../../references/abis/RewardsDistributor.json" with { type: "json" };
 import RouterJson from "../../../references/abis/Router.json" with { type: "json" };
@@ -64,6 +65,7 @@ export const ABIS = {
   QuoterV2: extract(QuoterV2Json),
   MixedRouteQuoterV1: extract(MixedRouteQuoterV1Json),
   Multicall3: extract(Multicall3Json),
+  Relay: extract(RelayJson),
 } as const;
 
 export type AbiName = keyof typeof ABIS;

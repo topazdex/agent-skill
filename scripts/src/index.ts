@@ -1,6 +1,7 @@
 export * from "./config/addresses.js";
 export * from "./config/brand.js";
 export * from "./config/chain.js";
+export * from "./config/relays.js";
 export * from "./config/tokens.js";
 
 export * from "./lib/abis.js";
@@ -10,6 +11,7 @@ export * from "./lib/erc20.js";
 export * from "./lib/epoch.js";
 export * from "./lib/path.js";
 export * from "./lib/pricing.js";
+export * from "./lib/relayBuilders.js";
 export * from "./lib/statsApi.js";
 export * from "./lib/subgraph.js";
 export * from "./lib/tickMath.js";
@@ -22,5 +24,6 @@ export * from "./read/locks.js";
 export * from "./read/pools.js";
 export * from "./read/positions.js";
 export * from "./read/quotes.js";
+export * from "./read/relays.js";
 export * from "./read/subgraphQueries.js";
 export * from "./read/votes.js";

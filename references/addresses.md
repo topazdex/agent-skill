@@ -65,6 +65,24 @@ Governance (`EpochGovernor`, `ProtocolGovernor`) is intentionally **not** docume
 | CustomSwapFeeModule | `0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2` | Per-pool flat swap fee override (MAX_FEE = 30,000 pips = 3%) |
 | CustomUnstakedFeeModule | `0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582` | Unstaked-position fee override (MAX_FEE = 500,000 pips = 50%; default 100,000 = 10%) |
 | DynamicSwapFeeModule | `0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541` | TWAP-volatility-scaled fees |
+| PositionBurnHelper | `0x8EA90c6711bcA4203C689bF0dd6f08E43377e3C5` | Bulk-burns the caller's empty/dead CL position NFTs; bound to the NonfungiblePositionManager |
+
+## Relays (mveTOPAZ reward automation)
+
+Automated reward managers for **managed veTOPAZ** locks. Full workflow + concept in `relays.md`. `FreeManagedReward` / `LockedManagedReward` are **not** fixed — resolve them per relay via `VotingEscrow.managedToFree(mTokenId)` / `managedToLocked(mTokenId)`.
+
+| Contract | Address | Notes |
+|---|---|---|
+| RelayFactoryRegistry | `0x987097eF2fBd740436166f49700a40ac5eD49FE4` | Whitelists relay factories |
+| AutoCompounderFactory | `0x717bB82888F103A1Ff8E07A0f96aD6497744feeA` | Deploys `AutoCompounder` (Maxi) relays |
+| CompoundConverterFactory | `0x64FaeF44D4b9bF1AbeF56878D0188084355fd5Ad` | Deploys `CompoundConverter` (Reward & Distribute) relays |
+| Optimizer | `0x62B3cea3C6028029E56A880E71b659aF523F06B6` | Swap-route optimizer used by relays |
+| OptimizerRegistry | `0x70008f088e60DE590ca63F93814692503e96Fcbd` | Whitelists optimizers |
+| KeeperRegistry | `0xDB93DCfd7a560fB0757857787b6B3c2dBF6E56aA` | Whitelists keepers that trigger compounding |
+| veTOPAZ Maxi (`AutoCompounder`) | `0xC3b3d7037DA1216A1770b3aC5cB8e2D4241AF251` | Compounds all rewards into TOPAZ; managed veNFT `mTokenId` 3083. No user claim |
+| Reward & Distribute (`CompoundConverter`) | `0xb30d44B5E6Ab16494EA2B8455BB430926A935b84` | Compounds TOPAZ + streams USDT to depositors; managed veNFT `mTokenId` 3087. Users claim USDT |
+
+New relays may be deployed over time — enumerate them on-chain via the factories (`relays()`) or `RelayFactoryRegistry`; the two above are the live BSC set as of this release.
 
 ## Per-gauge addresses are dynamic
 

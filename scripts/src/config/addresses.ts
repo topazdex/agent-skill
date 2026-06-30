@@ -42,6 +42,20 @@ export const ADDR = {
   CustomSwapFeeModule: "0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2",
   CustomUnstakedFeeModule: "0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582",
   DynamicSwapFeeModule: "0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541",
+  PositionBurnHelper: "0x8EA90c6711bcA4203C689bF0dd6f08E43377e3C5", // bulk-burns the caller's empty CL position NFTs
+
+  // Relays — automated reward managers for managed veTOPAZ (mveTOPAZ). Infra
+  // (factories / registries / keeper) plus the two live BSC relays. Each relay owns a
+  // managed veNFT (mTokenId); FreeManagedReward / LockedManagedReward are resolved per
+  // relay at runtime via VotingEscrow.managedTo{Free,Locked}(mTokenId), not static.
+  RelayFactoryRegistry: "0x987097eF2fBd740436166f49700a40ac5eD49FE4",
+  AutoCompounderFactory: "0x717bB82888F103A1Ff8E07A0f96aD6497744feeA",
+  CompoundConverterFactory: "0x64FaeF44D4b9bF1AbeF56878D0188084355fd5Ad",
+  RelayOptimizer: "0x62B3cea3C6028029E56A880E71b659aF523F06B6",
+  RelayOptimizerRegistry: "0x70008f088e60DE590ca63F93814692503e96Fcbd",
+  RelayKeeperRegistry: "0xDB93DCfd7a560fB0757857787b6B3c2dBF6E56aA",
+  RelayMaxi: "0xC3b3d7037DA1216A1770b3aC5cB8e2D4241AF251", // veTOPAZ Maxi — AutoCompounder, mTokenId 3083
+  RelayRewardDistribute: "0xb30d44B5E6Ab16494EA2B8455BB430926A935b84", // Reward & Distribute — CompoundConverter, mTokenId 3087
 } as const;
 
 export type ContractName = keyof typeof ADDR;

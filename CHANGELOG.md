@@ -12,6 +12,44 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- **Topaz Relays — managed veTOPAZ (mveTOPAZ) reward automation.** New
+  `references/relays.md` and `examples/deposit-into-relay.md` document the two live
+  BNB-Mainnet relays — **veTOPAZ Maxi** (`AutoCompounder`, compounds all rewards into
+  TOPAZ in-place, no claim) and **Reward & Distribute** (`CompoundConverter`, also
+  streams USDT to depositors) — and the depositor flow through Topaz core
+  (`Voter.depositManaged` / `withdrawManaged`, `FreeManagedReward.getReward`). Ships
+  executable, no-broadcast calldata builders (`buildDepositManagedTx`,
+  `buildWithdrawManagedTx`, `buildRelayClaimTx` in `scripts/src/lib/relayBuilders.ts`),
+  a `RELAYS` registry (`scripts/src/config/relays.ts`), live-state reads
+  (`scripts/src/read/relays.ts`), broadcast wrappers (`scripts/src/write/relay.ts`), a
+  `relay` CLI (`list` / `deposit` / `withdraw` / `claim`), a minimal `Relay` ABI, unit
+  tests, and eval `09-deposit-into-relay.md`. The relay infrastructure and the two
+  relay instances are added to the canonical address set
+  (`scripts/src/config/addresses.ts`, `README.md`, `references/addresses.md`), and
+  `SKILL.md` gains a mental-model entry, address quick-ref rows, a nav row, trigger
+  phrases, and an operating principle. Verified against the `topaz-relays` deploy
+  artifacts and the `topaz-agent-service` relay integration.
+- **`PositionBurnHelper`** (`0x8EA90c6711bcA4203C689bF0dd6f08E43377e3C5`) — the v3
+  periphery contract that bulk-burns the caller's empty/dead CL position NFTs — added
+  to the address tables.
+
+### Changed
+
+- **Subgraphs moved to the tag-based `…/prod/gn` endpoints.** The v2 and v3 Goldsky
+  URLs now use the stable `prod` tag instead of pinned `v0.0.x` versions across
+  `SKILL.md`, `README.md`, `references/analytics-subgraph.md`,
+  `developers/DEVELOPERS.md`, `developers/subgraph-recipes.md`, `scripts/.env.example`,
+  and `scripts/src/lib/subgraph.ts`. The `prod` tag always resolves to the latest
+  deploy, and the v3 `prod` build **fixes a bug that inflated `volumeUSD` / `feesUSD`**
+  in the old pinned `v0.0.2`.
+- **Subgraph schema docs refreshed.** Both subgraphs now index the gauge + staking
+  layer — `Gauge`, `GaugeLookup`, `User`, and per-user staked balances
+  (`LiquidityPosition` on v2, `Position` on v3). `references/analytics-subgraph.md` and
+  `references/analytics-onchain.md` were corrected; votes, bribes, and ve-locks remain
+  on-chain only.
+
 
 ## [2.8.1] — 2026-06-18
 

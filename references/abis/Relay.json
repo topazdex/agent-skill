@@ -1,0 +1,53 @@
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "name",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "string" }]
+    },
+    {
+      "type": "function",
+      "name": "mTokenId",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "uint256" }]
+    },
+    {
+      "type": "function",
+      "name": "token",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "address" }]
+    },
+    {
+      "type": "function",
+      "name": "rewardToken",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "address" }]
+    },
+    {
+      "type": "function",
+      "name": "keeperLastRun",
+      "stateMutability": "view",
+      "inputs": [],
+      "outputs": [{ "name": "", "type": "uint256" }]
+    },
+    {
+      "type": "function",
+      "name": "amountCompounded",
+      "stateMutability": "view",
+      "inputs": [{ "name": "_epochStart", "type": "uint256" }],
+      "outputs": [{ "name": "", "type": "uint256" }]
+    },
+    {
+      "type": "function",
+      "name": "amountDistributed",
+      "stateMutability": "view",
+      "inputs": [{ "name": "_epochStart", "type": "uint256" }],
+      "outputs": [{ "name": "", "type": "uint256" }]
+    }
+  ]
+}

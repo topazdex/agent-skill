@@ -174,14 +174,30 @@ The Topaz website auto-mirrors anything that lands on `main` via Next.js ISR wit
 | CustomSwapFeeModule | `0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2` |
 | CustomUnstakedFeeModule | `0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582` |
 | DynamicSwapFeeModule | `0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541` |
+| PositionBurnHelper | `0x8EA90c6711bcA4203C689bF0dd6f08E43377e3C5` |
+
+### Relays (`topaz-relays`)
+
+Automated reward managers for managed veTOPAZ (mveTOPAZ). See `references/relays.md`.
+
+| Contract | Address |
+|---|---|
+| RelayFactoryRegistry | `0x987097eF2fBd740436166f49700a40ac5eD49FE4` |
+| AutoCompounderFactory | `0x717bB82888F103A1Ff8E07A0f96aD6497744feeA` |
+| CompoundConverterFactory | `0x64FaeF44D4b9bF1AbeF56878D0188084355fd5Ad` |
+| Optimizer | `0x62B3cea3C6028029E56A880E71b659aF523F06B6` |
+| OptimizerRegistry | `0x70008f088e60DE590ca63F93814692503e96Fcbd` |
+| KeeperRegistry | `0xDB93DCfd7a560fB0757857787b6B3c2dBF6E56aA` |
+| veTOPAZ Maxi (AutoCompounder, mTokenId 3083) | `0xC3b3d7037DA1216A1770b3aC5cB8e2D4241AF251` |
+| Reward & Distribute (CompoundConverter, mTokenId 3087) | `0xb30d44B5E6Ab16494EA2B8455BB430926A935b84` |
 
 In this skill, addresses are canonical in `scripts/src/config/addresses.ts` and mirrored to `references/addresses.md` and the table above. The validator (`yarn validate` in `scripts/`) enforces parity across the three.
 
 ## Subgraph endpoints (Goldsky)
 
 ```
-v2: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn
-v3: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn
+v2: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn
+v3: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn
 ```
 
 Entity catalogs and example queries: `references/analytics-subgraph.md`.
@@ -231,6 +247,8 @@ Voting:
 
 Epochs are weekly, starting **Thursday 00:00:00 UTC**. Voting window opens at +1h and closes at the next epoch boundary -1h. See `references/epoch-timing.md`.
 
+**Relays (managed veTOPAZ).** Depositors can hand a veTOPAZ lock to a **Relay** (`Voter.depositManaged`) that aggregates voting power into a managed veNFT and auto-claims/swaps/votes/compounds each epoch. Two are live: **veTOPAZ Maxi** (compounds into TOPAZ in-place) and **Reward & Distribute** (also streams USDT to depositors). See `references/relays.md`.
+
 ## Repository layout
 
 ```
@@ -248,6 +266,7 @@ topaz-skill/
 │   ├── voting.md
 │   ├── rewards-claiming.md
 │   ├── bribes-deposit.md
+│   ├── relays.md            # managed veTOPAZ (mveTOPAZ) reward automation
 │   ├── analytics-{subgraph,onchain}.md
 │   ├── apr-calculations.md
 │   ├── pitfalls.md
@@ -258,10 +277,10 @@ topaz-skill/
 └── scripts/                 # TypeScript + ethers v6 helpers
     ├── package.json
     └── src/
-        ├── config/          # addresses, chain, tokens
-        ├── lib/             # client, erc20, subgraph, tickMath, path, pricing, epoch
-        ├── read/            # quotes, pools, gauges, locks, votes, claimable, apr, ...
-        ├── write/           # swap, liquidity, gauge, lock, vote, claim, bribe
+        ├── config/          # addresses, chain, tokens, relays
+        ├── lib/             # client, erc20, subgraph, tickMath, path, pricing, epoch, relayBuilders
+        ├── read/            # quotes, pools, gauges, locks, votes, claimable, apr, relays, ...
+        ├── write/           # swap, liquidity, gauge, lock, vote, claim, bribe, relay
         └── cli/             # `yarn tsx src/cli/<cmd>.ts ...` entry points
 ```
 

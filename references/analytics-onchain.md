@@ -1,6 +1,6 @@
 # Analytics — On-chain reads
 
-When subgraph data is stale, missing (gauges/votes/bribes/locks aren't indexed), or you need block-accurate state, read directly from the chain.
+When subgraph data is stale, missing (votes/bribes/locks aren't indexed — gauges and staked balances now are), or you need block-accurate state, read directly from the chain.
 
 > **For aggregated protocol metrics, pre-computed APRs, and foundation data**, prefer the Stats API (`analytics-stats-api.md`) — it returns the same numbers in a single REST call. Use on-chain reads below when you need user-specific state (balances, positions, claimable), block-accurate data for time-sensitive ops, or transaction construction.
 

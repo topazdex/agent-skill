@@ -145,8 +145,8 @@ For protocol/pool/gauge stats, **pre-computed APRs**, token prices, epoch/bribe 
 
 Use the subgraphs for ad-hoc GraphQL filtering, per-transaction events, or history beyond the API's window:
 
-- v2 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/v0.0.4/gn`
-- v3 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/v0.0.2/gn`
+- v2 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn`
+- v3 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn`
 
 Use on-chain reads for current ownership and live state:
 
