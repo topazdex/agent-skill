@@ -1,7 +1,7 @@
 ---
 name: topaz
 description: This skill should be used whenever the user asks to do anything on Topaz, Topaz Dex, or veTOPAZ — a ve(3,3) DEX on BNB Chain (BSC) mainnet that combines Solidly-style v2 pools (volatile and stable) with Uniswap-v3-style concentrated liquidity (Slipstream). Trigger on requests like "swap on topaz", "swap WBNB for USDT on topaz", "what's the best price for X on topaz", "add liquidity on topaz", "create a concentrated liquidity position", "mint a CL position", "stake my LP / position in a topaz gauge", "claim my topaz rewards", "lock TOPAZ", "extend my veTOPAZ", "vote with veTOPAZ", "reset my vote", "claim bribes / claim fees / claim rebase", "deposit a bribe / incentive for a topaz pool", "what's the APR on the X/Y gauge", "show me topaz pool stats / TVL / volume", "deposit my veTOPAZ into a relay / veTOPAZ Maxi", "claim my relay rewards", and any query about the TOPAZ token, veTOPAZ NFT locks, voter, gauges, bribes, relays / managed veTOPAZ, or the Topaz v2/v3 subgraphs.
-version: 2.9.0
+version: 2.9.1
 license: MIT
 metadata:
   homepage: https://topazdex.com

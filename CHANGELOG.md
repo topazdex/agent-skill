@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.9.1] — 2026-07-01
+
 ### Fixed
 
 - Corrected user-position source-of-truth docs: the deployed v2 subgraph now indexes per-user LP positions via `LiquidityPosition` and should be used for v2 discovery; the latest v3 position-indexing work is not deployed to the current `prod` endpoint yet, so v3 user CL positions should still be discovered on-chain and joined to subgraph pool analytics for context.
@@ -447,7 +450,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.9.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.9.1...HEAD
+[2.9.1]: https://github.com/topazdex/agent-skill/compare/v2.9.0...v2.9.1
 [2.9.0]: https://github.com/topazdex/agent-skill/compare/v2.8.1...v2.9.0
 [2.8.1]: https://github.com/topazdex/agent-skill/compare/v2.8.0...v2.8.1
 [2.8.0]: https://github.com/topazdex/agent-skill/compare/v2.7.0...v2.8.0
