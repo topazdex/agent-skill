@@ -251,7 +251,7 @@ const { pools } = await v3.request<{ pools: any[] }>(TOP_V3);
 ## Limitations & caveats
 
 - **Indexing lag**: Goldsky typically lags 1–2 blocks behind chain head. For things that need real-time freshness (current pool price, current voting weight, pending claims), use on-chain reads via `analytics-onchain.md`.
-- **Gauge + staking are now indexed; votes/bribes/locks are not.** As noted above, `Gauge` / `GaugeLookup` and per-user staked balances are queryable directly from these subgraphs. Voting weights, bribe markets, and ve-lock state remain on-chain only (`analytics-onchain.md`) or via the Stats API.
+- **Gauge indexing is live on both; per-user positions differ by stack.** `Gauge` / `GaugeLookup` are queryable on both subgraphs. Per-user LP balances are indexed on **v2** (`LiquidityPosition`); **v3** user CL positions are **not** in the current `prod` deployment yet — discover them on-chain (`analytics-onchain.md`). Voting weights, bribe markets, and ve-lock state remain on-chain only or via the Stats API.
 - **`fee` vs `feeTier`** in v3: `feeTier` is the tickSpacing default; `fee` is the effective fee at index time (could be overridden by a fee module). Use `fee` for revenue calcs.
 - **`customFee` and `dynamicFee` booleans** indicate non-default fee state — surface these in any "pool detail" UI so users understand why the fee changed.
 - **`derivedETH` is the token's price in WBNB**; multiply by `bundle.ethPrice(USD)` to get USD.
