@@ -43,17 +43,17 @@ These are **tag-based** endpoints (`…/prod/gn`): the `prod` tag always resolve
 | `Token` | `id`, `symbol`, `name`, `decimals`, `volume`, `volumeUSD`, `feesUSD`, `poolCount`, `totalValueLockedUSD`, `derivedETH`, `whitelistPools` |
 | `Pool` | `id`, `token0`, `token1`, `tickSpacing`, `fee`, `feeTier`, `customFee`, `dynamicFee`, `dynamicFeeCap`, `dynamicScalingFactor`, `liquidity`, `sqrtPrice`, `tick`, `token0Price`, `token1Price`, `volumeUSD`, `feesUSD`, `totalValueLockedUSD`, `collectedFeesUSD`, `gauge`, `txCount`, `liquidityProviderCount`, `createdAtTimestamp` |
 | `Tick` | `id`, `pool`, `tickIdx`, `liquidityGross`, `liquidityNet`, `price0`, `price1` |
-| `Position` | `id` (NFT tokenId), `owner`, `pool`, `tickLower`, `tickUpper`, `liquidity`, `staked`, `gauge` — CL position, incl. whether it is staked in the CLGauge |
+| `Position` | **Planned / not yet deployed to current `prod`**: CL position ownership and staked-state fields (`id`, `owner`, `pool`, `tickLower`, `tickUpper`, `liquidity`, `staked`, `gauge`). Until the updated v3 subgraph is deployed, discover user CL positions on-chain. |
 | `Gauge` | `id`, `pool`, `isAlive`, `stakedLiquidity`, `stakedPositionCount`, `rewardToken` — v3 CLGauge |
 | `GaugeLookup` | `id` — pool↔gauge lookup helper |
-| `User` | `id` — account; resolves to its `Position`s |
+| `User` | `id` — account. Current deployed `prod` should not be treated as complete user CL ownership; use on-chain lookup until the newer position-indexing deployment is promoted. |
 | `Mint`, `Burn`, `Swap`, `Collect` | Per-tx events with `pool`, `tickLower`/`tickUpper` (where applicable), amounts |
 | `Transaction` | Container for the above |
 | `UniswapDayData` | Global daily (`volumeUSD`, `feesUSD`, `tvlUSD`, `txCount`) |
 | `PoolDayData`, `PoolHourData` | OHLC + volume/fees/tvl |
 | `TokenDayData`, `TokenHourData` | OHLC + volume + price |
 
-**Important** — both subgraphs now index the **gauge + staking layer**: `Gauge` (per-pool staking gauge), `GaugeLookup`, `User`, and per-user staked/unstaked LP balances (`LiquidityPosition` on v2, `Position` on v3). They still **do not** index **votes, bribes, or ve-locks** — read those directly from chain (see `analytics-onchain.md`). Don't search for `Vote`/`Bribe`/`veNFT` types in these schemas.
+**Important** — the deployed v2 subgraph indexes the **gauge + staking layer** and per-user LP balances via `LiquidityPosition` (`unstakedBalance`, `stakedBalance`, `totalBalance`). The v3 position-indexing work exists but is **not deployed to the current `prod` endpoint yet**; use on-chain reads for user CL position ownership/staking until that deployment lands. Neither deployed subgraph indexes **votes, bribes, or ve-locks** — read those directly from chain (see `analytics-onchain.md`). Don't search for `Vote`/`Bribe`/`veNFT` types in these schemas.
 
 ## Example queries
 
@@ -129,30 +129,58 @@ For v2, replace `pool`/`pools`/`poolDayDatas` with `pair`/`pairs`/`pairDayDatas`
 
 ### User's v2 LP positions
 
-The v2 subgraph doesn't index per-user balances directly. Either read `ERC20.balanceOf(user)` on each Pair on-chain, or query Mint/Burn events:
+The deployed v2 subgraph now indexes per-user LP positions directly through `LiquidityPosition`. Use it as the primary discovery source for v2 portfolio views; it tells you which pools the user has LP in and splits the balance into loose wallet LP and LP staked in the gauge.
 
 ```graphql
-query UserV2LPHistory($user: Bytes!) {
-  mints(where: { to: $user }, orderBy: timestamp, orderDirection: desc, first: 100) {
-    id timestamp pair { id token0 { symbol } token1 { symbol } stable }
-    amount0 amount1 amountUSD liquidity
-  }
-  burns(where: { sender: $user }, orderBy: timestamp, orderDirection: desc, first: 100) {
-    id timestamp pair { id token0 { symbol } token1 { symbol } stable }
-    amount0 amount1 amountUSD liquidity
+query UserV2LPPositions($user: String!) {
+  liquidityPositions(first: 100, where: { user: $user, totalBalance_gt: "0" }) {
+    id
+    unstakedBalance
+    stakedBalance
+    totalBalance
+    pair {
+      id
+      stable
+      reserve0
+      reserve1
+      reserveUSD
+      totalSupply
+      token0 { id symbol decimals }
+      token1 { id symbol decimals }
+      gauge { id rewardToken isAlive }
+    }
   }
 }
 ```
 
-Authoritative current balance is on-chain.
+Use this for discovery and dashboard state. Overlay on-chain reads only when you need block-exact or action-critical values: `Gauge.earned(user)` for current claimables, `pair.getReserves()` / `totalSupply()` for transaction previews, and direct `balanceOf` checks before signing.
 
 ### User's v3 positions
 
-The v3 subgraph also doesn't index ERC721 position ownership. Read on-chain via `NonfungiblePositionManager.balanceOf(user)` + `tokenOfOwnerByIndex(user, i)`. Then for each `tokenId`, `npm.positions(tokenId)` and join with the indexed `Pool` entity using `(token0, token1, tickSpacing)`.
+The latest v3 subgraph work includes position ownership/staked-state indexing, but that version is **not deployed to the current `prod` endpoint yet**. Until the updated v3 subgraph is live, discover user CL positions on-chain and join the result to v3 subgraph pool data only for analytics context.
+
+Wallet-held CL NFTs:
+
+```solidity
+NonfungiblePositionManager.balanceOf(user)
+NonfungiblePositionManager.tokenOfOwnerByIndex(user, index)
+NonfungiblePositionManager.positions(tokenId)
+```
+
+Staked CL NFTs:
+
+```solidity
+CLGauge.stakedValues(user)
+CLGauge.earned(user, tokenId)
+NonfungiblePositionManager.positions(tokenId)
+CLPool.slot0()
+```
+
+To enrich a CL position with indexed pool context, resolve the pool from `(token0, token1, tickSpacing)` on-chain via `CLFactory.getPool(...)`, then query the v3 subgraph by pool id:
 
 ```graphql
-query PoolForPosition($t0: Bytes!, $t1: Bytes!, $ts: BigInt!) {
-  pools(where: { token0: $t0, token1: $t1, tickSpacing: $ts }, first: 1) {
+query PoolForPosition($pool: ID!) {
+  pool(id: $pool) {
     id totalValueLockedUSD volumeUSD feesUSD tickSpacing feeTier
     token0 { symbol decimals } token1 { symbol decimals }
   }

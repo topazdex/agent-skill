@@ -12,6 +12,10 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed
+
+- Corrected user-position source-of-truth docs: the deployed v2 subgraph now indexes per-user LP positions via `LiquidityPosition` and should be used for v2 discovery; the latest v3 position-indexing work is not deployed to the current `prod` endpoint yet, so v3 user CL positions should still be discovered on-chain and joined to subgraph pool analytics for context.
+
 
 ## [2.9.0] — 2026-06-30
 
@@ -47,11 +51,12 @@ Version semantics for this skill:
   and `scripts/src/lib/subgraph.ts`. The `prod` tag always resolves to the latest
   deploy, and the v3 `prod` build **fixes a bug that inflated `volumeUSD` / `feesUSD`**
   in the old pinned `v0.0.2`.
-- **Subgraph schema docs refreshed.** Both subgraphs now index the gauge + staking
-  layer — `Gauge`, `GaugeLookup`, `User`, and per-user staked balances
-  (`LiquidityPosition` on v2, `Position` on v3). `references/analytics-subgraph.md` and
-  `references/analytics-onchain.md` were corrected; votes, bribes, and ve-locks remain
-  on-chain only.
+- **Subgraph schema docs refreshed.** The deployed v2 subgraph now indexes the gauge +
+  staking layer and per-user LP balances via `LiquidityPosition`. The v3 position
+  indexing work exists but is not deployed to the current `prod` endpoint yet, so v3
+  user CL position discovery remains on-chain for now. `references/analytics-subgraph.md`
+  and `references/analytics-onchain.md` were corrected; votes, bribes, and ve-locks
+  remain on-chain only.
 
 
 ## [2.8.1] — 2026-06-18
