@@ -12,6 +12,19 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed
+
+- **Topaz ID Connect guide brought up to the current `@topazdex/id-connect` API.**
+  `developers/topaz-id-connect.md` was a version-and-a-half stale: it described
+  Topaz ID as a "standard EIP-1193 wallet — sign through plain wagmi" and its
+  `/react` exports omitted `useTopazIdClient`. Corrected to state plainly that
+  Topaz ID is an **ERC-4337 smart contract wallet** and to document the action
+  client (`useTopazIdClient` / `createTopazIdClient`, `sendCalls`, `writeContract`,
+  `waitForReceipt`), native-value formatting, the receipt gotcha, ERC-1271/6492
+  signature verification, and Smart vs Legacy modes. Fixed the exports and
+  peer-dependency tables. Softened the same "standard wagmi wallet" framing in
+  `developers/DEVELOPERS.md`.
+
 
 ## [2.9.1] — 2026-07-01
 

@@ -12,14 +12,16 @@ Topaz Dex runs on **BNB Chain mainnet (chain id 56)** and combines:
 
 If you are building a partner dApp and want users to connect with the Topaz
 account layer, use the **Topaz ID Wallet Connector** via `@topazdex/id-connect`.
-Topaz ID is a self-custodial BNB Chain global wallet — users sign in with their
-existing Topaz ID account (email/Google, no seed phrase) and your app gets a
-standard wagmi wallet back, plus their Topaz ID name and avatar.
+Topaz ID is a BNB Chain global account — users sign in with their existing Topaz
+ID account (email/Google, no seed phrase) and your app connects to their Topaz ID
+**smart contract wallet** (ERC-4337) through a standard wagmi connector, plus
+their Topaz ID name and avatar.
 
 This is **separate from the protocol calldata builders**: the connector handles
 account/login/identity, while the DEX builders handle swaps, liquidity, gauges,
-votes, and rewards. Most apps use both. See
-[`topaz-id-connect.md`](topaz-id-connect.md).
+votes, and rewards. Most apps use both. Because it's a smart contract wallet,
+transactions go through the Topaz ID action client (`useTopazIdClient`), not plain
+`writeContract` — see [`topaz-id-connect.md`](topaz-id-connect.md).
 
 ## Choose the right integration surface
 
