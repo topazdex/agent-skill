@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.9.4] — 2026-07-11
+
 ### Added
 
 - **Topaz ID Connect: message-signing guidance and integration edge cases.**
@@ -24,6 +27,7 @@ Version semantics for this skill:
   hooks sign from the EOA. A new **Integration edge cases** checklist adds
   BNB-Chain-only (id 56), funding the fresh smart-wallet address, async `address`
   resolution, and popup-gesture requirements. `developers/DEVELOPERS.md` links both.
+
 
 ## [2.9.3] — 2026-07-11
 
@@ -496,7 +500,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.9.3...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.9.4...HEAD
+[2.9.4]: https://github.com/topazdex/agent-skill/compare/v2.9.3...v2.9.4
 [2.9.3]: https://github.com/topazdex/agent-skill/compare/v2.9.2...v2.9.3
 [2.9.2]: https://github.com/topazdex/agent-skill/compare/v2.9.1...v2.9.2
 [2.9.1]: https://github.com/topazdex/agent-skill/compare/v2.9.0...v2.9.1
