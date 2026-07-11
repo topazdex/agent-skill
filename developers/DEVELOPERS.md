@@ -23,6 +23,12 @@ votes, and rewards. Most apps use both. Because it's a smart contract wallet,
 transactions go through the Topaz ID action client (`useTopazIdClient`), not plain
 `writeContract` — see [`topaz-id-connect.md`](topaz-id-connect.md).
 
+Two things trip up first-time integrators, both covered in that guide: **message
+signing** (SIWE/auth signatures are ERC-1271/6492, so verify with viem's
+`verifyMessage` — never `ecrecover` — and the one code path works for EOAs too),
+and a short list of **integration edge cases** (BNB-Chain-only, funding the fresh
+smart-wallet address, popup-gesture requirements).
+
 ## Choose the right integration surface
 
 - **Topaz ID / wallet login integration**: use `@topazdex/id-connect` when a partner app wants to offer "Connect with Topaz ID", show Topaz ID profile identity, or let users sign through the Topaz ID consent flow. See [`topaz-id-connect.md`](topaz-id-connect.md).

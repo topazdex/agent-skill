@@ -18,7 +18,8 @@ wallet, no seed phrase, no extension — and your dApp connects to their Topaz I
 >   `value` they actually send.
 > - **Signatures are ERC-1271/6492, not ECDSA.** Any backend that verifies wallet
 >   ownership with `ecrecover` / `recoverMessageAddress` will silently fail. Use
->   viem's `verifyMessage` / `verifyTypedData` with a public client instead.
+>   viem's `verifyMessage` / `verifyTypedData` with a public client instead — see
+>   [Signing messages](#signing-messages).
 
 `@topazdex/id-connect` is the public NPM package that adds **"Connect with Topaz
 ID"** to any dApp. Your app is just the *requester*: it references Topaz ID's
@@ -61,8 +62,9 @@ Add `@rainbow-me/rainbowkit` if you want the RainbowKit picker, or
 are optional and only pulled in by the entrypoint that needs them (see
 [Peer dependencies](#peer-dependencies)).
 
-> `@privy-io/cross-app-connect` pins `viem@2.52.0`. Match that exact version to
-> avoid peer-dependency warnings.
+> Install the latest of each package. `@privy-io/cross-app-connect` peer-depends on
+> an **exact** `viem` version, so if npm/yarn prints a `viem` peer-dependency
+> warning, pin your `viem` to the version it requests (check its `peerDependencies`).
 
 ## Integration styles
 
@@ -414,23 +416,6 @@ eagerly, so a typo fails before a consent popup ever opens.
   timeout and resolves to `null` instead of hanging. On `null`, fall back to
   re-reading your app state (balances, allowances) rather than blocking the UI.
 
-### Signatures are ERC-1271/6492, not ECDSA
-
-`personal_sign` and `eth_signTypedData_v4` (wagmi's `useSignMessage` /
-`useSignTypedData`) return a **contract signature**, not an ECDSA one. If your
-backend verifies wallet ownership (e.g. SIWE, or signing launch/mint metadata),
-an `ecrecover` / `recoverMessageAddress` check will **silently fail**. Verify with
-viem's `verifyMessage` / `verifyTypedData` against a BNB Chain public client — they
-handle ERC-1271 (deployed wallet) and ERC-6492 (counterfactual) automatically:
-
-```ts
-import { createPublicClient, http } from "viem";
-import { bsc } from "viem/chains";
-
-const client = createPublicClient({ chain: bsc, transport: http() });
-const valid = await client.verifyMessage({ address, message, signature });
-```
-
 ### Keep the user as the final signer
 
 **The user is always the final signer.** Do not give an agent unconstrained wallet
@@ -440,6 +425,143 @@ session-key/policy system exists. For DeFi actions on Topaz DEX, build
 deterministic calldata (see [`swap-calldata.md`](swap-calldata.md)), show a
 confirmation screen with expected token deltas / slippage / risk, then submit
 through the action client.
+
+## Signing messages
+
+Some flows need a **signed message** rather than a transaction — Sign-In With
+Ethereum (SIWE) session auth, signing mint/launch metadata, agreeing to terms,
+proving address ownership. Topaz ID supports this, but because the connected
+account is a **smart contract wallet**, the signature is an **ERC-1271** (wallet
+already deployed) or **ERC-6492** (wallet not yet deployed) contract signature —
+**not** an ECDSA signature. Get this wrong and signing succeeds in the wallet
+while every backend check fails. This is the single most common Topaz ID
+integration snag.
+
+> There is **no Topaz-ID-specific signing helper** — `useTopazIdClient` is
+> transactions-only. Sign with the standard wagmi hooks. In smart-wallet mode the
+> connector transparently rewrites `personal_sign` → `privy_signSmartWalletMessage`
+> and `eth_signTypedData_v4` → `privy_signSmartWalletTypedData`, so
+> `useSignMessage` / `useSignTypedData` return a signature bound to the
+> **smart-wallet address** — the same address `useAccount()` gives you.
+
+### One code path for Topaz ID and plain EOAs
+
+You do **not** branch on wallet type. Sign with the standard wagmi hook and verify
+with viem's signature verifiers — the same two calls cover a MetaMask EOA, a
+deployed Topaz ID smart wallet, and a not-yet-deployed one.
+
+**Client — produce the signature (identical for every wallet):**
+
+```tsx
+import { useSignMessage } from "wagmi";
+
+function SignInButton({ message }: { message: string }) {
+  const { signMessageAsync } = useSignMessage();
+
+  async function signIn() {
+    const signature = await signMessageAsync({ message });
+    // POST { address, message, signature } to your backend to verify
+  }
+
+  return <button onClick={signIn}>Sign in</button>;
+}
+```
+
+Use `useSignTypedData` the same way for EIP-712. Trigger the signature from a
+direct user gesture — like sends, it opens the Topaz ID consent popup.
+
+**Server — verify (the one rule that matters):** verify with viem's
+`verifyMessage` / `verifyTypedData` against a BNB Chain public client. **Never
+`ecrecover` / `recoverMessageAddress`.** viem's verifiers resolve EOAs by
+`ecrecover`, deployed smart wallets by ERC-1271, and undeployed ones by ERC-6492 —
+automatically, in one call:
+
+```ts
+import { createPublicClient, http } from "viem";
+import { bsc } from "viem/chains";
+
+const publicClient = createPublicClient({ chain: bsc, transport: http() });
+
+const valid = await publicClient.verifyMessage({ address, message, signature });
+// verifyTypedData({ address, domain, types, primaryType, message, signature })
+// for EIP-712.
+```
+
+`ecrecover` recovers *some* address from a Topaz ID signature, but never the
+smart-wallet one — so an `ecrecover(sig) === address` check silently returns
+`false` for every Topaz ID user while continuing to pass for EOAs. That asymmetry
+is exactly what makes signing look wallet-specific when it should not be.
+
+### Sign-In With Ethereum (SIWE)
+
+The standard nonce → sign → verify flow is unchanged; swap only the verify step:
+
+```ts
+// 1. Server issues a nonce and stores it against the pending session.
+// 2. Client builds the SIWE message and signs it with the SAME wagmi hook:
+import { useSignMessage } from "wagmi";
+const { signMessageAsync } = useSignMessage();
+const signature = await signMessageAsync({ message: siweMessage });
+
+// 3. Server verifies — viem is ERC-1271/6492-aware:
+import { createPublicClient, http } from "viem";
+import { bsc } from "viem/chains";
+const publicClient = createPublicClient({ chain: bsc, transport: http() });
+const ok = await publicClient.verifySiweMessage({ message: siweMessage, signature });
+```
+
+If you use the `siwe` package directly, its default in-process verification is
+`ecrecover`-based and **rejects every smart-wallet login**. Either pass it a
+viem/ethers provider so it runs the ERC-1271 path, or use viem's
+`verifySiweMessage` (above), which handles EOA, ERC-1271, and ERC-6492 for you.
+
+### Gotchas that bite
+
+- **Signatures are variable-length.** ERC-1271 signatures are arbitrary-length and
+  ERC-6492 ones are much longer than 65 bytes. Don't assume a 132-char / 65-byte
+  signature, don't split into `r` / `s` / `v`, and size DB columns for a long (or
+  `TEXT`) value.
+- **A brand-new user's wallet may be undeployed.** If they sign before their first
+  transaction, the smart wallet isn't on-chain yet and the signature is
+  ERC-6492-wrapped. viem's verifiers handle it; a direct on-chain `isValidSignature`
+  call does **not** (there's no contract at the address yet). Stick to
+  `verifyMessage` / `verifyTypedData` / `verifySiweMessage`.
+- **Verify against the smart-wallet address.** Pass the address from `useAccount()`
+  (the smart wallet), not the `signerAddress` from `useTopazIdAccount()`.
+- **Legacy mode and Privy's own hooks sign from the EOA.** In **Legacy** mode
+  (`smartWalletMode: false`) the connector does *not* rewrite the sign methods, so
+  you get a normal ECDSA signature from the signer EOA — verify it against that EOA,
+  not a smart-wallet address. Likewise `@privy-io/react-auth`'s signing hooks
+  execute from the embedded EOA; use wagmi's `useSignMessage` / `useSignTypedData`
+  so the signature always matches the connected `useAccount()` address.
+
+## Integration edge cases
+
+Beyond the per-section notes above, these surprise first-time integrators. Treat
+it as a pre-launch checklist:
+
+- **BNB Chain only (id 56).** Topaz ID wallets operate solely on BNB Chain. There
+  is no other chain to switch to — a `useSwitchChain` call to another network has
+  no valid target, and all reads/writes must target chain 56. A multichain dApp
+  should treat Topaz ID as the BNB Chain account and keep other networks on other
+  connectors.
+- **The smart wallet is a fresh address the user must fund.** It differs from the
+  user's MetaMask/EOA, so their existing BNB isn't there. Gas is sponsored, so they
+  need funds only for the `value` they actually send (see the intro callout).
+- **`address` resolves asynchronously.** Right after login the smart-wallet address
+  can be briefly `undefined` while it is provisioned and linked — guard on it before
+  rendering identity or transacting, especially on the `/privy`
+  `useTopazIdAccount` path.
+- **Every consent action needs a user gesture.** Login, sends, and signing all open
+  a Topaz ID popup, so fire them from a direct click — a call made after a long
+  `await` chain gets popup-blocked. Embedded/in-app browsers (some mobile-wallet
+  and messenger webviews) that block popups can't complete Topaz ID login; offer
+  another connector as a fallback there.
+- **Route value-bearing and contract calls through the action client**, not plain
+  `writeContract` — see [Sending transactions](#sending-transactions).
+- **Treat receipts as best-effort.** Some smart-wallet sends return an id
+  `eth_getTransactionReceipt` never resolves; use `waitForReceipt` and fall back to
+  re-reading app state — see [Sending transactions](#sending-transactions).
 
 ## Smart vs Legacy
 

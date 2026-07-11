@@ -12,6 +12,18 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Added
+
+- **Topaz ID Connect: message-signing guidance and integration edge cases.**
+  `developers/topaz-id-connect.md` now has a first-class **Signing messages**
+  section — one code path for Topaz ID smart wallets *and* plain EOAs: sign with
+  wagmi's `useSignMessage` / `useSignTypedData`, verify with viem's
+  `verifyMessage` / `verifyTypedData` / `verifySiweMessage`, never `ecrecover`.
+  It covers SIWE end-to-end, the ERC-1271 (deployed) vs ERC-6492 (counterfactual)
+  distinction, variable-length signatures, and why Legacy mode / `@privy-io/react-auth`
+  hooks sign from the EOA. A new **Integration edge cases** checklist adds
+  BNB-Chain-only (id 56), funding the fresh smart-wallet address, async `address`
+  resolution, and popup-gesture requirements. `developers/DEVELOPERS.md` links both.
 
 ## [2.9.3] — 2026-07-11
 
