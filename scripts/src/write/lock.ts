@@ -33,6 +33,11 @@ export async function withdrawLock(tokenId: bigint) {
   return await ve().withdraw(tokenId);
 }
 
+// Preconditions apply ONLY to `from` (burned): reset its votes (Voter.reset) if it
+// carries a vote allocation, and unlockPermanent it first if it is permanent — else
+// merge reverts. Reset is epoch-gated: a `from` that voted THIS epoch can't reset (so
+// can't merge) until the next flip. Host `to` is unrestricted (may be permanent or
+// have voted); a permanent `to` keeps the merged result permanent.
 export async function mergeLocks(args: { from: bigint; to: bigint }) {
   return await ve().merge(args.from, args.to);
 }

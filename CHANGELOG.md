@@ -12,6 +12,21 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Fixed
+
+- **veTOPAZ `merge` and permanent-lock semantics corrected.** The docs and the
+  `mergeLocks` helper comment previously claimed *"neither lock may be voting"*
+  for `merge` — that is wrong. Per `VotingEscrow.merge`, the preconditions fall
+  ONLY on the consumed `_from` leg: it must not have voted this epoch
+  (`Voter.reset` first) and must not be permanent (`unlockPermanent` first, else
+  reverts `PermanentLock`). The kept `_to` leg is unrestricted — it may be
+  permanent or have voted, and a permanent `_to` keeps the merged result
+  permanent (otherwise the unlock time becomes `max(from.end, to.end)`). Also
+  clarified that `unlockPermanent` is a reversible toggle that re-arms a fresh
+  4-year (MAXTIME) decaying term and requires the lock's votes to be reset first
+  (reverts `AlreadyVoted`). Touched `references/ve-locks.md`,
+  `references/pitfalls.md`, and `scripts/src/write/lock.ts`.
+
 
 ## [2.9.2] — 2026-07-08
 

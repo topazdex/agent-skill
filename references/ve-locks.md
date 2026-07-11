@@ -72,10 +72,13 @@ After modifying voting-power (any of `increase*`), call `Voter.poke(tokenId)` to
 
 ```solidity
 function merge(uint256 _from, uint256 _to) external;
-//   _from's amount is added to _to.
+//   _from's amount is added to _to; _from is burned.
+//   If _to is permanent the merged result stays permanent; otherwise
 //   _to's unlock time becomes max(_from.end, _to.end).
-//   _from is burned.
-//   Neither lock may be voting in the current epoch (call Voter.reset first if so).
+//   Requirements apply ONLY to _from (the consumed/burned lock): its votes must be
+//   reset (Voter.reset) if it voted, AND it must not be permanent (call
+//   unlockPermanent on it first) — else reverts PermanentLock.
+//   The host _to (kept) has NO requirements: it may itself be permanent or voting.
 
 function split(uint256 _from, uint256 _amount) external returns (uint256 tokenId1, uint256 tokenId2);
 //   BURNS _from and creates TWO new NFTs:
@@ -93,14 +96,16 @@ function toggleSplit(address _account, bool _bool) external;   // governance onl
 
 ## Permanent locks
 
+**Permanent is a reversible toggle.** `lockPermanent` pins the lock at its full `amount` — no decay, no expiry — while it's on. `unlockPermanent` turns it back OFF and resumes a fresh 4-year (MAXTIME) decaying lock; it requires the lock's votes to be reset first (reverts `AlreadyVoted` otherwise) and only works on NORMAL escrow (relay-deposited LOCKED/MANAGED veNFTs can't). The TOPAZ is not withdrawable until that new term expires.
+
 ```solidity
-function lockPermanent(uint256 _tokenId) external;     // never expires; voting power stays at amount (no decay)
-function unlockPermanent(uint256 _tokenId) external;   // start a fresh 4-year decay clock
+function lockPermanent(uint256 _tokenId) external;     // does not expire WHILE permanent is on; call unlockPermanent to turn it back into a decaying lock; voting power stays at amount (no decay)
+function unlockPermanent(uint256 _tokenId) external;   // turns permanent OFF; re-arms a fresh 4-year (MAXTIME) decaying lock; requires votes reset first
 ```
 
-Permanent locks always vote with full `amount`, do not decay, and earn rebase at full weight. They cannot be `withdraw`n until `unlockPermanent` is called and then waited the remaining time (which starts at MAXTIME again).
+Permanent locks always vote with full `amount`, do not decay, and earn rebase at full weight. They cannot be `withdraw`n until `unlockPermanent` is called and the fresh MAXTIME term is then waited out.
 
-Use cases: a DAO/treasury that intends to hold TOPAZ governance forever.
+Use cases: a DAO/treasury that wants full non-decaying voting power indefinitely, while retaining the ability to `unlockPermanent` and eventually withdraw.
 
 ## Approvals / ERC721
 
@@ -144,7 +149,7 @@ Out of scope for typical users; integrate against the `FreeManagedReward` and `L
 | Create | `scripts/src/write/lock.ts` — `createLock({ amount, durationSec })` |
 | Increase amount | `increaseAmount({ tokenId, amount })` |
 | Extend duration | `increaseUnlockTime({ tokenId, newDurationSec })` |
-| Merge | `mergeLocks({ from, to })` |
+| Merge | `mergeLocks({ from, to })` — reset + `unlockPermanent` the consumed `from` first; host `to` is unrestricted |
 | Split | `splitLock({ tokenId, amount })` |
 | Permanent on/off | `lockPermanent(tokenId)`, `unlockPermanent(tokenId)` |
 | Withdraw | `withdrawLock(tokenId)` (expired only) |
