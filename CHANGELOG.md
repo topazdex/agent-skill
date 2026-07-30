@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [2.10.0] — 2026-07-30
+
 ### Changed
 
 - **v3 gauge listing APR now standardizes on a $100 reference position** (was
@@ -524,7 +527,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.9.4...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v2.10.0...HEAD
+[2.10.0]: https://github.com/topazdex/agent-skill/compare/v2.9.4...v2.10.0
 [2.9.4]: https://github.com/topazdex/agent-skill/compare/v2.9.3...v2.9.4
 [2.9.3]: https://github.com/topazdex/agent-skill/compare/v2.9.2...v2.9.3
 [2.9.2]: https://github.com/topazdex/agent-skill/compare/v2.9.1...v2.9.2
