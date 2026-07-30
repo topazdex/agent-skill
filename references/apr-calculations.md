@@ -41,7 +41,7 @@ A tighter range puts more liquidity per dollar of capital, so the same dollar am
 
 ### Gauge listing APR (preset position)
 
-For pool tables / gauge listings, `poolApr()` simulates a representative $1,000 deposit at a preset spread:
+For pool tables / gauge listings, `poolApr()` simulates a representative **$100** deposit at a preset spread:
 
 | Pair type | Spread |
 |---|---|
@@ -49,13 +49,19 @@ For pool tables / gauge listings, `poolApr()` simulates a representative $1,000 
 | Stable–stable | ±0.1% |
 | tickSpacing = 1 | ±0.05% |
 
-The algorithm (matches the production frontend `computeV3GaugeApr`):
+The algorithm (matches the production frontend `computeV3GaugeApr` and the Stats API's `clGaugeApr.ts`):
 
 1. Convert spread percentage to tick bounds aligned to `tickSpacing`.
-2. Compute token amounts for a reference liquidity (1e15) in that range.
+2. Compute token amounts for a reference liquidity (1e18) in that range.
 3. Derive individual token USD prices from the pool's subgraph TVL data.
-4. Scale the reference liquidity so the position is worth $1,000.
+4. Scale the reference liquidity so the position is worth $100.
 5. Apply the core formula with `stakedLiquidity + positionLiquidity` as denominator (dilution effect).
+
+The reference liquidity in step 2 cancels out of the final position — it exists only to price the range once. It is 1e18 rather than a smaller value so scaling down to $100 doesn't floor to zero on high-value pools with coarse tick spacing.
+
+**Why the deposit size shows up at all.** Step 5 measures the position's share *after* it joins the gauge, which is what stops a thin gauge from handing a hypothetical position more than 100% of emissions. That self-dilution is the only place the dollar figure enters: when staked liquidity dwarfs the reference position the size cancels out entirely, and when it doesn't, a larger reference reports a lower APR. The number is a **$100 estimate**, not a pool-wide rate — quote it that way.
+
+**Keep all three surfaces on the same figure.** The frontend (`CL_APR_REFERENCE_DEPOSIT_USD`), the Stats API (`PRESET_DEPOSIT_USD`), and `scripts/src/read/apr.ts` (`PRESET_DEPOSIT_USD`, exported) all use $100. Pool tables fall back between client-computed and API-served values per pool, so a mismatch makes the listing APR jump when the source switches. `computeV3PresetApr()` takes an optional trailing `depositUsd` for what-if sizing; leave it unset to reproduce what the UI and `/pools?sort=gaugeApr` display.
 
 ### Position-level APR
 
@@ -142,11 +148,12 @@ yourTotalApr = lpEmissionApr  (gauge stake)
 computeEmissionApr(rewardRate, topazUsd, stakedTvlUsd, alive): number           // v2 pool-wide %
 computePositionEmissionApr(posLiq, stakedLiq, rate, topazUsd, posValue, alive)   // v3 position-specific %
 computeFeeApr(fees7d, tvlUsd): number
-computeV3PresetApr(poolInfo, sgData, rewardRate, topazUsd, alive)                // v3 gauge listing preset
+computeV3PresetApr(poolInfo, sgData, rewardRate, topazUsd, alive, depositUsd?)   // v3 gauge listing preset ($100 default)
 isRewardPeriodActive(periodFinish, nowSec?): boolean                             // periodFinish guard
+PRESET_DEPOSIT_USD: number                                                       // 100 — reference deposit behind the listing APR
 
 // Async (on-chain + subgraph)
-poolApr(pool): Promise<PoolAprBreakdown>                // v2: pool-wide, v3: preset-range
+poolApr(pool): Promise<PoolAprBreakdown>                // v2: pool-wide, v3: $100 preset-range
 positionApr(tokenId): Promise<PositionAprBreakdown>     // individual staked position
 votingApr(pool): Promise<number>
 rebaseApr(): Promise<number>

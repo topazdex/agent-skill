@@ -46,7 +46,7 @@ Use `scripts/src/read/claimable.ts:claimableSummary(tokenId, address)` for examp
 
 ## APR recipe
 
-`scripts/src/read/apr.ts` exports pool-level and position-level APR helpers. For v3 pools, `poolApr` uses a position-specific formula (simulating a preset-range $1,000 deposit) matching the production frontend — not a simple pool-wide average.
+`scripts/src/read/apr.ts` exports pool-level and position-level APR helpers. For v3 pools, `poolApr` uses a position-specific formula (simulating a preset-range **$100** deposit) matching the production frontend and the Stats API — not a simple pool-wide average. Label it as an estimate on $100, not as a pool-wide rate.
 
 ```ts
 import { poolApr, positionApr, votingApr, rebaseApr } from "../scripts/src/read/apr.js";
@@ -94,7 +94,8 @@ Snapshots every 15 min; the OpenAPI spec (`https://www.topazdex.com/api/stats/op
 
 ### Caveats every APR display must respect
 
-- **v3 `emissionApr` is position-specific, not pool-wide.** `poolApr` simulates a ±3% (volatile) or ±0.1% (stable) preset position — the same formula the production frontend shows in gauge listings. For an individual staked position, use `positionApr(tokenId)` instead. Out-of-range CL positions earn nothing.
+- **v3 `emissionApr` is position-specific, not pool-wide.** `poolApr` simulates a $100 position at a ±3% (volatile) or ±0.1% (stable) preset spread — the same formula the production frontend shows in gauge listings. For an individual staked position, use `positionApr(tokenId)` instead. Out-of-range CL positions earn nothing.
+- **Match the reference deposit if you compute listing APRs yourself.** The number is the reference position's share *after* it joins the gauge, so on a thin gauge the deposit size changes the result. Frontend, Stats API, and `apr.ts` all standardize on $100 (`PRESET_DEPOSIT_USD`); pool tables mix API-served and client-computed values per pool, so a different figure makes the displayed APR jump when the source switches.
 - **`votingApr` is a one-epoch annualization** based on this epoch's deposited rewards and the pool's current vote weight. Bribes are typically posted late in the epoch — a Monday snapshot will look much worse than a Wednesday snapshot. Either cache the previous-completed-epoch number or label the freshness explicitly.
 - **Subgraph lag**: APR numbers backed by `volumeUSD`/`feesUSD` lag the chain by a few blocks. Combine with on-chain `slot0` / `getReserves` for "now" pricing.
 - **Dead gauges**: `Voter.isAlive(gauge) === false` means emissions stopped. `poolApr` already returns `emissionApr: 0` in that case but you should label the gauge so users don't expect rewards.

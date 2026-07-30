@@ -100,6 +100,8 @@ Grouped quick-reference. Consult `openapi.json` for exact field lists.
 - `GET /gauges/{addr}/kpis` — foundation KPI/classification history.
 - `GET /gauges/{addr}/rewards?limit=12` — per-epoch reward-token breakdown (`kind: bribe|fee`, `amountDecimal`, `amountUsd`).
 
+> For **v3 gauges**, the served emission APR (`emissionApr` here, `gaugeApr` on `/pools`) is what a **$100 preset-range position** would earn after joining the gauge — the same model the frontend renders. Present it as an estimate on $100, and use the same reference deposit if you compute the number yourself. See `references/apr-calculations.md`.
+
 ### Tokens
 - `GET /tokens?limit=100` — every tracked token with `priceUsd`, sorted by price desc.
 - `GET /tokens/{addr}` — `{ current, history (≤672) }` price history.

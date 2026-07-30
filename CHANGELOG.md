@@ -12,6 +12,30 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+### Changed
+
+- **v3 gauge listing APR now standardizes on a $100 reference position** (was
+  $1,000), matching the production frontend (`CL_APR_REFERENCE_DEPOSIT_USD`) and
+  the Stats API (`clGaugeApr.ts`). `computeV3PresetApr` / `poolApr` report what a
+  $100 preset-range position earns *after* it joins the gauge, so on a thin gauge
+  the emission APR they return is higher than before; where staked liquidity
+  dominates, the reference size cancels out and the number is unchanged. The
+  reference liquidity used to price the range moved from 1e15 to 1e18 — it cancels
+  out of the final position, but keeps scaling down to $100 from flooring to zero
+  on high-value pools with coarse tick spacing.
+- **`references/apr-calculations.md`, `developers/gauges-and-apr.md`,
+  `references/analytics-stats-api.md`, and `SKILL.md`** now name $100 as the
+  reference deposit, explain that the dollar figure only moves the result through
+  self-dilution, and tell agents to quote a v3 gauge APR as an estimate on $100
+  rather than a pool-wide rate.
+
+### Added
+
+- **`PRESET_DEPOSIT_USD` (= 100) is exported** from `scripts/src/read/apr.ts`, and
+  `computeV3PresetApr()` takes an optional trailing `depositUsd` for what-if
+  sizing (defaults to `PRESET_DEPOSIT_USD`, so listing APRs are unchanged when
+  omitted). Covered by new goldens in `src/read/apr.test.ts`.
+
 
 ## [2.9.4] — 2026-07-11
 
