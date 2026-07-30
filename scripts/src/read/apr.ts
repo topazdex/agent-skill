@@ -23,8 +23,21 @@ const SECONDS_PER_YEAR = 31_536_000;
 const VOLATILE_PRESET_SPREAD_PERCENT = 3;
 const STABLE_PRESET_SPREAD_PERCENT = 0.1;
 const ONE_TICK_PRESET_SPREAD_PERCENT = 0.05;
-const PRESET_DEPOSIT_USD = 1000;
-const REFERENCE_LIQUIDITY = 1_000_000_000_000_000n; // 1e15
+/**
+ * Standard reference deposit for pre-deposit CL emission APR estimates.
+ * Matches the production frontend (`CL_APR_REFERENCE_DEPOSIT_USD`) and the
+ * Stats API (`clGaugeApr.ts` `PRESET_DEPOSIT_USD`) — all three must agree or
+ * the listing APR jumps when a UI switches between sources.
+ */
+export const PRESET_DEPOSIT_USD = 100;
+
+/**
+ * Liquidity units priced once to derive the scale factor for the reference
+ * deposit. It cancels out of the final position, but a large value keeps
+ * `Math.floor` from rounding a $100 position to zero on high-value pools with
+ * coarse tick spacing.
+ */
+const REFERENCE_LIQUIDITY = 1_000_000_000_000_000_000n; // 1e18
 
 const STABLE_SYMBOLS = new Set([
   "USDC", "USDC.E", "USDT", "DAI", "USDP", "FRAX", "USDE", "USD+", "LUSD", "BUSD",
@@ -201,12 +214,23 @@ export function deriveTokenPricesUsd(
   return { price0Usd: price1Usd * priceRatio, price1Usd };
 }
 
+/**
+ * Pure helper: the gauge-listing emission APR for a v3 pool — what a
+ * `PRESET_DEPOSIT_USD` position at the preset spread would earn *after* it
+ * joins the gauge (its own liquidity is in the denominator, so a thin gauge
+ * can never award the reference position more than 100% of emissions).
+ *
+ * Mirrors the production frontend's `computeV3GaugeApr` and the Stats API's
+ * `clGaugeApr.ts`. `depositUsd` is exposed for what-if sizing; leave it unset
+ * to reproduce the number the UI and `/pools?sort=gaugeApr` display.
+ */
 export function computeV3PresetApr(
   poolInfo: PoolInfoV3,
   sgData: { tvlUsd: number; tvlToken0: number; tvlToken1: number },
   rewardRate: bigint,
   topazUsd: number,
   alive: boolean,
+  depositUsd: number = PRESET_DEPOSIT_USD,
 ): { emissionApr: number; stakedTvlUsd: number } {
   if (!alive || poolInfo.stakedLiquidity === 0n) {
     const stakedFrac = poolInfo.liquidity > 0n
@@ -250,7 +274,7 @@ export function computeV3PresetApr(
   }
 
   const scaledLiq = BigInt(Math.floor(
-    Number(REFERENCE_LIQUIDITY) * (PRESET_DEPOSIT_USD / refValue),
+    Number(REFERENCE_LIQUIDITY) * (depositUsd / refValue),
   ));
   if (scaledLiq <= 0n) {
     return { emissionApr: 0, stakedTvlUsd };

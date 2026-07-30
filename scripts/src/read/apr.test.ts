@@ -9,6 +9,7 @@ import {
   getTicksForSpread,
   deriveTokenPricesUsd,
   computeV3PresetApr,
+  PRESET_DEPOSIT_USD,
 } from "./apr.js";
 import type { PoolInfoV3 } from "./pools.js";
 import { getSqrtRatioAtTick } from "../lib/tickMath.js";
@@ -255,5 +256,36 @@ describe("computeV3PresetApr", () => {
     const pool = makePoolInfo();
     const result = computeV3PresetApr(pool, sgData, 10n ** 18n, 1, true);
     expect(result.stakedTvlUsd).toBeCloseTo(500_000, -2);
+  });
+
+  it("defaults to the $100 reference deposit the frontend and Stats API use", () => {
+    const pool = makePoolInfo();
+    const preset = computeV3PresetApr(pool, sgData, 10n ** 18n, 1, true);
+    const explicit = computeV3PresetApr(pool, sgData, 10n ** 18n, 1, true, 100);
+
+    expect(PRESET_DEPOSIT_USD).toBe(100);
+    expect(preset.emissionApr).toBe(explicit.emissionApr);
+  });
+
+  // This fixture's staked liquidity (5e17) is dwarfed by the reference position, so
+  // the post-deposit share is ~1 either way and the APR is set by the deposit size:
+  // 10x the capital over the same emissions ≈ a tenth of the APR.
+  it("a 10x larger reference deposit yields ~1/10th the APR when the gauge is thin", () => {
+    const pool = makePoolInfo();
+    const at100 = computeV3PresetApr(pool, sgData, 10n ** 18n, 1, true, 100);
+    const at1000 = computeV3PresetApr(pool, sgData, 10n ** 18n, 1, true, 1000);
+
+    expect(at100.emissionApr / at1000.emissionApr).toBeCloseTo(10, 1);
+  });
+
+  // The mirror case: once staked liquidity dominates, the reference position barely
+  // dilutes itself, so its size cancels out. The $1,000 → $100 switch only moves the
+  // published number for gauges thin enough for the reference position to matter.
+  it("deposit size cancels out when staked liquidity dominates", () => {
+    const pool = makePoolInfo({ liquidity: 2n * 10n ** 25n, stakedLiquidity: 10n ** 25n });
+    const at100 = computeV3PresetApr(pool, sgData, 10n ** 18n, 1, true, 100);
+    const at1000 = computeV3PresetApr(pool, sgData, 10n ** 18n, 1, true, 1000);
+
+    expect(at100.emissionApr / at1000.emissionApr).toBeCloseTo(1, 2);
   });
 });
