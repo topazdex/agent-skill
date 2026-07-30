@@ -105,7 +105,7 @@ bash tools/check_update.sh   # exit 0 = up to date, 10 = update available
 cd <dest>/scripts
 yarn validate    # static checks: frontmatter, links, addresses, checksums, manifest parity, ...
 yarn build       # type-check (tsc --noEmit)
-yarn test        # 109 unit tests (vitest, no RPC)
+yarn test        # 173 unit tests (vitest, no RPC)
 yarn smoke       # live read against BSC mainnet — requires BSC_RPC_URL
 ```
 
