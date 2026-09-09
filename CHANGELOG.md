@@ -12,6 +12,10 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+## [3.0.2] - 2026-09-09
+
+- Requote cyclic API routes with a two-hop limit compatible with agent execution, preserving fresh output minimums and all route validation.
+
 ## [3.0.1] — 2026-09-09
 
 - Clear direct Universal Router allowance before every ERC20 Permit2 batch, including allowances established by earlier calls. The complete batch now has seven calls.

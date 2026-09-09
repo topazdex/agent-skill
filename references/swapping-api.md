@@ -42,3 +42,5 @@ Keep funds at the same account when chaining swaps into LP, locks or another swa
 The old single-router builders remain available as `buildBestLegacySwapTx`, `buildV2SwapTx`, `buildV3SwapTx`, and path/route variants. Explicit on-chain diagnostics are `onchainQuoteBundle`, `onchainBestQuote`, `bestV2Quote`, `bestV3Quote`, `topRoutes` and `quoteMixed`. They do not provide the API's split/mixed best execution. Do not downgrade to them silently after an API failure.
 
 Rebuild after wallet, chain, amount or slippage changes, and when `isStale(batch)` returns true. Review changed prices before submission, simulate the complete batch, and require the user's wallet confirmation. Publishing this source package does not deploy the wallet connectors or agent service.
+
+The API can return token-revisiting routes through different pools. The agent builders intentionally reject those paths and request a fresh quote with `maxHops: 2`; the resulting route and minimum output are independently validated. Other invalid quote data fails immediately. This compatibility retry can select a less profitable route than an unrestricted quote.

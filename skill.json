@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "name": "topaz",
   "display_name": "Topaz Dex Agent Skill",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Topaz Dex on BNB Chain: smart order router quotes, signature-free Permit2 swap batches, CL/v2 liquidity, gauges, veTOPAZ, voting, bribes, relays and analytics.",
   "homepage": "https://topazdex.com",
   "agents_page": "https://topazdex.com/agents",

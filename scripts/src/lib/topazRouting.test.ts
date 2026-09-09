@@ -5,7 +5,7 @@ import {
   TOPAZ_WBNB,
   MAX_PERMIT2_AMOUNT,
   type TopazQuoteRequest,
-} from "./topazRouting.js";
+} from "./topazRouting";
 
 const out = "0xdf002282C1474C9592780618Adda7EaA99998Abd";
 const intermediate = "0x55d398326f99059fF775485246999027B3197955";
@@ -128,5 +128,62 @@ describe("Topaz API wire validation", () => {
     await expect(
       fetchTopazQuote({ ...request, tokenOut: TOPAZ_WBNB }),
     ).rejects.toThrow("must differ");
+  });
+
+  it("requotes API token cycles with a two-hop limit and preserves request bounds", async () => {
+    const cyclic = fixture();
+    cyclic.routes[0].hops[1].tokenOut = TOPAZ_WBNB;
+    cyclic.routes[0].hops.push({
+      protocol: "cl",
+      address: out,
+      tokenIn: TOPAZ_WBNB,
+      tokenOut: out,
+      tickSpacing: 2000,
+    });
+    const compatible = fixture();
+    compatible.quote = "190";
+    compatible.minimumAmountOut = "189";
+    compatible.routes[0].amountOut = "190";
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => cyclic })
+      .mockResolvedValueOnce({ ok: true, json: async () => compatible });
+    vi.stubGlobal("fetch", fetchMock);
+    const result = await fetchTopazQuote({
+      ...request,
+      recipient: out,
+      deadlineSeconds: 300,
+    });
+    expect(result.quote).toBe("190");
+    expect(result.minimumAmountOut).toBe("189");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const first = JSON.parse(fetchMock.mock.calls[0][1].body);
+    const second = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(first).not.toHaveProperty("maxHops");
+    expect(second).toEqual({ ...first, maxHops: 2 });
+    expect(second).toMatchObject({
+      recipient: out,
+      deadlineSeconds: 300,
+      permitGrantedInBatch: true,
+      skipCache: true,
+    });
+  });
+
+  it("fails closed when the bounded requote is still cyclic or disconnected", async () => {
+    const cyclic = fixture();
+    cyclic.routes[0].hops[1].tokenOut = TOPAZ_WBNB;
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue({ ok: true, json: async () => cyclic });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchTopazQuote(request)).rejects.toThrow("Cyclic");
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const disconnected = fixture();
+    disconnected.routes[0].hops[1].tokenIn = out;
+    fetchMock
+      .mockClear()
+      .mockResolvedValue({ ok: true, json: async () => disconnected });
+    await expect(fetchTopazQuote(request)).rejects.toThrow("Disconnected");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

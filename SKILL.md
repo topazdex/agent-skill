@@ -1,7 +1,7 @@
 ---
 name: topaz
 description: "Operate and integrate Topaz Dex on BNB Chain: smart order router quotes and Permit2 swap batches, CL and v2 liquidity, gauges, veTOPAZ locks, voting, rewards, bribes, relays and protocol analytics. Use for Topaz user actions or for building Topaz wallet and application integrations."
-version: 3.0.1
+version: 3.0.2
 license: MIT
 metadata:
   homepage: https://topazdex.com

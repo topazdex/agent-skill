@@ -6,6 +6,8 @@ export const TOPAZ_PERMIT2 = "0x000000000022D473030F116dDEE9F6B43aC78BA3";
 export const TOPAZ_WBNB = "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c";
 export const MAX_PERMIT2_AMOUNT = (1n << 160n) - 1n;
 
+class CyclicTopazRouteError extends Error {}
+
 export interface TopazHop {
   protocol: "cl" | "v2-volatile" | "v2-stable";
   address: string;
@@ -126,11 +128,10 @@ export function validateTopazQuote(
         throw new Error("Invalid Topaz hop protocol");
       const tokenIn = address(h.tokenIn);
       const tokenOut = address(h.tokenOut);
-      if (
-        tokenIn.toLowerCase() !== previous ||
-        seen.has(tokenOut.toLowerCase())
-      )
-        throw new Error("Disconnected or cyclic Topaz route");
+      if (tokenIn.toLowerCase() !== previous)
+        throw new Error("Disconnected Topaz route");
+      if (seen.has(tokenOut.toLowerCase()))
+        throw new CyclicTopazRouteError("Cyclic Topaz route");
       previous = tokenOut.toLowerCase();
       seen.add(previous);
       return {
@@ -190,27 +191,39 @@ export async function fetchTopazQuote(
   const slippageBps = integer(request.slippageBps ?? 100, 1, 500);
   const deadlineSeconds = integer(request.deadlineSeconds ?? 600, 30, 1800);
   if (request.recipient) address(request.recipient);
-  const response = await fetch(`${TOPAZ_ROUTING_URL}/quote`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Cache-Control": "no-store",
-    },
-    body: JSON.stringify({
-      tokenIn: request.tokenIn,
-      tokenOut: request.tokenOut,
-      amount: request.amountIn.toString(),
-      type: "exactIn",
-      slippageBips: slippageBps,
-      deadlineSeconds,
-      recipient: request.recipient,
-      permitGrantedInBatch: true,
-      skipCache: true,
-    }),
-    signal: AbortSignal.timeout(8_000),
-    cache: "no-store",
-  });
-  if (!response.ok)
-    throw new Error(`Topaz routing API unavailable (${response.status})`);
-  return validateTopazQuote(await response.json(), request);
+  const requestQuote = async (maxHops?: number): Promise<TopazQuote> => {
+    const response = await fetch(`${TOPAZ_ROUTING_URL}/quote`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Cache-Control": "no-store",
+      },
+      body: JSON.stringify({
+        tokenIn: request.tokenIn,
+        tokenOut: request.tokenOut,
+        amount: request.amountIn.toString(),
+        type: "exactIn",
+        slippageBips: slippageBps,
+        deadlineSeconds,
+        recipient: request.recipient,
+        permitGrantedInBatch: true,
+        skipCache: true,
+        ...(maxHops === undefined ? {} : { maxHops }),
+      }),
+      signal: AbortSignal.timeout(8_000),
+      cache: "no-store",
+    });
+    if (!response.ok)
+      throw new Error(`Topaz routing API unavailable (${response.status})`);
+    return validateTopazQuote(await response.json(), request);
+  };
+  try {
+    return await requestQuote();
+  } catch (error) {
+    if (!(error instanceof CyclicTopazRouteError)) throw error;
+    // The API may revisit a token via different pools. The connector rejects
+    // cycles, so request a fresh compatible route with its own output minimum.
+    // Two hops between distinct endpoints cannot contain a valid token cycle.
+    return requestQuote(2);
+  }
 }
