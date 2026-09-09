@@ -12,6 +12,11 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+## [3.0.1] — 2026-09-09
+
+- Clear direct Universal Router allowance before every ERC20 Permit2 batch, including allowances established by earlier calls. The complete batch now has seven calls.
+- Correct remaining single-transaction approval guidance, BNB/WBNB defaults and API deadline descriptions.
+
 ## [3.0.0] — 2026-09-09
 
 - Default quotes use quote.topazdex.com split/mixed CL/v2 routing.

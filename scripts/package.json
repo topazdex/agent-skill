@@ -1,6 +1,6 @@
 {
   "name": "topaz-skill-scripts",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "description": "TypeScript helpers and builder references for interacting with Topaz Dex on BNB Mainnet (chain id 56).",
   "license": "MIT",

@@ -152,6 +152,14 @@ export async function buildTopazSwapBatch(
   const nativeIn = request.tokenIn.toUpperCase() === "BNB";
   const tokenIn = getAddress(wrappedTopazToken(request.tokenIn));
   if (!nativeIn) {
+    // Topaz tries direct transferFrom before Permit2. Clear any old grant,
+    // including one created by an earlier call in the same atomic batch.
+    transactions.push({
+      to: tokenIn,
+      data: erc20.encodeFunctionData("approve", [TOPAZ_UNIVERSAL_ROUTER, 0n]),
+      value: "0",
+      label: "Clear legacy direct-router allowance",
+    });
     // Always reset: independent of current allowances, including earlier batch calls.
     for (const amount of [0n, request.amountIn])
       transactions.push({

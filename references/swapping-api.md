@@ -21,13 +21,15 @@ const batch = await buildTopazSwapBatch({
 // This helper does not request signatures or broadcast anything.
 ```
 
-The request includes `permitGrantedInBatch: true` and `skipCache: true`; never attach a signed `permit`. For ERC20 input the call list is:
+The request includes `permitGrantedInBatch: true` and `skipCache: true`; never attach a signed `permit`. For ERC20 input the seven-call list is:
 
-1. Reset the token's ERC20 allowance to Permit2 to zero.
-2. Approve the exact input amount to Permit2.
-3. Call `Permit2.approve(token, TopazUniversalRouter, uint160(amount), uint48(deadline))`.
-4. Execute the router swap.
-5. Clear the router's Permit2 allowance and the ERC20 allowance to Permit2.
+1. Clear the direct Universal Router allowance, even if a previous read reported zero.
+2. Reset the token's ERC20 allowance to Permit2 to zero.
+3. Approve the exact input amount to Permit2.
+4. Call `Permit2.approve(token, TopazUniversalRouter, uint160(amount), uint48(deadline))`.
+5. Execute the router swap.
+6. Clear the router's Permit2 allowance.
+7. Clear the ERC20 allowance to Permit2.
 
 A wallet transaction signature is still required. `permit2SignatureRequired: false` means **no separate Permit2/EIP-712/ERC-1271 signature**. `atomicRequired: true` means the entire call list must execute atomically from one payer. Sequential EOA transactions are not an atomic batch. Never submit only the last entry (it is cleanup), only the router entry, or a list missing the approvals. Native input needs only the router call with the input amount as `value`.
 

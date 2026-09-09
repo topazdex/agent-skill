@@ -21,26 +21,22 @@ Use your own production RPC. Public RPCs can rate-limit and are not suitable for
 
 ## Wallet flow
 
-A safe swap flow:
+For Topaz API swaps:
 
-1. Validate wallet is on chain 56.
-2. Resolve token metadata and decimals.
-3. Quote route.
-4. Build calldata.
-5. If ERC20-in, request approval to the exact router spender.
-6. Simulate the swap transaction.
-7. Ask the user to sign.
-8. Track tx receipt and refresh balances.
+1. Validate chain 56 and resolve token metadata and decimals.
+2. Build a fresh `TopazSwapBatch` with `buildTopazSwapBatch` or `buildBestSwapTx`.
+3. Review and simulate the complete ordered `batch.transactions` from `batch.payer`.
+4. Submit every call in one atomic wallet/account batch when `batch.atomicRequired` is true.
+5. Confirm the receipt and refresh balances.
+
+ERC20 swaps include the direct-router allowance reset, token reset/grant to Permit2, Permit2 grant, swap and both cleanup calls. Never send only the router transaction, and never request a separate Permit2 signature for this path.
 
 ## BNB vs WBNB
 
-Topaz routes internally use WBNB. The wallet-facing convention used by the builders in `scripts/src/lib/txBuilders.ts` is:
-
-- pass `ADDR.WBNB` as `tokenIn` to spend **native BNB**
-- with the default `useBnb: true`, the builder will set `value = amountIn` and route through the payable swap method (v2 `swapExactETHForTokens` or v3 `exactInputSingle` with `msg.value`); no ERC20 approval is required
-- pass `useBnb: false` (still with `ADDR.WBNB` as `tokenIn`) to spend **already-held WBNB** as an ERC20 — the builder uses `swapExactTokensForTokens` / `exactInputSingle` non-payable and emits an `approval` requirement
-- on v2 with `tokenOut === ADDR.WBNB` and `useBnb: true`, the builder routes through `swapExactTokensForETH` and the user receives native BNB
-- on v3 with `tokenOut === ADDR.WBNB` and `useBnb: true` (default), `buildV3SwapTx` / `buildV3PathSwapTx` emit `SwapRouter.multicall([exactInputSingle|exactInput(recipient=Router, amountOutMinimum=0), unwrapWETH9(amountOutMin, recipient=user)])`. The unwrap step enforces slippage at the boundary, so the inner swap can defer the floor check. Pass `useBnb: false` if you specifically want WBNB output rather than native BNB.
+- `buildTopazSwapBatch` uses raw bigint amounts. Pass `BNB` explicitly for native input/output; a WBNB address means ERC20.
+- `buildBestSwapTx` accepts human units and WBNB addresses. WBNB is ERC20 by default; `useBnb: true` explicitly requests native BNB for the WBNB side.
+- Native input has one payable router call. ERC20 input requires the entire atomic approval/swap/cleanup batch.
+- Explicit legacy direct-router builders retain `useBnb: true` as their default and return `BuiltSwapTx`. Set `useBnb: false` to retain ERC20 WBNB in those legacy builders.
 
 ## Approvals
 

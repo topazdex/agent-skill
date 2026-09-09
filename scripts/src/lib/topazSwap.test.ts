@@ -92,19 +92,21 @@ describe("signature-free Topaz swap batch", () => {
     expect(batch.atomicRequired).toBe(true);
     expect(batch.permit2SignatureRequired).toBe(false);
     const tx = batch.transactions;
-    expect(tx).toHaveLength(6);
-    expect(permit.decodeFunctionData("approve", tx[4].data).amount).toBe(0n);
-    expect(erc20.decodeFunctionData("approve", tx[5].data).amount).toBe(0n);
-    expect(erc20.decodeFunctionData("approve", tx[0].data).amount).toBe(0n);
-    expect(erc20.decodeFunctionData("approve", tx[1].data).amount).toBe(100n);
-    expect(tx[1].to).toBe(TOPAZ_WBNB);
-    expect(tx[2].to).toBe(TOPAZ_PERMIT2);
-    const grant = permit.decodeFunctionData("approve", tx[2].data);
+    expect(tx).toHaveLength(7);
+    expect(tx[0].to).toBe(TOPAZ_WBNB);
+    expect(erc20.decodeFunctionData("approve", tx[0].data)).toEqual([TOPAZ_UNIVERSAL_ROUTER, 0n]);
+    expect(permit.decodeFunctionData("approve", tx[5].data).amount).toBe(0n);
+    expect(erc20.decodeFunctionData("approve", tx[6].data).amount).toBe(0n);
+    expect(erc20.decodeFunctionData("approve", tx[1].data).amount).toBe(0n);
+    expect(erc20.decodeFunctionData("approve", tx[2].data).amount).toBe(100n);
+    expect(tx[2].to).toBe(TOPAZ_WBNB);
+    expect(tx[3].to).toBe(TOPAZ_PERMIT2);
+    const grant = permit.decodeFunctionData("approve", tx[3].data);
     expect(grant.spender).toBe(TOPAZ_UNIVERSAL_ROUTER);
     expect(grant.expiration).toBe(BigInt(batch.deadline));
-    expect(tx[3].to).toBe(TOPAZ_UNIVERSAL_ROUTER);
-    expect(tx[3].value).toBe("0");
-    const swap = router.decodeFunctionData("execute", tx[3].data);
+    expect(tx[4].to).toBe(TOPAZ_UNIVERSAL_ROUTER);
+    expect(tx[4].value).toBe("0");
+    const swap = router.decodeFunctionData("execute", tx[4].data);
     expect(swap.commands).toBe("0x08000004");
     const middle = coder.decode(
       ["address", "uint256", "uint256", "bytes", "bool"],
@@ -159,7 +161,7 @@ describe("signature-free Topaz swap batch", () => {
     });
     const swap = router.decodeFunctionData(
       "execute",
-      batch.transactions[3].data,
+      batch.transactions[4].data,
     );
     expect(swap.commands).toBe("0x0800000c");
     expect(coder.decode(["address", "uint256"], swap.inputs[3])[0]).toBe(PAYER);

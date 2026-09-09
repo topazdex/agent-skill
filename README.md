@@ -4,7 +4,7 @@ Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (
 
 Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
 
-**Current version:** `3.0.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
+**Current version:** `3.0.1` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
 The Topaz website auto-mirrors this version: `https://topazdex.com/agents`, `https://topazdex.com/skill.md`, and `https://topazdex.com/skill.json` all pull from `main` on a 1-hour ISR cycle. Pushing a new version here propagates without any website-side changes — see [`docs/RELEASING.md`](./docs/RELEASING.md) for details.
 
@@ -323,7 +323,7 @@ Developer/builder layer (added on this branch):
 
 - [x] `developers/` with builder-facing recipes (`DEVELOPERS.md`, `quote-widget.md`, `swap-calldata.md`, `user-positions.md`, `subgraph-recipes.md`, `gauges-and-apr.md`, `frontend-integration.md`, `error-cookbook.md`).
 - [x] Public import surface via `scripts/src/index.ts` (re-exports `ADDR`, `TOKENS`, `ABIS`, `provider`, `bestQuote`, `bestQuoteBundle`, `bestV2Quote`, `bestV3Quote`, `topRoutes`, `buildBestSwapTx`, `buildV{2,3}SwapTx`, `buildV{2,3}{Route,Path}SwapTx`, `buildFromExecRoute`, `buildBribeDepositTx`, `getPoolV{2,3}`, claimable/locks/votes/positions/apr/subgraph helpers, epoch math, tick math).
-- [x] Wallet-ready swap calldata builders in `scripts/src/lib/txBuilders.ts` returning `{ to, data, value, expectedOut, amountOutMin, route, quotedAt, deadline, approval? }`.
+- [x] Wallet-ready swap builders in `scripts/src/lib/txBuilders.ts`: `buildBestSwapTx` returns a complete `TopazSwapBatch`; explicit legacy builders retain `{ to, data, value, expectedOut, amountOutMin, route, quotedAt, deadline, approval? }`.
 - [x] Wallet-ready bribe calldata builder in `scripts/src/lib/actionBuilders.ts` returning approval + `notifyRewardAmount` calldata after gauge/live/whitelist checks.
 - [x] Default quotes and swap building use Topaz API split/mixed CL/v2 routing with signature-free Permit2 batches. Explicit on-chain quoters remain available. See [API routing and migration](references/swapping-api.md).
 - [x] **Broken-pool filter** on every route search: candidates with > 50% USD price impact (subgraph spot prices) are dropped, with a relative-to-best fallback when subgraph prices are missing. `BestRoute.priceImpactPct` exposed for UI. Tunable via `maxPriceImpactPct` / `minRelativeToBest` / `skipPriceFilter` on `BestQuoteOptions`. New `tokenPricesUSD(addresses)` helper in `scripts/src/read/subgraphQueries.ts`.
@@ -376,7 +376,7 @@ Validator, unit tests, live smoke, goldens, agent evals, PR checklist. Land in o
 - [x] `getAmountsForLiquidity` / `getLiquidityForAmounts` for representative tick ranges.
 - [x] `findToken("topaz" | "0xdf...")` case + address lookup.
 - [x] `normalizeAndValidate` rejects: self-swap, zero recipient, slippage > 10000, past deadline, malformed address.
-- [x] `buildBestSwapTx` calldata shape for a static `ExecRoute` (offline, by mocking quoters): correct selector, decoded args, `value` set when `useBnb && tokenIn === WBNB`, approval skipped when payer allowance ≥ amountIn.
+- [x] `buildBestLegacySwapTx` calldata shape for a static `ExecRoute` (offline, by mocking quoters): correct selector, decoded args, `value` set when `useBnb && tokenIn === WBNB`, approval skipped when payer allowance ≥ amountIn.
 
 **C. Live smoke tests** (`yarn smoke` runs `src/cli/stats.ts smoke`; exits non-zero on any FAIL):
 
