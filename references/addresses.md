@@ -122,3 +122,12 @@ Read live from `PoolFactory.getFee(pool, stable)`. Defaults:
 | stable | 5 = 0.05% | `PoolFactory.stableFee` |
 
 `PoolFactory.MAX_FEE = 300` (3%). Custom per-pool fee can be set via `setCustomFee`.
+
+## Smart order routing (BNB Chain)
+
+| Contract | Address |
+|---|---|
+| Topaz Universal Router | `0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6` |
+| Permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` |
+
+API: `https://quote.topazdex.com`. Helpers: `scripts/src/lib/topazRouting.ts` and `topazSwap.ts`.

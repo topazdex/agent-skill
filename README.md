@@ -4,7 +4,7 @@ Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (
 
 Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
 
-**Current version:** `2.10.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
+**Current version:** `3.0.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
 The Topaz website auto-mirrors this version: `https://topazdex.com/agents`, `https://topazdex.com/skill.md`, and `https://topazdex.com/skill.json` all pull from `main` on a 1-hour ISR cycle. Pushing a new version here propagates without any website-side changes — see [`docs/RELEASING.md`](./docs/RELEASING.md) for details.
 
@@ -325,7 +325,7 @@ Developer/builder layer (added on this branch):
 - [x] Public import surface via `scripts/src/index.ts` (re-exports `ADDR`, `TOKENS`, `ABIS`, `provider`, `bestQuote`, `bestQuoteBundle`, `bestV2Quote`, `bestV3Quote`, `topRoutes`, `buildBestSwapTx`, `buildV{2,3}SwapTx`, `buildV{2,3}{Route,Path}SwapTx`, `buildFromExecRoute`, `buildBribeDepositTx`, `getPoolV{2,3}`, claimable/locks/votes/positions/apr/subgraph helpers, epoch math, tick math).
 - [x] Wallet-ready swap calldata builders in `scripts/src/lib/txBuilders.ts` returning `{ to, data, value, expectedOut, amountOutMin, route, quotedAt, deadline, approval? }`.
 - [x] Wallet-ready bribe calldata builder in `scripts/src/lib/actionBuilders.ts` returning approval + `notifyRewardAmount` calldata after gauge/live/whitelist checks.
-- [x] Route search is **v2-only or v3-only — never mixed**. `bestQuoteBundle(...)` returns the best v2 (volatile + stable, up to 3 hops) and best v3 (every tick-spacing combination, up to 3 hops) side-by-side, plus the overall winner. Intermediaries swept: `USDT, WBNB, BTCB, ETH, TOPAZ, USDC`. A pool-existence probe (one `Multicall3.aggregate3`) prunes routes through non-existent pools before the quoter sweep, and large quote batches are chunked across multicalls so the v3 3-hop layer fits inside the eth_call gas cap.
+- [x] Default quotes and swap building use Topaz API split/mixed CL/v2 routing with signature-free Permit2 batches. Explicit on-chain quoters remain available. See [API routing and migration](references/swapping-api.md).
 - [x] **Broken-pool filter** on every route search: candidates with > 50% USD price impact (subgraph spot prices) are dropped, with a relative-to-best fallback when subgraph prices are missing. `BestRoute.priceImpactPct` exposed for UI. Tunable via `maxPriceImpactPct` / `minRelativeToBest` / `skipPriceFilter` on `BestQuoteOptions`. New `tokenPricesUSD(addresses)` helper in `scripts/src/read/subgraphQueries.ts`.
 - [x] `bestQuote` returns the overall winner (max of v2 / v3), `bestV2Quote` / `bestV3Quote` return one stack at a time. `topRoutes(...)` returns the full sorted candidate list with an optional `limit` for UI alternatives. `allowMixed` on `BestQuoteOptions` is now a deprecated no-op.
 
@@ -385,7 +385,7 @@ Validator, unit tests, live smoke, goldens, agent evals, PR checklist. Land in o
 - [x] v2 subgraph: top pair has `reserveUSD > 0`.
 - [x] v3 subgraph: top pool has `totalValueLockedUSD > 0`.
 - [x] WBNB→TOPAZ `bestQuote` returns nonzero, route type is `v3-single` or `v3-path` (sanity).
-- [x] `buildBestSwapTx({ WBNB→TOPAZ, recipient=dead })` returns `{ to: ADDR.SwapRouter, data: 0x..., value: amountIn, expectedOut > 0, amountOutMin > 0, quotedAt > 0, deadline > now }`.
+- [x] `buildBestSwapTx` returns a complete Permit2/router `TopazSwapBatch`, with quote minima, payer, chain, deadline and every ordered call. WBNB is ERC20 by default.
 - [x] `Voter.gauges(<top live pool by TVL>) !== ZeroAddress` and `Voter.isAlive(gauge) === true`.
 
 **D. Golden / regression tests**:
@@ -451,3 +451,7 @@ The harness can be re-targeted: the YAML schema is runtime-agnostic, and any age
 - [x] `developers/frontend-integration.md` BNB-vs-WBNB section updated now that v3 native-BNB-out is shipped.
 - [ ] Verify `developers/subgraph-recipes.md`'s "Goldsky rejects mixing column filters with `or`" claim against the live deployment; the comment reads like it was written from a remembered failure rather than tested.
 - [x] `developers/error-cookbook.md` — every revert across v2 Router, v3 SwapRouter / CLPool, NonfungiblePositionManager, Voter, VotingEscrow, gauges, ERC20, plus generic patterns (empty revert data, nonce / gas) — each entry has source pointer, UI string, and a next step. Wired from `SKILL.md` nav, `developers/DEVELOPERS.md`, and the priority-1 `evals/07-explain-revert.md` diagnostic.
+
+In skill 3.0.0: the default swap builder returns a full batch. See [the migration contract](references/swapping-api.md) and [release notes](CHANGELOG.md).
+
+Universal Router: `0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6` · Permit2: `0x000000000022D473030F116dDEE9F6B43aC78BA3`. See [API routing](references/swapping-api.md).

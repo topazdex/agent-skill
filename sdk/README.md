@@ -38,3 +38,5 @@ This can become a standalone npm package later without moving the protocol code 
 5. Treat files not exported from `src/index.ts` as internal implementation details.
 
 Until then, the repository functions as both an agent skill and a reference SDK implementation.
+
+The default `buildBestSwapTx` now returns a complete `TopazSwapBatch`, not one transaction. See [API routing and the Permit2 migration](../references/swapping-api.md). Explicit direct-router builders retain their old shapes.

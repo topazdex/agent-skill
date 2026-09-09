@@ -1,3 +1,4 @@
+import { buildTopazSwapBatch, type TopazSwapBatch } from "./topazSwap.js";
 import { Interface, ZeroAddress, getAddress, parseUnits } from "ethers";
 import { ABIS } from "./abis.js";
 import { ADDR } from "../config/addresses.js";
@@ -5,7 +6,7 @@ import { allowance, getDecimals } from "./erc20.js";
 import { encodePath } from "./path.js";
 import { findV2Pool, findV3Pool } from "../read/pools.js";
 import {
-  bestQuote,
+  onchainBestQuote,
   quoteV2,
   quoteV2Route,
   quoteV3Path,
@@ -423,13 +424,13 @@ export async function buildV3PathSwapTx(args: BuildV3PathSwapTxArgs): Promise<Bu
   };
 }
 
-export async function buildBestSwapTx(args: BuildBestSwapTxArgs): Promise<BuiltSwapTx> {
+export async function buildBestLegacySwapTx(args: BuildBestSwapTxArgs): Promise<BuiltSwapTx> {
   // Validate up front so a bad input fails before we eat hundreds of RPC quotes.
   const v = normalizeAndValidate({ ...args, defaultSlippageBps: 100n });
   const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
   // bestQuote searches v2 and v3 independently and never emits a mixed route,
   // so every result is executable as a single wallet signature.
-  const best = await bestQuote(v.tokenIn, v.tokenOut!, amountIn);
+  const best = await onchainBestQuote(v.tokenIn, v.tokenOut!, amountIn);
   return buildFromExecRoute({
     exec: best.exec,
     tokenIn: v.tokenIn,
@@ -491,6 +492,8 @@ export async function buildFromExecRoute(args: {
         payer: args.payer,
         routeLabel: args.routeLabel,
       });
+    case "topaz-api":
+      throw new Error("Topaz API routes require buildTopazSwapBatch or buildBestSwapTx and the complete atomic call list");
     case "mixed":
       throw new Error("mixed routes are quote-only in this builder; implement atomic mixed execution before enabling");
     default: {
@@ -498,4 +501,15 @@ export async function buildFromExecRoute(args: {
       throw new Error(`unsupported route: ${JSON.stringify(exhaustive)}`);
     }
   }
+}
+
+/** The canonical builder now returns a complete batch, never a bare swap call.
+ * useBnb is explicit: ERC20 WBNB must not silently become native BNB. */
+export async function buildBestSwapTx(args: BuildBestSwapTxArgs): Promise<TopazSwapBatch> {
+  const v = normalizeAndValidate({ ...args, useBnb: args.useBnb ?? false, defaultSlippageBps: 100n });
+  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
+  return buildTopazSwapBatch({ tokenIn: v.useBnb && isWbnb(v.tokenIn) ? "BNB" : v.tokenIn,
+    tokenOut: v.useBnb && isWbnb(v.tokenOut!) ? "BNB" : v.tokenOut!, amountIn,
+    payer: v.payer ?? v.recipient, recipient: v.recipient, slippageBps: Number(v.slippageBps),
+    deadlineSeconds: v.deadline - Math.floor(Date.now() / 1000) });
 }

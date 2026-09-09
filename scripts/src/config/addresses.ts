@@ -3,6 +3,10 @@
 // references/addresses.md; `yarn validate` (scripts/src/cli/validate.ts) enforces parity.
 
 export const ADDR = {
+  // Smart order routing
+  UniversalRouter: "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6",
+  Permit2: "0x000000000022D473030F116dDEE9F6B43aC78BA3",
+
   // Tokens
   TOPAZ: "0xdf002282C1474C9592780618Adda7EaA99998Abd",
   WBNB: "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",

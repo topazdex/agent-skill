@@ -2,8 +2,8 @@
   "schema_version": "1.0",
   "name": "topaz",
   "display_name": "Topaz Dex Agent Skill",
-  "version": "2.10.0",
-  "description": "Agent skill for Topaz Dex — a ve(3,3) DEX on BNB Chain that combines Solidly-style v2 pools with Uniswap-v3-style concentrated liquidity. Covers swaps, liquidity (v2 LP + v3 NFT positions), gauges, veTOPAZ locks, voting, bribes, rewards, and subgraph/on-chain analytics.",
+  "version": "3.0.0",
+  "description": "Topaz Dex on BNB Chain: smart order router quotes, signature-free Permit2 swap batches, CL/v2 liquidity, gauges, veTOPAZ, voting, bribes, relays and analytics.",
   "homepage": "https://topazdex.com",
   "agents_page": "https://topazdex.com/agents",
   "repository": "https://github.com/topazdex/agent-skill",
@@ -25,7 +25,7 @@
       "claude-code-project": ".claude/skills/topaz",
       "hermes": "~/.hermes/skills/defi/topaz",
       "opencode": "~/.config/opencode/skills/topaz",
-      "codex-or-generic": "any path — point the agent at it explicitly"
+      "codex-or-generic": "any path \u2014 point the agent at it explicitly"
     }
   },
   "consumption_modes": [
@@ -62,11 +62,19 @@
       "cd scripts && yarn test",
       "cd scripts && yarn smoke"
     ],
-    "notes": "yarn smoke is a live read against BSC mainnet — requires BSC_RPC_URL in scripts/.env (no PRIVATE_KEY needed for reads)."
+    "notes": "yarn smoke is a live read against BSC mainnet \u2014 requires BSC_RPC_URL in scripts/.env (no PRIVATE_KEY needed for reads)."
   },
   "compatibility": {
-    "agents": ["any agent that can read a SKILL.md + linked references"],
-    "verified_with": ["claude-code", "hermes", "codex", "opencode", "generic"],
+    "agents": [
+      "any agent that can read a SKILL.md + linked references"
+    ],
+    "verified_with": [
+      "claude-code",
+      "hermes",
+      "codex",
+      "opencode",
+      "generic"
+    ],
     "node": ">=20.0.0",
     "package_manager": "yarn@4",
     "requires_local_install_for_full_functionality": true,
@@ -87,7 +95,7 @@
     "operator_scripts": "scripts/README.md"
   },
   "topaz_id": {
-    "description": "Topaz ID is the Topaz ecosystem account/identity layer — a self-custodial BNB Chain global wallet. The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
+    "description": "Topaz ID is the Topaz ecosystem account/identity layer \u2014 a self-custodial BNB Chain global wallet. The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
     "profile_host": "https://id.topazdex.com",
     "npm": "https://www.npmjs.com/package/@topazdex/id-connect",
     "package": "@topazdex/id-connect",
@@ -105,7 +113,12 @@
   "safety": {
     "default_behavior": "quote-and-build",
     "broadcast_policy": "Never broadcast unless the user explicitly authorizes it and a PRIVATE_KEY is configured.",
-    "output_labels": ["quote", "built calldata", "approval-needed", "broadcast tx-hash"]
+    "output_labels": [
+      "quote",
+      "built calldata",
+      "approval-needed",
+      "broadcast tx-hash"
+    ]
   },
   "tags": [
     "defi",

@@ -135,7 +135,7 @@ Most CLI commands wrap library functions you can call directly. For app and wall
 ```ts
 import { ADDR, buildBestSwapTx } from "./src/index.js";
 
-const tx = await buildBestSwapTx({
+const batch = await buildBestSwapTx({
   tokenIn: ADDR.WBNB,
   tokenOut: ADDR.TOPAZ,
   amountIn: "0.5",
@@ -143,9 +143,11 @@ const tx = await buildBestSwapTx({
   slippageBps: 100n,
 });
 
-// Submit with a wallet/provider of your choice:
-// await signer.sendTransaction({ to: tx.to, data: tx.data, value: tx.value });
+// Review and simulate ALL batch.transactions, then submit them in order through
+// an atomic wallet/account executor. No Permit2 signature; wallet confirmation required.
 ```
+
+The default builder uses Topaz API routing and returns `TopazSwapBatch`; see [the migration contract](../references/swapping-api.md). WBNB is ERC20 unless `useBnb: true` is explicit.
 
 For backend agents or ops scripts that intentionally broadcast with `PRIVATE_KEY`, use the write helpers directly:
 

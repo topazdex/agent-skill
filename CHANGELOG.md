@@ -12,6 +12,13 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+## [3.0.0] — 2026-09-09
+
+- Default quotes use quote.topazdex.com split/mixed CL/v2 routing.
+- Breaking: buildBestSwapTx returns the entire signature-free Permit2 swap batch, with explicit ERC20 WBNB semantics. The old shape remains at buildBestLegacySwapTx.
+- Validate API routes, reconstruct restricted commands, bind payer/recipient/chain/minimum/deadline, revoke allowances and reject unsafe inputs. Never broadcast from a builder.
+- Update CLI, SDK docs and tests. Publish the versioned GitHub release and refresh website skill resources as separate release steps.
+
 
 ## [2.10.0] — 2026-07-30
 

@@ -563,11 +563,12 @@ async function cmdSmoke() {
     // as long as the route is atomically executable (not "mixed", which the
     // current enumerator never emits anyway).
     if (
+      best.exec.type !== "topaz-api" &&
       best.exec.type !== "v2" &&
       best.exec.type !== "v3-single" &&
       best.exec.type !== "v3-path"
     ) {
-      throw new Error(`route type ${best.exec.type}, expected v2|v3-single|v3-path`);
+      throw new Error(`route type ${best.exec.type}, expected topaz-api|v2|v3-single|v3-path`);
     }
     ok(
       "bestQuote WBNB→TOPAZ (0.1)",
@@ -586,23 +587,11 @@ async function cmdSmoke() {
       recipient: "0x000000000000000000000000000000000000dEaD",
       slippageBps: 100n,
     });
-    if (built.to !== ADDR.SwapRouter) {
-      throw new Error(`to=${built.to}, expected SwapRouter ${ADDR.SwapRouter}`);
+    if (built.transactions.length < 1 || BigInt(built.quote.quote) <= 0n || BigInt(built.quote.minimumAmountOut) <= 0n) {
+      throw new Error("Missing Topaz API swap batch");
     }
-    if (!built.data.startsWith("0x") || built.data.length < 10) {
-      throw new Error(`bad data: ${built.data.slice(0, 32)}...`);
-    }
-    if (built.value !== amountIn) throw new Error(`value=${built.value}, expected amountIn ${amountIn}`);
-    if (built.expectedOut <= 0n) throw new Error("expectedOut <= 0");
-    if (built.amountOutMin <= 0n) throw new Error("amountOutMin <= 0");
-    if (built.quotedAt <= 0) throw new Error("quotedAt missing");
-    if (built.deadline <= Math.floor(Date.now() / 1000)) {
-      throw new Error("deadline not in the future");
-    }
-    ok(
-      "buildBestSwapTx WBNB→TOPAZ",
-      `route=${built.route} expectedOut=${formatUnits(built.expectedOut, 18)} TOPAZ amountOutMin=${formatUnits(built.amountOutMin, 18)}`,
-    );
+    if (built.deadline <= Math.floor(Date.now() / 1000)) throw new Error("Expired Topaz batch");
+    ok("buildBestSwapTx WBNB→TOPAZ", `${built.transactions.length} signature-free Permit2/router calls`);
   } catch (e) {
     fail("buildBestSwapTx WBNB→TOPAZ", e);
   }

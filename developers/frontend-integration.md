@@ -66,10 +66,10 @@ Use the `isStale(tx, maxAgeSeconds?)` helper exported from `@topazdex/agent-skil
 ```ts
 import { buildBestSwapTx, isStale } from "./scripts/src";
 
-const tx = await buildBestSwapTx({ tokenIn, tokenOut, amountIn, recipient });
+const batch = await buildBestSwapTx({ tokenIn, tokenOut, amountIn, recipient });
 
 // before showing the "Sign" button:
-if (isStale(tx)) {
+if (isStale(batch)) {
   // rebuild calldata, then re-render
 }
 ```
@@ -85,3 +85,5 @@ Common errors to map into user-friendly messages:
 - transaction would receive less than minimum output
 - voting window closed / already voted this epoch
 - RPC timeout or rate limit
+
+For API swaps, review and submit every entry in `batch.transactions` atomically from `batch.payer`; there is no singular `approval` or top-level swap transaction. See [Permit2 batch integration](../references/swapping-api.md).

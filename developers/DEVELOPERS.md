@@ -32,7 +32,7 @@ smart-wallet address, popup-gesture requirements).
 ## Choose the right integration surface
 
 - **Topaz ID / wallet login integration**: use `@topazdex/id-connect` when a partner app wants to offer "Connect with Topaz ID", show Topaz ID profile identity, or let users sign through the Topaz ID consent flow. See [`topaz-id-connect.md`](topaz-id-connect.md).
-- **Frontend or wallet integration**: use transaction builders from `scripts/src/lib/txBuilders.ts`. These return `{ to, data, value }` plus quote metadata so your app can show a confirmation screen and let the user's wallet sign.
+- **Frontend or wallet integration**: use transaction builders from `scripts/src/lib/txBuilders.ts`. The default swap builder returns the complete `TopazSwapBatch.transactions` list plus quote metadata. Submit all calls atomically; explicit legacy builders retain the old single-transaction shape.
 - **Backend bots / ops agents**: use CLI wrappers under `scripts/src/cli/` or write modules under `scripts/src/write/`, which broadcast with an env-provided `PRIVATE_KEY`.
 - **Analytics / dashboards**: use the Goldsky subgraphs for indexed pool/volume/TVL data, and on-chain reads for gauges, votes, claimables, and real-time pool state.
 - **Protocol reference**: use `references/` for addresses, ABIs, timing rules, pitfalls, and contract-specific mechanics.
@@ -97,18 +97,7 @@ The most commonly used addresses are:
 
 ### Quotes and route selection
 
-Use `bestQuoteBundle(tokenIn, tokenOut, amountIn)` from `scripts/src/read/quotes.ts`
-to compare:
-
-- best v2 route (volatile + stable, up to 3 hops through `USDT, WBNB, BTCB, ETH, TOPAZ, USDC`)
-- best v3 route (every tick-spacing combination, up to 3 hops through the same intermediaries)
-- the overall winner
-
-The two stacks are searched independently — the default flow **never returns a
-mixed v2/v3 route** (Topaz has no atomic mixed-route executor). If you only
-need the overall winner, call `bestQuote(...)`; for one stack at a time, call
-`bestV2Quote(...)` or `bestV3Quote(...)`. For analytics-only mixed pricing,
-call `quoteMixed(pathBytes, amountIn)` against `MixedRouteQuoterV1` directly.
+Use `fetchTopazQuote` or `bestQuoteBundle(tokenIn, tokenOut, amountIn)` for Topaz API split/mixed routing. `bestQuoteBundle` returns `{topaz, best, v2: null, v3: null}`; null legacy fields do not mean those pools are absent. Read [API routing and Permit2 batches](../references/swapping-api.md) before integrating execution. Explicit on-chain diagnostic helpers remain available.
 
 For simple UX, show:
 
@@ -126,7 +115,7 @@ See `developers/quote-widget.md`.
 Use `buildBestSwapTx` or the more specific builders in `scripts/src/lib/txBuilders.ts` to construct wallet-ready calldata:
 
 ```ts
-const tx = await buildBestSwapTx({
+const batch = await buildBestSwapTx({
   tokenIn: ADDR.WBNB,
   tokenOut: ADDR.TOPAZ,
   amountIn: "0.5",
@@ -134,10 +123,13 @@ const tx = await buildBestSwapTx({
   recipient: userAddress,
 });
 
-await walletClient.sendTransaction({
-  to: tx.to,
-  data: tx.data,
-  value: tx.value,
+// After wallet confirmation, pass ALL calls to an adapter that guarantees
+// atomic execution from batch.payer. Never send these as sequential EOA calls.
+await atomicWallet.sendCalls({
+  chainId: batch.chainId,
+  from: batch.payer,
+  calls: batch.transactions,
+  atomicRequired: batch.atomicRequired,
 });
 ```
 

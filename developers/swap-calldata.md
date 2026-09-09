@@ -1,146 +1,23 @@
-# Swap Calldata Builders
+# Swap calldata and atomic Permit2 batches
 
-Most applications should not call helper functions that directly broadcast transactions with a local private key. Instead, build calldata and hand it to the user's wallet.
-
-The builder helpers live in:
-
-```text
-scripts/src/lib/txBuilders.ts
-```
-
-They return:
+Use [API routing and Permit2 batches](../references/swapping-api.md) for the maintained execution contract and a complete example. The SOR supports split and mixed CL/v2 routes on BNB Chain.
 
 ```ts
-type BuiltSwapTx = {
-  to: string;
-  data: string;
-  value: bigint;
-  expectedOut: bigint;
-  amountOutMin: bigint;
-  route: string;
-  quotedAt: number;   // unix seconds; use for freshness checks
-  deadline: number;   // unix seconds passed to the router
-  approval?: {
-    token: string;
-    spender: string;
-    amount: bigint;
-  };
-};
-```
+import { buildBestSwapTx, isStale } from "../scripts/src/index.js";
 
-Every builder validates inputs before quoting:
-
-- `tokenIn` / `tokenOut` / `recipient` must be valid (checksummable) addresses; malformed strings throw.
-- `tokenIn !== tokenOut`, `recipient !== ZeroAddress`, `amountIn > 0`.
-- `slippageBps` is clamped to `0..10000` (0%..100%). Anything else throws.
-- `deadline` must be strictly in the future.
-
-If any check fails the builder throws synchronously — no half-built calldata is returned.
-
-## Skipping redundant approvals
-
-Pass `payer` (the address that will sign and supply `tokenIn`) and the builder will read `allowance(tokenIn, payer, spender)` and **omit** the `approval` field when the existing allowance already covers `amountIn`. This saves the user a tx and a gas trip:
-
-```ts
-const tx = await buildBestSwapTx({
-  tokenIn: ADDR.WBNB,
-  tokenOut: ADDR.TOPAZ,
-  amountIn: "0.5",
-  recipient: userAddress,
-  payer: userAddress,       // <-- enables the allowance check
-  slippageBps: 100n,
+const batch = await buildBestSwapTx({
+  tokenIn, tokenOut, amountIn: "0.5", recipient: executingAccount,
+  slippageBps: 100n, useBnb: false,
 });
-
-if (tx.approval) {
-  // truly needed; have the wallet sign approve() first
-}
+if (isStale(batch)) throw new Error("Refresh the quote before confirming");
+// Show batch.quote.quote, batch.quote.minimumAmountOut, batch.deadline and every call.
+// After simulation/review, submit batch.transactions through your atomic wallet executor.
 ```
 
-Omit `payer` entirely if you'd rather always emit the approval and let the wallet decide.
+`buildBestSwapTx` returns `TopazSwapBatch`, with a complete `transactions` array. There is no top-level `to`, `data`, `value` or singular `approval`. WBNB is ERC20 by default. `useBnb: true` explicitly selects native input/output when a token is WBNB. A batch has one payer and recipient; chained output remains with that executing account.
 
-## Best-route swap
+For raw amounts without RPC decimal discovery, import `buildTopazSwapBatch` directly from `scripts/src/lib/topazSwap.ts`. Its slippage is a number in basis points, and its input is a bigint. The call list includes exact ERC20 approval to Permit2, `Permit2.approve` to the Topaz router, the swap, and allowance cleanup. Use **all** calls in order. `permit2SignatureRequired: false` does not remove the wallet transaction confirmation.
 
-```ts
-import { ADDR, buildBestSwapTx } from "../scripts/src/index.js";
+Explicit direct-router integrations may still use `buildBestLegacySwapTx`, `buildV2SwapTx`, `buildV2RouteSwapTx`, `buildV3SwapTx` and `buildV3PathSwapTx`. Those retain the older `BuiltSwapTx` shape and have their own singular ERC20 `approval` requirement. They are not the SOR path. `buildFromExecRoute` intentionally rejects `topaz-api`: use a fresh complete batch instead of forwarding that route into an old single-call builder.
 
-const tx = await buildBestSwapTx({
-  tokenIn: ADDR.WBNB,
-  tokenOut: ADDR.TOPAZ,
-  amountIn: "0.5",
-  recipient: userAddress,
-  slippageBps: 100n,
-});
-
-// ethers BrowserProvider example
-await signer.sendTransaction({
-  to: tx.to,
-  data: tx.data,
-  value: tx.value,
-});
-```
-
-## v3 single-pool swap
-
-```ts
-import { ADDR, buildV3SwapTx } from "../scripts/src/index.js";
-
-const tx = await buildV3SwapTx({
-  tokenIn: ADDR.WBNB,
-  tokenOut: ADDR.TOPAZ,
-  amountIn: "1",
-  tickSpacing: 200,
-  recipient: userAddress,
-  slippageBps: 100n,
-});
-```
-
-For BNB-in swaps, use WBNB as `tokenIn`; the builder sets `value = amountIn` and encodes the payable v3 router call.
-
-## v2 swap
-
-```ts
-import { ADDR, buildV2SwapTx } from "../scripts/src/index.js";
-
-const tx = await buildV2SwapTx({
-  tokenIn: ADDR.WBNB,
-  tokenOut: "0xTOKEN",
-  amountIn: "0.25",
-  stable: false,
-  recipient: userAddress,
-  slippageBps: 50n,
-  useBnb: true,
-});
-```
-
-## ERC20 approvals
-
-If `approval` is returned, the user must approve the spender before submitting the swap transaction.
-
-```ts
-if (tx.approval) {
-  await erc20.write.approve([tx.approval.spender, tx.approval.amount]);
-}
-```
-
-Native BNB-in routes do not require ERC20 approval. ERC20-in routes do.
-
-## Why builders skip some routes
-
-`buildBestSwapTx` always picks a route whose `exec.type` is `v2`, `v3-single`,
-or `v3-path`. Mixed v2/v3 routes are not part of the default search at all —
-`bestQuote`, `bestQuoteBundle`, `bestV2Quote`, `bestV3Quote`, and `topRoutes`
-all search v2 and v3 independently. Topaz has no atomic mixed-route executor,
-so a mixed quote could not be delivered as a single wallet signature.
-
-If you need a mixed price for analytics, call `quoteMixed(pathBytes, amountIn)`
-directly against `MixedRouteQuoterV1` and treat the result as price discovery,
-not as something to execute.
-
-## Production checklist
-
-- Simulate the built transaction before asking the user to sign.
-- Confirm the wallet is on BNB Chain mainnet (`chainId = 56`).
-- Display the spender address for approvals.
-- Display expected output, minimum output, route, and deadline.
-- Refresh quotes before signing if the quote is older than 15-30 seconds.
-- Never reuse calldata across users or sessions.
+The API builders reject other chains, zero/overflow input, zero minimum output, disconnected/cyclic paths, unsupported protocols, invalid deadlines and recipients other than the payer. They rebuild restricted commands from validated routes rather than executing opaque API calldata. Simulation and quote freshness remain required before signing.

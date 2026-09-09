@@ -1,3 +1,4 @@
+import { fetchTopazQuote, type TopazQuote } from "../lib/topazRouting.js";
 import {
   AbiCoder,
   Contract,
@@ -42,7 +43,7 @@ const abiCoder = AbiCoder.defaultAbiCoder();
  *   - each additional hop pays another swap fee and is dominated by the 3-hop
  *     route through the same intermediaries in practice.
  *
- * Callers can pass `maxHops` to `bestV2Quote`/`bestV3Quote`/`bestQuoteBundle`
+ * Callers can pass `maxHops` to `bestV2Quote`/`bestV3Quote`/`onchainQuoteBundle`
  * to restrict the search further (e.g. `maxHops: 2` for snappier UIs).
  */
 export const MAX_ROUTE_HOPS = 3;
@@ -163,6 +164,7 @@ export function compareByAmountOutDesc(a: BestRoute, b: BestRoute): number {
 }
 
 export type ExecRoute =
+  | { type: "topaz-api"; quote: TopazQuote }
   | { type: "v2"; route: V2Route[] }
   | { type: "v3-single"; tokenIn: string; tokenOut: string; tickSpacing: number }
   | { type: "v3-path"; tokens: string[]; spacings: number[] }
@@ -170,10 +172,8 @@ export type ExecRoute =
 
 export interface BestQuoteOptions {
   /**
-   * @deprecated The default best-route search is now V2-only or V3-only — it
-   * never returns a mixed v2/v3 route, because Topaz has no atomic mixed-route
-   * executor. This flag is retained as a no-op for backwards compatibility;
-   * callers that want a mixed quote should call `quoteMixed(...)` directly.
+   * @deprecated A no-op in the explicit legacy on-chain search. The default
+   * API search supports mixed and split routes without this option.
    */
   allowMixed?: boolean;
   /**
@@ -585,10 +585,10 @@ function assertQuoteInputs(tokenIn: string, tokenOut: string, amountIn: bigint):
 }
 
 /**
- * @deprecated Use `bestQuoteBundle` (or `bestV2Quote` / `bestV3Quote`) for
+ * @deprecated Use `onchainQuoteBundle` (or `bestV2Quote` / `bestV3Quote`) for
  * separated v2 vs v3 routes. Retained so existing callers keep compiling; the
  * `allowMixed` flag is now a no-op — the enumerator never emits mixed-route
- * candidates because Topaz has no atomic mixed-route executor.
+ * candidates. Use the default API router for executable mixed/split routes.
  *
  * Returns the flat list of candidates the new enumerators would produce
  * (v2 plans first, then v3 plans), keyed off an internally-fetched inventory.
@@ -602,7 +602,7 @@ export function enumerateCandidates(
   maxHops: number = MAX_ROUTE_HOPS,
 ): CandidatePlan[] {
   // Tests provide a permissive synthetic inventory; production callers should
-  // go through `bestQuoteBundle` which probes the chain first.
+  // go through `onchainQuoteBundle` which probes the chain first.
   const inv = inventory ?? permissiveInventory();
   return [
     ...enumerateV2Plans(tokenIn, tokenOut, amountIn, inv, maxHops),
@@ -629,6 +629,7 @@ export function permissiveInventory(): PoolInventory {
  * can show side-by-side "v2 vs CL" prices without re-running the search.
  */
 export interface QuoteBundle {
+  topaz?: BestRoute | null;
   v2: BestRoute | null;
   v3: BestRoute | null;
   best: BestRoute | null;
@@ -682,7 +683,7 @@ interface FilterContext {
  *      Always on so we still catch broken pools when subgraph data is missing.
  *
  * Annotates `priceImpactPct` on each surviving candidate when prices are known.
- * Exported for tests; production callers go through `bestQuoteBundle` / `topRoutes`.
+ * Exported for tests; production callers go through `onchainQuoteBundle` / `topRoutes`.
  */
 export function filterByImpact(
   sorted: BestRoute[],
@@ -721,7 +722,7 @@ export function filterByImpact(
  * `(tokenIn, tokenOut, ...HOP_TOKENS)` and one chunked multicall per stack
  * (often a single chunk each). Failed quotes are silently dropped.
  */
-export async function bestQuoteBundle(
+export async function onchainQuoteBundle(
   tokenIn: string,
   tokenOut: string,
   amountIn: bigint,
@@ -778,7 +779,7 @@ export async function bestQuoteBundle(
 /**
  * Best executable v2 (volatile/stable, up to `MAX_ROUTE_HOPS` hops) route. Returns
  * `null` if no v2 path is viable. Shares the pool-existence probe shape with
- * `bestQuoteBundle` — call `bestQuoteBundle` instead if you also want the v3
+ * `onchainQuoteBundle` — call `onchainQuoteBundle` instead if you also want the v3
  * side.
  */
 export async function bestV2Quote(
@@ -787,7 +788,7 @@ export async function bestV2Quote(
   amountIn: bigint,
   opts: BestQuoteOptions = {},
 ): Promise<BestRoute | null> {
-  return (await bestQuoteBundle(tokenIn, tokenOut, amountIn, opts)).v2;
+  return (await onchainQuoteBundle(tokenIn, tokenOut, amountIn, opts)).v2;
 }
 
 /**
@@ -800,7 +801,7 @@ export async function bestV3Quote(
   amountIn: bigint,
   opts: BestQuoteOptions = {},
 ): Promise<BestRoute | null> {
-  return (await bestQuoteBundle(tokenIn, tokenOut, amountIn, opts)).v3;
+  return (await onchainQuoteBundle(tokenIn, tokenOut, amountIn, opts)).v3;
 }
 
 /**
@@ -809,13 +810,13 @@ export async function bestV3Quote(
  *
  * Throws when neither stack has a viable route.
  */
-export async function bestQuote(
+export async function onchainBestQuote(
   tokenIn: string,
   tokenOut: string,
   amountIn: bigint,
   opts: BestQuoteOptions = {}
 ): Promise<BestRoute> {
-  const bundle = await bestQuoteBundle(tokenIn, tokenOut, amountIn, opts);
+  const bundle = await onchainQuoteBundle(tokenIn, tokenOut, amountIn, opts);
   if (!bundle.best) throw new Error("no viable route found");
   return bundle.best;
 }
@@ -899,15 +900,28 @@ export async function quoteHuman(
   const decIn = await getDecimals(tokenIn);
   const decOut = await getDecimals(tokenOut);
   const amountIn = parseUnits(amountHuman, decIn);
-  const best = await bestQuote(tokenIn, tokenOut, amountIn, opts);
+  const best = await bestQuote(tokenIn, tokenOut, amountIn);
   const amountOutHuman = formatUnits(best.amountOut, decOut);
   return { best, amountOutHuman, decimalsOut: decOut };
 }
 
 /**
  * Re-exported so power users can build mixed paths against `MixedRouteQuoterV1`
- * directly. The default routing pipeline never produces or executes mixed
- * routes (Topaz has no atomic mixed-route executor today), but the sentinels
- * stay available for analytics or off-protocol pricing.
+ * directly for diagnostics. Default API routing can execute mixed routes
+ * through the Universal Router; these sentinels are specific to this quoter.
  */
 export { V2_VOLATILE, V2_STABLE, encodeMixedPath };
+
+/** Canonical SOR quote. Explicit v2/v3 helpers remain available for diagnostics. */
+export async function bestQuoteBundle(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<QuoteBundle> {
+  const quote = await fetchTopazQuote({ tokenIn, tokenOut, amountIn });
+  const topaz: BestRoute = { amountOut: BigInt(quote.quote),
+    route: `Topaz API (${quote.routes.map((r) => `${r.percent}% ${r.protocol}`).join(" + ")})`,
+    exec: { type: "topaz-api", quote } };
+  return { topaz, v2: null, v3: null, best: topaz };
+}
+export async function bestQuote(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<BestRoute> {
+  const bundle = await bestQuoteBundle(tokenIn, tokenOut, amountIn);
+  if (!bundle.best) throw new Error("No Topaz API route");
+  return bundle.best;
+}

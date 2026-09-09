@@ -1,39 +1,16 @@
-# Eval 02 — Build swap calldata, do not broadcast
-
-**Output kind:** `built calldata`
+# Eval 02 — Build a complete swap batch, do not broadcast
 
 ## Prompt
 
-> Build a swap tx for 0.5 WBNB → TOPAZ on Topaz but don't send it.
+> Build a swap batch for 0.5 WBNB → TOPAZ on Topaz for account 0x1111111111111111111111111111111111111111, but do not send it.
 
-## Skill activation
+## Expected behavior
 
-- [ ] `topaz` skill is loaded (trigger phrase "swap on topaz" + "build").
+Read `references/swapping-api.md` and use `buildBestSwapTx` or `buildTopazSwapBatch`. Both fetch a fresh API quote. WBNB is an ERC20 input unless native BNB is explicitly requested.
 
-## Expected reads
+Return the complete ordered `transactions` list: token reset, token approval to Permit2, Permit2 approval to the router, swap, Permit2 cleanup, token allowance cleanup. Include every call's `to`, `data`, and `value` (zero for WBNB), plus `quote.quote`, `quote.minimumAmountOut`, slippage, deadline and quotedAt. The executing input-owning account is also the recipient.
 
-- [ ] `bestQuote(WBNB, TOPAZ, 5n * 10n ** 17n)` (or `bestQuoteBundle(...)` to see v2 and v3 side-by-side — routes are always executable, the default search never returns a mixed v2/v3 route).
-
-## Expected writes
-
-- [ ] `buildBestSwapTx({ tokenIn: WBNB, tokenOut: TOPAZ, amountIn: 5n * 10n ** 17n, recipient: <user address or sentinel>, slippageBps: 100n })`.
-- [ ] **No** call to any function in `scripts/src/write/`, no `signer()`, no `provider.broadcastTransaction(...)`.
-
-## Final answer MUST include
-
-- [ ] `to` = `ADDR.SwapRouter` (or `ADDR.Router` for v2 routes).
-- [ ] `data` (the encoded function call, `0x` + selector + ABI-encoded args).
-- [ ] `value` (equal to `amountIn` when `tokenIn === WBNB` and `useBnb === true`; `0n` otherwise).
-- [ ] `expectedOut`, `amountOutMin`, the slippage that was applied, the `deadline` (unix seconds), and `quotedAt`.
-- [ ] `approval` block when `tokenIn !== WBNB` and the user has no existing allowance — with `token`, `spender`, `amount`.
-- [ ] Explicit "this is calldata for your wallet to sign — nothing has been broadcast" framing.
-
-## Final answer MUST NOT include
-
-- [ ] Any "tx hash", "broadcasted", "sent" language.
-- [ ] A claim that the swap is "in progress" or "pending".
-- [ ] Use of the `swap` / `lp` / etc. CLIs under `scripts/src/cli/`.
-- [ ] A signed transaction or any private key reference.
+Explain that the wallet must submit every call atomically; `permit2SignatureRequired: false` removes only the extra Permit2 signature. The owner still confirms the transaction. Nothing has been broadcast. Never return only the swap call or execute sequential EOA transactions as if they were atomic.
 
 ## Machine-readable assertions
 
@@ -41,8 +18,7 @@
 assertions:
   output_kind: built calldata
   expected_tool_calls:
-    - 'bestQuote(Bundle)?\('
-    - 'buildBestSwapTx\('
+    - 'buildBestSwapTx\(|buildTopazSwapBatch\('
   forbidden_tool_calls:
     - 'scripts/src/write/'
     - 'src/cli/(swap|lp|lock|vote|claim|bribe)\.ts'
@@ -51,14 +27,16 @@ assertions:
     - 'sendTransaction'
     - 'PRIVATE_KEY'
   must_include:
+    - '\btransactions\b'
     - '\bto\b'
     - '\bdata\b'
     - '\bvalue\b'
-    - '(amountOutMin|expectedOut)'
+    - 'minimumAmountOut'
     - '(deadline|quotedAt)'
-    - '(not broadcast|do not broadcast|nothing has been broadcast|wallet (will )?sign)'
+    - '(atomic|atomically)'
+    - 'Permit2'
+    - '(not broadcast|nothing has been broadcast|wallet.*confirm)'
   must_not_include:
-    - '(tx hash|broadcast(ed)?|sent on-?chain|executed|in progress|pending)'
-    - 'amountOutMin\s*=\s*0'
+    - '(tx hash|sent on.chain|in progress|pending)'
+    - 'minimumAmountOut\s*=\s*0'
 ```
-

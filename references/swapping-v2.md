@@ -94,9 +94,8 @@ Quote both routes and use whichever returns a better `amountOut`. For correlated
 `scripts/src/read/quotes.ts` exposes `quoteV2(...)` for one v2 route. For full
 route search use `bestV2Quote(...)` (direct + 2- and 3-hop combinations of
 volatile/stable legs through `USDT, WBNB, BTCB, ETH, TOPAZ, USDC`) or
-`bestQuoteBundle(...)` to get the v2 winner alongside the v3 winner. v2 and v3
-are searched separately — the default flow never mixes the two stacks in a
-single route.
+`onchainQuoteBundle(...)` for legacy v2/v3 diagnostic comparisons. The default
+`bestQuoteBundle(...)` uses Topaz API split/mixed routing; see [API routing](swapping-api.md).
 
 ## Slippage pattern
 
@@ -139,7 +138,7 @@ const tx = await router.swapExactTokensForTokens(
 | Operation | Where |
 |---|---|
 | Quote | `scripts/src/read/quotes.ts` — `quoteV2(tokenIn, tokenOut, amountIn, stable)`, `bestV2Quote(...)`, `bestQuoteBundle(...)`, `topRoutes(...)` |
-| Build calldata | `scripts/src/lib/txBuilders.ts` — `buildV2SwapTx(...)`, `buildBestSwapTx(...)` |
+| Build calldata | `scripts/src/lib/txBuilders.ts` — `buildV2SwapTx(...)` for explicit direct v2; `buildBestSwapTx(...)` for the complete API/Permit2 batch |
 | Broadcast token→token | `scripts/src/write/swap.ts` — `swapV2({ tokenIn, tokenOut, amountIn, stable, slippageBps, deadline })` |
 | CLI | `yarn tsx src/cli/swap.ts v2 --in <addr> --out <addr> --amount <n> [--stable] [--slippage 50]` |
 

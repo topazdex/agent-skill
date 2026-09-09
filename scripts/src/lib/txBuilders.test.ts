@@ -127,7 +127,7 @@ describe("normalizeAndValidate", () => {
   });
 });
 
-// --- buildBestSwapTx calldata shape, with mocked quoters/pool lookups ---
+// --- buildBestLegacySwapTx calldata shape, with mocked quoters/pool lookups ---
 //
 // We hijack the read-side modules so no RPC is needed. Each route type (v2, v3-single,
 // v3-path) returns a canned `bestQuote` and the builder produces real calldata against
@@ -137,7 +137,7 @@ vi.mock("../read/quotes.js", async () => {
   const actual = await vi.importActual<typeof import("../read/quotes.js")>("../read/quotes.js");
   return {
     ...actual,
-    bestQuote: vi.fn(),
+    onchainBestQuote: vi.fn(),
     quoteV2: vi.fn(),
     quoteV2Route: vi.fn(),
     quoteV3Single: vi.fn(),
@@ -160,9 +160,9 @@ vi.mock("./erc20.js", () => ({
 const quotes = await import("../read/quotes.js");
 const pools = await import("../read/pools.js");
 const erc20 = await import("./erc20.js");
-const { buildBestSwapTx, buildV3SwapTx, buildV3PathSwapTx } = await import("./txBuilders.js");
+const { buildBestLegacySwapTx, buildV3SwapTx, buildV3PathSwapTx } = await import("./txBuilders.js");
 
-const mockBestQuote = vi.mocked(quotes.bestQuote);
+const mockBestQuote = vi.mocked(quotes.onchainBestQuote);
 const mockQuoteV3Single = vi.mocked(quotes.quoteV3Single);
 const mockQuoteV3Path = vi.mocked(quotes.quoteV3Path);
 const mockFindV3Pool = vi.mocked(pools.findV3Pool);
@@ -173,7 +173,7 @@ beforeEach(() => {
   mockAllowance.mockResolvedValue(0n);
 });
 
-describe("buildBestSwapTx — calldata shape (mocked quoters)", () => {
+describe("buildBestLegacySwapTx — calldata shape (mocked quoters)", () => {
   it("produces v3-single calldata against SwapRouter with the right selector and decoded args", async () => {
     const amountIn = 10n ** 18n; // 1 WBNB
     const expectedOut = 5_000n * 10n ** 18n; // 5000 TOPAZ
@@ -185,7 +185,7 @@ describe("buildBestSwapTx — calldata shape (mocked quoters)", () => {
     mockFindV3Pool.mockResolvedValue("0x1111111111111111111111111111111111111111");
     mockQuoteV3Single.mockResolvedValue(expectedOut);
 
-    const built = await buildBestSwapTx({
+    const built = await buildBestLegacySwapTx({
       tokenIn: WBNB,
       tokenOut: TOPAZ,
       amountIn,
@@ -223,7 +223,7 @@ describe("buildBestSwapTx — calldata shape (mocked quoters)", () => {
     mockFindV3Pool.mockResolvedValue("0x2222222222222222222222222222222222222222");
     mockQuoteV3Single.mockResolvedValue(expectedOut);
 
-    const built = await buildBestSwapTx({
+    const built = await buildBestLegacySwapTx({
       tokenIn: USDT,
       tokenOut: TOPAZ,
       amountIn,
@@ -248,7 +248,7 @@ describe("buildBestSwapTx — calldata shape (mocked quoters)", () => {
     mockQuoteV3Single.mockResolvedValue(expectedOut);
     mockAllowance.mockResolvedValue(2n * amountIn); // payer already approved 2x
 
-    const built = await buildBestSwapTx({
+    const built = await buildBestLegacySwapTx({
       tokenIn: USDT,
       tokenOut: TOPAZ,
       amountIn,
@@ -261,7 +261,7 @@ describe("buildBestSwapTx — calldata shape (mocked quoters)", () => {
 
   it("rejects bad input before calling bestQuote (fails fast)", async () => {
     await expect(
-      buildBestSwapTx({
+      buildBestLegacySwapTx({
         tokenIn: WBNB,
         tokenOut: WBNB, // self-swap
         amountIn: 1n,

@@ -16,6 +16,8 @@ export * from "./lib/statsApi.js";
 export * from "./lib/subgraph.js";
 export * from "./lib/tickMath.js";
 export * from "./lib/txBuilders.js";
+export * from "./lib/topazRouting.js";
+export * from "./lib/topazSwap.js";
 
 export * from "./read/apr.js";
 export * from "./read/claimable.js";

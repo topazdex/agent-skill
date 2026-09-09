@@ -1,3 +1,4 @@
+import { buildBestSwapTx } from "../lib/txBuilders.js";
 // CLI: yarn tsx src/cli/swap.ts <mode> [options]
 //   modes: v2 | v3 | best | quote
 //
@@ -6,7 +7,7 @@
 import minimist from "minimist";
 import { parseUnits, formatUnits } from "ethers";
 import { swapV2, swapV3Single, swapV3Path } from "../write/swap.js";
-import { bestQuoteBundle, type BestRoute } from "../read/quotes.js";
+import { onchainQuoteBundle, bestQuoteBundle, type BestRoute } from "../read/quotes.js";
 import { getDecimals, getSymbol } from "../lib/erc20.js";
 import { findToken } from "../config/tokens.js";
 
@@ -18,11 +19,11 @@ Usage: yarn tsx src/cli/swap.ts <mode> [options]
   best   --in <addr> --out <addr> --amount <human> [--execute] [--prefer v2|v3]
   quote  --in <addr> --out <addr> --amount <human>
 
-Both \`quote\` and \`best\` enumerate routes for v2 (volatile + stable, up to 3 hops)
-and v3 / concentrated liquidity (every tick spacing combination, up to 3 hops)
-separately. The two stacks are never mixed in a single route — Topaz has no atomic
-mixed-route executor today. Intermediaries used for the search: USDT, BNB/WBNB,
-BTCB, ETH, TOPAZ, USDC.
+Default quote/best use quote.topazdex.com, including split and mixed CL/v2 routes.
+Pass --payer <executing-account> to best to print the complete signature-free
+Permit2 approval + swap batch. Submit every returned call atomically through your
+wallet/account adapter. This CLI does not broadcast API batches. Explicit
+--prefer v2|v3 keeps the legacy direct-router execution path.
 
 Tokens accept either a 0x… address OR a symbol. Built-in symbols include
   BNB / WBNB, TOPAZ, USDT, USDC, USD1, FDUSD, BTCB, ETH, SOL, XRP, CAKE, DOGE,
@@ -102,8 +103,11 @@ async function cmdQuote(argv: any) {
   const bundle = await bestQuoteBundle(tokenIn, tokenOut, amountIn);
 
   console.log(`Quoting ${argv.amount} ${symIn} → ${symOut}\n`);
-  console.log(formatRoute("v2 (basic)", bundle.v2, decOut, symOut));
-  console.log(formatRoute("v3 (concentrated)", bundle.v3, decOut, symOut));
+  if (bundle.topaz) console.log(formatRoute("Topaz API", bundle.topaz, decOut, symOut));
+  else {
+    console.log(formatRoute("v2 (basic)", bundle.v2, decOut, symOut));
+    console.log(formatRoute("v3 (concentrated)", bundle.v3, decOut, symOut));
+  }
   if (bundle.best) {
     console.log(`\nBest overall: ${bundle.best.route}`);
   }
@@ -116,11 +120,15 @@ async function cmdBest(argv: any) {
   const decOut = await getDecimals(tokenOut);
   const [symIn, symOut] = await Promise.all([getSymbol(tokenIn), getSymbol(tokenOut)]);
   const amount = parseUnits(String(argv.amount), decIn);
-  const bundle = await bestQuoteBundle(tokenIn, tokenOut, amount);
+  if (argv.prefer && !["v2", "v3"].includes(String(argv.prefer))) throw new Error("--prefer must be v2 or v3");
+  const bundle = argv.prefer ? await onchainQuoteBundle(tokenIn, tokenOut, amount) : await bestQuoteBundle(tokenIn, tokenOut, amount);
 
   console.log(`Routing ${argv.amount} ${symIn} → ${symOut}\n`);
-  console.log(formatRoute("v2 (basic)", bundle.v2, decOut, symOut));
-  console.log(formatRoute("v3 (concentrated)", bundle.v3, decOut, symOut));
+  if (bundle.topaz) console.log(formatRoute("Topaz API", bundle.topaz, decOut, symOut));
+  else {
+    console.log(formatRoute("v2 (basic)", bundle.v2, decOut, symOut));
+    console.log(formatRoute("v3 (concentrated)", bundle.v3, decOut, symOut));
+  }
 
   const prefer = String(argv.prefer ?? "").toLowerCase();
   const chosen =
@@ -135,6 +143,15 @@ async function cmdBest(argv: any) {
   console.log(`  amountOut: ${formatUnits(chosen.amountOut, decOut)} ${symOut}`);
   console.log(`  exec: ${JSON.stringify(chosen.exec)}`);
 
+  if (chosen.exec.type === "topaz-api") {
+    if (argv.execute) throw new Error("API swaps require an atomic wallet/account batch; use --payer to build its calls, then submit with your wallet adapter.");
+    if (argv.payer) {
+      const batch = await buildBestSwapTx({ tokenIn, tokenOut, amountIn: amount,
+        recipient: String(argv.payer), slippageBps: BigInt(argv.slippage ?? 100), useBnb: argv["use-bnb"] === true || argv["use-bnb"] === "true" || String(argv.in).toUpperCase() === "BNB" || String(argv.out).toUpperCase() === "BNB" });
+      console.log(JSON.stringify(batch, null, 2));
+    }
+    return;
+  }
   if (!argv.execute) return;
 
   const slippageBps = BigInt(argv.slippage ?? 100);
@@ -184,7 +201,7 @@ async function cmdBest(argv: any) {
 }
 
 async function main() {
-  const argv = minimist(process.argv.slice(2), { string: ["_", "in", "out", "pool", "gauge", "address", "amount", "amount-a", "amount-b", "amount0", "amount1", "id", "tokenId", "token", "a", "b", "t0", "t1", "from", "to", "lower-price", "upper-price", "duration", "prefer"] });
+  const argv = minimist(process.argv.slice(2), { string: ["_", "in", "out", "pool", "gauge", "address", "amount", "amount-a", "amount-b", "amount0", "amount1", "id", "tokenId", "token", "a", "b", "t0", "t1", "from", "to", "lower-price", "upper-price", "duration", "prefer", "payer"] });
   const mode = argv._[0];
   if (!mode || mode === "help" || argv.h || argv.help) {
     console.log(USAGE);

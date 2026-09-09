@@ -1,7 +1,7 @@
 ---
 name: topaz
-description: This skill should be used whenever the user asks to do anything on Topaz, Topaz Dex, or veTOPAZ — a ve(3,3) DEX on BNB Chain (BSC) mainnet that combines Solidly-style v2 pools (volatile and stable) with Uniswap-v3-style concentrated liquidity (Slipstream). Trigger on requests like "swap on topaz", "swap WBNB for USDT on topaz", "what's the best price for X on topaz", "add liquidity on topaz", "create a concentrated liquidity position", "mint a CL position", "stake my LP / position in a topaz gauge", "claim my topaz rewards", "lock TOPAZ", "extend my veTOPAZ", "vote with veTOPAZ", "reset my vote", "claim bribes / claim fees / claim rebase", "deposit a bribe / incentive for a topaz pool", "what's the APR on the X/Y gauge", "show me topaz pool stats / TVL / volume", "deposit my veTOPAZ into a relay / veTOPAZ Maxi", "claim my relay rewards", and any query about the TOPAZ token, veTOPAZ NFT locks, voter, gauges, bribes, relays / managed veTOPAZ, or the Topaz v2/v3 subgraphs.
-version: 2.10.0
+description: "Operate and integrate Topaz Dex on BNB Chain: smart order router quotes and Permit2 swap batches, CL and v2 liquidity, gauges, veTOPAZ locks, voting, rewards, bribes, relays and protocol analytics. Use for Topaz user actions or for building Topaz wallet and application integrations."
+version: 3.0.0
 license: MIT
 metadata:
   homepage: https://topazdex.com
@@ -36,6 +36,12 @@ Read `README.md` for the architecture diagram and full address tables. Use this 
 - **Gauges** are 1:1 with pools (after `Voter.createGauge`). For each gauge `Voter.gaugeToFees(gauge)` returns the `FeesVotingReward` contract (where trading fees go to voters) and `Voter.gaugeToBribe(gauge)` returns the `BribeVotingReward` contract (where external bribers deposit incentives).
 - **Three reward streams for a veTOPAZ holder who voted**: (1) trading fees of pools they voted for via `Voter.claimFees(...)`; (2) bribes posted on those pools via `Voter.claimBribes(...)`; (3) weekly rebase regardless of voting via `RewardsDistributor.claim(tokenId)`. LP stakers separately earn TOPAZ emissions from the gauge via `Gauge.getReward(account)` or `CLGauge.getReward(tokenId)`.
 - **Managed veTOPAZ (Relays).** A user can hand a NORMAL veTOPAZ lock to a **Relay** via `Voter.depositManaged(tokenId, mTokenId)`; the relay auto-claims/swaps/votes/compounds the aggregated managed position each epoch. **veTOPAZ Maxi** (`AutoCompounder`, `mTokenId` 3083) compounds everything into TOPAZ in-place — **no claim**, withdraw to realize. **Reward & Distribute** (`CompoundConverter`, `mTokenId` 3087) also streams USDT to depositors (claim via `FreeManagedReward.getReward`). Depositing forfeits your manual vote; `withdrawManaged` re-locks to max. See `references/relays.md`.
+
+## Swap routing and execution
+
+Use `quote.topazdex.com` through `fetchTopazQuote` / `bestQuoteBundle` for swaps, including split and mixed CL/v2 routes. Use `buildTopazSwapBatch` or `buildBestSwapTx` to return the COMPLETE ordered signature-free Permit2 approval + swap + cleanup batch. `buildBestSwapTx` now returns a batch, not a single transaction. WBNB is ERC20; request `BNB` (or explicitly `useBnb: true` in the human amount wrapper) for native input. Never infer native BNB from a WBNB address. See [API routing and Permit2 batches](references/swapping-api.md) before building a swap.
+
+Require the user's wallet confirmation for execution; no separate Permit2 signature is needed. Every call must be sent atomically by the same input-owning payer account, which also receives output. Keep AI wallet proposals semantic: its compiler inserts the approvals and runtime-sized swap connectors. Do not turn a quote estimate into a guaranteed downstream amount or invent calldata/connector addresses. The published service and wallet may need separate upgrades before a newly prepared capability is live.
 
 ## Address quick reference
 
@@ -93,9 +99,10 @@ Use these when a user asks where to go or you need to direct them outside the ag
 
 | Task | File |
 |---|---|
+| Smart order router quotes and signature-free atomic swaps | `references/swapping-api.md` |
 | Swap on a v2 pool (volatile or stable) | `references/swapping-v2.md` |
 | Swap on a v3 CL pool (single or multi-hop) | `references/swapping-v3.md` |
-| Quote a cross-stack route (v2 ↔ v3) | `references/swapping-mixed.md` |
+| Mixed CL/v2 routes and legacy quoter diagnostics | `references/swapping-mixed.md` |
 | Add / remove v2 liquidity | `references/liquidity-v2.md` |
 | Mint, modify, collect, or burn a v3 position | `references/liquidity-v3.md` |
 | Stake/unstake in a gauge, claim emissions | `references/gauges.md` |
