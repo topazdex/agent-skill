@@ -12,6 +12,10 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+## [3.0.3] - 2026-09-15
+
+- Stats API moved to `https://api.topazdex.com/api/stats` (default for `TOPAZ_STATS_API_URL`, now documented in `scripts/.env.example`); the landing-site host is being retired. Same routes and response contract. OpenAPI spec and Swagger UI now live at `https://api.topazdex.com/api/stats/openapi.json` and `https://api.topazdex.com/api/stats/docs`; the unified spec for the whole API is `https://api.topazdex.com/openapi.json`.
+
 ## [3.0.2] - 2026-09-09
 
 - Requote cyclic API routes with a two-hop limit compatible with agent execution, preserving fresh output minimums and all route validation.

@@ -84,7 +84,7 @@ await (await bribe.notifyRewardAmount(TOKEN, AMOUNT)).wait();
 ## Reading a pool's current and historical bribes
 
 For indexed bribe data, prefer the Stats API — it's the easiest, fastest, most accurate source:
-- History with USD values and filtering: `curl "https://www.topazdex.com/api/stats/bribes?pool=0xPOOL"` (also `/pools/{addr}/bribes`, `/gauges/{addr}/bribes`).
+- History with USD values and filtering: `curl "https://api.topazdex.com/api/stats/bribes?pool=0xPOOL"` (also `/pools/{addr}/bribes`, `/gauges/{addr}/bribes`).
 - Foundation-only bribes: `/api/stats/foundation/bribes`; per-epoch foundation spend: `/api/stats/bribes/totals`.
 - **Current bribe markets** with derived `$/vote` (where a bribe buys the most votes): `/api/stats/markets/bribes`.
 

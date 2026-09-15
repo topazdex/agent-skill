@@ -4,7 +4,7 @@ The Topaz Stats API is a public REST endpoint that serves pre-computed protocol 
 
 **This is the easiest, fastest, and most accurate way to read any data the API exposes.** Prefer it over the subgraph or on-chain calls for anything in the catalog below; fall back to subgraph/on-chain only for data the API does not serve (see the decision table).
 
-**Base URL:** `https://www.topazdex.com/api/stats`
+**Base URL:** `https://api.topazdex.com/api/stats`
 
 Override via `TOPAZ_STATS_API_URL` env var in `scripts/.env`. No auth required; all endpoints are read-only `GET`.
 
@@ -14,17 +14,17 @@ The API publishes a machine-readable **OpenAPI 3.1** spec. Treat it as canonical
 
 | Resource | URL | Use |
 |---|---|---|
-| OpenAPI 3.1 spec | `https://www.topazdex.com/api/stats/openapi.json` | **Canonical contract.** Exact request/response schemas for every endpoint. Feed to `openapi-typescript`, codegen, Postman, or an agent. |
-| Swagger UI | `https://www.topazdex.com/api/stats/docs` | Human-browsable docs with "Try it out" against the live API. |
-| Discovery linkset | `https://www.topazdex.com/.well-known/api-catalog` | RFC 9727 linkset pointing at the spec, Swagger UI, and skill manifest. |
+| OpenAPI 3.1 spec | `https://api.topazdex.com/api/stats/openapi.json` | **Canonical contract.** Exact request/response schemas for every endpoint. Feed to `openapi-typescript`, codegen, Postman, or an agent. |
+| Swagger UI | `https://api.topazdex.com/api/stats/docs` | Human-browsable docs with "Try it out" against the live API. |
+| Full API spec | `https://api.topazdex.com/openapi.json` | Unified OpenAPI 3.1 document for the whole Topaz API (v1 multichain routes plus these stats routes); Swagger UI at `https://api.topazdex.com/docs`. |
 | Skill manifest | `https://www.topazdex.com/skill.json` | Topaz agent skill manifest; carries an `analytics_api` block enumerating endpoints. |
 
 ```bash
 # Inspect the live contract (authoritative field list for any endpoint):
-curl -s https://www.topazdex.com/api/stats/openapi.json | jq '.paths | keys'
+curl -s https://api.topazdex.com/api/stats/openapi.json | jq '.paths | keys'
 
 # Generate a typed TypeScript client straight from the spec:
-npx openapi-typescript https://www.topazdex.com/api/stats/openapi.json -o topaz-api.ts
+npx openapi-typescript https://api.topazdex.com/api/stats/openapi.json -o topaz-api.ts
 ```
 
 The endpoint catalog below is a quick map for agents; **for exact, up-to-date schemas always consult `openapi.json`.**
@@ -134,16 +134,16 @@ Grouped quick-reference. Consult `openapi.json` for exact field lists.
 
 ```bash
 # Highest gauge APR among incentivized pools over $10k TVL:
-curl "https://www.topazdex.com/api/stats/pools?sort=gaugeApr&incentivized=true&minTvl=10000&limit=20" | jq '.data[] | {pair:(.token0Symbol+"/"+.token1Symbol), gaugeApr, feeApr, tvlUsd}'
+curl "https://api.topazdex.com/api/stats/pools?sort=gaugeApr&incentivized=true&minTvl=10000&limit=20" | jq '.data[] | {pair:(.token0Symbol+"/"+.token1Symbol), gaugeApr, feeApr, tvlUsd}'
 
 # 30-day protocol TVL & volume history:
-curl "https://www.topazdex.com/api/stats/protocol/history?days=30" | jq '.data'
+curl "https://api.topazdex.com/api/stats/protocol/history?days=30" | jq '.data'
 
 # Where does a voter earn the most per vote this epoch?
-curl "https://www.topazdex.com/api/stats/markets/bribes?minUsd=1" | jq '.data[] | {pair:(.token0Symbol+"/"+.token1Symbol), dollarPerVote, totalRewardUsd}'
+curl "https://api.topazdex.com/api/stats/markets/bribes?minUsd=1" | jq '.data[] | {pair:(.token0Symbol+"/"+.token1Symbol), dollarPerVote, totalRewardUsd}'
 
 # Foundation veNFT locks (lock end / permanent status), served from live RPC:
-curl "https://www.topazdex.com/api/stats/ve" | jq '.data.foundation.locks'
+curl "https://api.topazdex.com/api/stats/ve" | jq '.data.foundation.locks'
 ```
 
 ## Using the TypeScript client

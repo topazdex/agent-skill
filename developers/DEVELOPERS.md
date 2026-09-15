@@ -139,8 +139,8 @@ See `developers/swap-calldata.md`.
 
 For protocol/pool/gauge stats, **pre-computed APRs**, token prices, epoch/bribe data, and **historical time-series**, prefer the public Stats API — one REST call, no math, and its OpenAPI spec is the canonical contract you can codegen against:
 
-- Base: `https://www.topazdex.com/api/stats` — e.g. `/protocol/history`, `/pools?sort=gaugeApr`, `/pools/{addr}/daily`, `/gauges`, `/tokens`, `/markets/bribes`.
-- Spec (source of truth): `https://www.topazdex.com/api/stats/openapi.json` — `npx openapi-typescript … -o topaz-api.ts`.
+- Base: `https://api.topazdex.com/api/stats` — e.g. `/protocol/history`, `/pools?sort=gaugeApr`, `/pools/{addr}/daily`, `/gauges`, `/tokens`, `/markets/bribes`.
+- Spec (source of truth): `https://api.topazdex.com/api/stats/openapi.json` — `npx openapi-typescript … -o topaz-api.ts`.
 - See `references/analytics-stats-api.md` for the full catalog and decision table.
 
 Use the subgraphs for ad-hoc GraphQL filtering, per-transaction events, or history beyond the API's window:

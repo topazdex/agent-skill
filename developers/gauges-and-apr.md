@@ -90,7 +90,7 @@ const { data: rewards } = await fetchGaugeRewards("0xGAUGE");
 const { data: markets } = await fetchBribeMarkets({ minUsd: 1 });
 ```
 
-Snapshots every 15 min; the OpenAPI spec (`https://www.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md`. Drop to the on-chain `apr.ts` helpers below only for block-accurate or custom-window/position-specific APRs.
+Snapshots every 15 min; the OpenAPI spec (`https://api.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md`. Drop to the on-chain `apr.ts` helpers below only for block-accurate or custom-window/position-specific APRs.
 
 ### Caveats every APR display must respect
 

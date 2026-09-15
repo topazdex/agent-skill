@@ -12,16 +12,16 @@ The fastest, most accurate way — no manual APR math:
 
 ```bash
 # Single pool: { current, history (≤672 snapshots), gauge, gaugeHistory }
-curl https://www.topazdex.com/api/stats/pools/0xPOOL | jq .data
+curl https://api.topazdex.com/api/stats/pools/0xPOOL | jq .data
 
 # Long-horizon daily candles (beyond the 7-day snapshot window)
-curl "https://www.topazdex.com/api/stats/pools/0xPOOL/daily?days=90" | jq .data
+curl "https://api.topazdex.com/api/stats/pools/0xPOOL/daily?days=90" | jq .data
 
 # Top pools by gauge APR, incentivized only, min $10k TVL
-curl "https://www.topazdex.com/api/stats/pools?sort=gaugeApr&incentivized=true&minTvl=10000&limit=10" | jq .data
+curl "https://api.topazdex.com/api/stats/pools?sort=gaugeApr&incentivized=true&minTvl=10000&limit=10" | jq .data
 
 # All gauges with emission/fee/bribe/total APR
-curl https://www.topazdex.com/api/stats/gauges | jq .data
+curl https://api.topazdex.com/api/stats/gauges | jq .data
 ```
 
 Via the CLI:
@@ -42,7 +42,7 @@ const { data: topPools } = await fetchPools({ sort: "gaugeApr", incentivized: tr
 const { data: daily } = await fetchPoolDaily("0xPOOL", { days: 90 });
 ```
 
-The Stats API snapshots every 15 minutes; its OpenAPI spec (`https://www.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md` for the full decision table.
+The Stats API snapshots every 15 minutes; its OpenAPI spec (`https://api.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md` for the full decision table.
 
 ---
 
