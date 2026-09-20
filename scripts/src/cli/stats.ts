@@ -64,7 +64,7 @@ Commands:
   quote --in <addr> --out <addr> --amount <human>   Best-route quote
   smoke                         End-to-end sanity check (verifies RPC + subgraphs + ABIs)
 
-Stats API commands (https://www.topazdex.com/api/stats):
+Stats API commands (https://api.topazdex.com/api/stats):
   protocol                      Protocol overview (TVL, volume, fees, TOPAZ price, veTOPAZ)
   protocol-history [--days N]   Protocol TVL/volume/fees/price time-series (snapshot resolution)
   protocol-daily [--days N]     Daily volume/fee rollups (one row per UTC day)

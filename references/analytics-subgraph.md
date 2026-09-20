@@ -2,7 +2,7 @@
 
 Topaz indexes two subgraphs on Goldsky — a v2 (Solidly) subgraph and a v3 (Slipstream) subgraph. The entity catalogs below are the canonical reference for query authoring.
 
-> **Try the Stats API first.** For pool lists, gauge APRs, protocol totals, token prices, epoch/bribe data, and **historical time-series** (`/protocol/history`, `/protocol/daily`, `/pools/{addr}/daily`, plus 7-day snapshot history on most detail endpoints), the Stats API (`analytics-stats-api.md`) is the easiest, fastest, and most accurate source — one REST call with pre-computed numbers, and its OpenAPI spec (`https://www.topazdex.com/api/stats/openapi.json`) is the canonical contract. Reach for the subgraphs below only for ad-hoc GraphQL filtering, per-transaction event data (`Mint`/`Burn`/`Swap`), or history beyond the API's window.
+> **Try the Stats API first.** For pool lists, gauge APRs, protocol totals, token prices, epoch/bribe data, and **historical time-series** (`/protocol/history`, `/protocol/daily`, `/pools/{addr}/daily`, plus 7-day snapshot history on most detail endpoints), the Stats API (`analytics-stats-api.md`) is the easiest, fastest, and most accurate source — one REST call with pre-computed numbers, and its OpenAPI spec (`https://api.topazdex.com/api/stats/openapi.json`) is the canonical contract. Reach for the subgraphs below only for ad-hoc GraphQL filtering, per-transaction event data (`Mint`/`Burn`/`Swap`), or history beyond the API's window.
 
 ## Endpoints
 

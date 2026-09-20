@@ -78,7 +78,7 @@ yarn tsx src/cli/stats.ts bribes --pool 0xPOOL
 yarn tsx src/cli/stats.ts apr --pool 0xPOOL [--position 1234]
 yarn tsx src/cli/stats.ts smoke                 # quick end-to-end sanity check
 
-# Stats API (https://www.topazdex.com/api/stats) — pre-computed, no RPC needed
+# Stats API (https://api.topazdex.com/api/stats) — pre-computed, no RPC needed
 yarn tsx src/cli/stats.ts protocol              # protocol overview
 yarn tsx src/cli/stats.ts protocol-history --days 30
 yarn tsx src/cli/stats.ts protocol-daily --days 30

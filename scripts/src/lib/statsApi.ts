@@ -1,8 +1,8 @@
-// Typed client for the Topaz Stats API (https://www.topazdex.com/api/stats).
+// Typed client for the Topaz Stats API (https://api.topazdex.com/api/stats).
 // Read-only; no auth required for public endpoints.
 
 const BASE_URL =
-  process.env.TOPAZ_STATS_API_URL ?? "https://www.topazdex.com/api/stats";
+  process.env.TOPAZ_STATS_API_URL ?? "https://api.topazdex.com/api/stats";
 
 // ---------------------------------------------------------------------------
 // Response envelope

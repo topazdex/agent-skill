@@ -1,6 +1,6 @@
 # Multichain data and public API
 
-Base: **https://api.topazdex.com**. Discover the current contract at [OpenAPI](https://api.topazdex.com/openapi.json) and [API docs](https://api.topazdex.com/docs). The public API covers BNB, Robinhood, Base, Ethereum and Arc. The legacy `https://www.topazdex.com/api/stats` remains **BNB-only**; its response schema is different. Do not add an unsupported chain parameter and relabel its output.
+Base: **https://api.topazdex.com**. Discover the current contract at [OpenAPI](https://api.topazdex.com/openapi.json) and [API docs](https://api.topazdex.com/docs). The public API covers BNB, Robinhood, Base, Ethereum and Arc. The legacy `https://api.topazdex.com/api/stats` remains **BNB-only**; its response schema is different. Do not add an unsupported chain parameter and relabel its output.
 
 | Need | Request |
 |---|---|
