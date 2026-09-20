@@ -1,4 +1,6 @@
-/** Shared with topaz-agent-service and agent-skill. Keep the wire validation in sync. */
+import { deployment } from "../config/deployments.js";
+
+/** Same-chain routing. BNB constants remain compatibility aliases. */
 export const TOPAZ_ROUTING_URL = "https://quote.topazdex.com";
 export const TOPAZ_UNIVERSAL_ROUTER =
   "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6";
@@ -23,6 +25,7 @@ export interface TopazRoute {
   hops: TopazHop[];
 }
 export interface TopazQuote {
+  chainId?: number;
   blockNumber: number;
   tradeType: "exactIn";
   amount: string;
@@ -32,6 +35,7 @@ export interface TopazQuote {
   routes: TopazRoute[];
 }
 export interface TopazQuoteRequest {
+  chainId?: number;
   tokenIn: string;
   tokenOut: string;
   amountIn: bigint;
@@ -76,8 +80,16 @@ function integer(value: unknown, min: number, max: number): number {
   }
   return value;
 }
-export function wrappedTopazToken(token: string): string {
-  return token.toUpperCase() === "BNB" ? TOPAZ_WBNB : address(token);
+export function isTopazNative(token: string, chainId = 56): boolean {
+  const chain = deployment(chainId);
+  const native = token.toUpperCase() === chain.nativeSymbol || token.toLowerCase() === "native" || /^0x0{40}$/i.test(token);
+  if (native && !chain.wrappedNative) throw new Error("Arc has no wrapped native; use the USDC ERC20 address");
+  return native;
+}
+
+export function wrappedTopazToken(token: string, chainId = 56): string {
+  const chain = deployment(chainId);
+  return isTopazNative(token, chainId) ? address(chain.wrappedNative) : address(token);
 }
 
 /** Treat the HTTP response as untrusted route data; never execute its opaque calldata. */
@@ -86,8 +98,14 @@ export function validateTopazQuote(
   request: TopazQuoteRequest,
 ): TopazQuote {
   const q = record(value);
-  const input = wrappedTopazToken(request.tokenIn).toLowerCase();
-  const output = wrappedTopazToken(request.tokenOut).toLowerCase();
+  const chainId = request.chainId ?? 56;
+  deployment(chainId);
+  // Legacy BNB in-memory fixtures predate chainId; explicit chain requests always require it.
+  if ((q.chainId !== undefined || request.chainId !== undefined) && q.chainId !== chainId) {
+    throw new Error("Topaz quote chain does not match the request");
+  }
+  const input = wrappedTopazToken(request.tokenIn, chainId).toLowerCase();
+  const output = wrappedTopazToken(request.tokenOut, chainId).toLowerCase();
   const amount = uint(q.amount);
   const quote = uint(q.quote);
   const minimumAmountOut = uint(q.minimumAmountOut);
@@ -167,6 +185,7 @@ export function validateTopazQuote(
   )
     throw new Error("Topaz split totals do not match the quote");
   return {
+    chainId,
     blockNumber: integer(q.blockNumber, 1, Number.MAX_SAFE_INTEGER),
     tradeType: "exactIn",
     amount,
@@ -180,8 +199,8 @@ export function validateTopazQuote(
 export async function fetchTopazQuote(
   request: TopazQuoteRequest,
 ): Promise<TopazQuote> {
-  const input = wrappedTopazToken(request.tokenIn);
-  const output = wrappedTopazToken(request.tokenOut);
+  const input = wrappedTopazToken(request.tokenIn, request.chainId);
+  const output = wrappedTopazToken(request.tokenOut, request.chainId);
   if (input.toLowerCase() === output.toLowerCase())
     throw new Error(
       "Swap tokens must differ; native/wrapped pairs require wrapping",
@@ -199,6 +218,7 @@ export async function fetchTopazQuote(
         "Cache-Control": "no-store",
       },
       body: JSON.stringify({
+        chainId: request.chainId ?? 56,
         tokenIn: request.tokenIn,
         tokenOut: request.tokenOut,
         amount: request.amountIn.toString(),
@@ -215,7 +235,7 @@ export async function fetchTopazQuote(
     });
     if (!response.ok)
       throw new Error(`Topaz routing API unavailable (${response.status})`);
-    return validateTopazQuote(await response.json(), request);
+    return validateTopazQuote(await response.json(), { ...request, chainId: request.chainId ?? 56 });
   };
   try {
     return await requestQuote();

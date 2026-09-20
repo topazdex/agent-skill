@@ -1,8 +1,8 @@
 import { AbiCoder, Interface, getAddress, solidityPacked } from "ethers";
+import { deployedContract, deployment } from "../config/deployments.js";
 import {
   fetchTopazQuote,
-  TOPAZ_PERMIT2,
-  TOPAZ_UNIVERSAL_ROUTER,
+  isTopazNative,
   wrappedTopazToken,
   type TopazQuote,
   type TopazQuoteRequest,
@@ -27,7 +27,7 @@ export interface TopazSwapCall {
   label: string;
 }
 export interface TopazSwapBatch {
-  chainId: 56;
+  chainId: number;
   payer: string;
   recipient: string;
   atomicRequired: boolean;
@@ -46,8 +46,10 @@ export function encodeTopazSwap(
   deadline: number,
 ): TopazSwapCall {
   quote = validateTopazQuote(quote, request);
-  const nativeIn = request.tokenIn.toUpperCase() === "BNB";
-  const nativeOut = request.tokenOut.toUpperCase() === "BNB";
+  const chainId = request.chainId ?? 56;
+  const TOPAZ_UNIVERSAL_ROUTER = deployedContract(chainId, "UniversalRouter").address;
+  const nativeIn = isTopazNative(request.tokenIn, chainId);
+  const nativeOut = isTopazNative(request.tokenOut, chainId);
   const inputs: string[] = [];
   let commands = "0x";
   function add(command: string, types: string[], values: unknown[]) {
@@ -135,8 +137,10 @@ export async function buildTopazSwapBatch(
     chainId?: number;
   },
 ): Promise<TopazSwapBatch> {
-  if (request.chainId !== undefined && request.chainId !== 56)
-    throw new Error("Only chainId 56 is supported");
+  const chainId = request.chainId ?? 56;
+  deployment(chainId);
+  const TOPAZ_UNIVERSAL_ROUTER = deployedContract(chainId, "UniversalRouter").address;
+  const TOPAZ_PERMIT2 = deployedContract(chainId, "Permit2").address;
   const payer = getAddress(request.payer);
   const recipient = getAddress(request.recipient ?? payer);
   if (/^0x0{40}$/i.test(payer) || recipient !== payer)
@@ -149,8 +153,8 @@ export async function buildTopazSwapBatch(
   if (deadline <= Math.floor(Date.now() / 1000))
     throw new Error("Topaz quote expired during build");
   const transactions: TopazSwapCall[] = [];
-  const nativeIn = request.tokenIn.toUpperCase() === "BNB";
-  const tokenIn = getAddress(wrappedTopazToken(request.tokenIn));
+  const nativeIn = isTopazNative(request.tokenIn, chainId);
+  const tokenIn = getAddress(wrappedTopazToken(request.tokenIn, chainId));
   if (!nativeIn) {
     // Topaz tries direct transferFrom before Permit2. Clear any old grant,
     // including one created by an earlier call in the same atomic batch.
@@ -206,7 +210,7 @@ export async function buildTopazSwapBatch(
     });
   }
   return {
-    chainId: 56,
+    chainId,
     payer,
     recipient,
     atomicRequired: !nativeIn,

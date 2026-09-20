@@ -1,0 +1,103 @@
+[
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "internalType": "string",
+            "name": "baseSymbol",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "quoteSymbol",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "baseColor",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "quoteColor",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "priceLeft",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "priceCurrent",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "priceRight",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "baseAmount",
+            "type": "string"
+          },
+          {
+            "internalType": "string",
+            "name": "quoteAmount",
+            "type": "string"
+          },
+          {
+            "internalType": "int256",
+            "name": "tickLeft",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "tickRight",
+            "type": "int256"
+          },
+          {
+            "internalType": "int256",
+            "name": "tickCurrent",
+            "type": "int256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "spanTicks",
+            "type": "uint256"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tickSpacing",
+            "type": "uint256"
+          },
+          {
+            "internalType": "bool",
+            "name": "inRange",
+            "type": "bool"
+          },
+          {
+            "internalType": "uint256",
+            "name": "tokenId",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct NFTSVG.SVGParams",
+        "name": "p",
+        "type": "tuple"
+      }
+    ],
+    "name": "generateSVG",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  }
+]

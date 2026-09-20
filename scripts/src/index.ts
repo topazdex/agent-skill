@@ -1,4 +1,6 @@
 export * from "./config/addresses.js";
+export * from "./config/deployments.js";
+export * from "./lib/multichain.js";
 export * from "./config/brand.js";
 export * from "./config/chain.js";
 export * from "./config/relays.js";

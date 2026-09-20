@@ -17,6 +17,7 @@ const request: TopazQuoteRequest = {
 };
 function fixture() {
   return {
+    chainId: 56,
     blockNumber: 123,
     tradeType: "exactIn",
     amount: "100",

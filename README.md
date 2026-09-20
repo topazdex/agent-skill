@@ -1,10 +1,10 @@
 # Topaz Skill
 
-Agent skill package for **Topaz Dex** — a ve(3,3) DEX on **BNB Chain Mainnet (chain id 56)** combining Solidly-style v2 pools (volatile + stable) with Uniswap-v3-style concentrated liquidity (Slipstream). The skill teaches Claude how to swap, manage liquidity (both v2 LP and v3 NFT positions), stake in gauges, manage veTOPAZ locks, vote, claim rewards, deposit bribes, and query analytics via on-chain reads, the official subgraphs, and the public Stats API.
+Agent skill package for **Topaz Dex** on **BNB Chain, Robinhood Chain, Base, Ethereum and Arc**. Covers v2/Slipstream markets, chain-specific deployments and ABIs, swaps, liquidity, gauges, BNB veTOPAZ, xTOPAZ entry/redemption and bridging, spoke voting, rewards, analytics and website navigation.
 
-Everything here is mainnet-only. Testnet and governance contracts (EpochGovernor/ProtocolGovernor) are intentionally out of scope.
+Everything here is mainnet-only. Start with [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Legacy BNB helpers are explicitly scoped; low-level quote/swap batch and deployment helpers accept a chain ID. Governance information is linked; privileged changes are not ordinary user actions.
 
-**Current version:** `3.0.2` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
+**Current version:** `3.1.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
 The Topaz website auto-mirrors this version: `https://topazdex.com/agents`, `https://topazdex.com/skill.md`, and `https://topazdex.com/skill.json` all pull from `main` on a 1-hour ISR cycle. Pushing a new version here propagates without any website-side changes — see [`docs/RELEASING.md`](./docs/RELEASING.md) for details.
 
@@ -167,14 +167,14 @@ The Topaz website auto-mirrors anything that lands on `main` via Next.js ISR wit
 | MixedRouteQuoterV1 (v2+v3 routes) | `0x47c3570b90e7234FE695Ad5F1bE69E21fe1a9ee2` |
 | CLGaugeFactory | `0xeD2ED418f104E18B1D11eA5C26236A1caa675839` |
 | CLGauge implementation | `0xc2f777a2e9f54f195212a5a2d394399252958b97` |
-| NonfungibleTokenPositionDescriptor | `0xBa4C4f5Ca809C21286ff1a872b3c0CFb57AfE904` |
+| NonfungibleTokenPositionDescriptor | `0x239BD25E86e4A3B931B1C6Cf7849C27cA9f0498A` |
 | NonfungibleTokenPositionDescriptor_V1 (legacy) | `0x81aCc35240D19948a56b8b68BcC8706F90baBAb5` |
 | NFTDescriptor (library) | `0x50f9756f631266686b9A7EBDF55998dB3dA5ca0a` |
 | NFTSVG (library) | `0x21C9257dFCdf04154D34dF5A2204B9402Ef31d9a` |
 | CustomSwapFeeModule | `0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2` |
 | CustomUnstakedFeeModule | `0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582` |
 | DynamicSwapFeeModule | `0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541` |
-| PositionBurnHelper | `0x8EA90c6711bcA4203C689bF0dd6f08E43377e3C5` |
+| PositionBurnHelper | `0x2764db7bca0ccf98a1611f36879ebffd06ffc02b` |
 
 ### Relays (`topaz-relays`)
 
@@ -335,12 +335,12 @@ Builder-side input validation and safety (added on this branch):
 - [x] Optional `payer?: string` triggers an on-chain `allowance(tokenIn, payer, spender)` read; the `approval` field is omitted when existing allowance already covers `amountIn`, saving the user a redundant tx.
 - [x] `BuiltSwapTx` carries `quotedAt` and `deadline` (unix seconds) for staleness UX.
 - [x] `quoteV2` and the v3 quoters all `try/catch` reverts; one bad pool can't kill a `bestQuote`.
-- [x] Provider is constructed with `staticNetwork: { chainId: 56 }` so ethers rejects wrong-chain RPCs.
+- [x] Chain-bound multichain helpers explicitly read `eth_chainId` and reject wrong-chain RPCs. Legacy helpers remain BNB-scoped; a static network setting alone is not evidence of RPC chain identity.
 - [x] Write helpers throw on missing `PRIVATE_KEY` (no silent degradation); write CLIs broadcast only when explicitly invoked with a configured key, while no-broadcast wallet flows use builders.
 
 Skill hygiene, validator, and brand surface (added on this branch):
 
-- [x] Static skill validator `scripts/src/cli/validate.ts` (run via `yarn validate`) covering 9 categories: frontmatter, internal links (markdown + backticked paths, fenced-code-aware), author-local paths, external-repo source pointers, secrets / vendored deps / yarn-cache artifacts, address-set parity (config ↔ README ↔ references), EIP-55 checksum validity (via `ethers.getAddress`), subgraph URL consistency, and brand URL parity. Git-aware: only inspects tracked files.
+- [x] Static skill validator `scripts/src/cli/validate.ts` (run via `yarn validate`) covers frontmatter, internal links, author-local paths, external-repo source pointers, secrets/vendored artifacts, address parity and checksums, subgraph URLs, manifest, brand and eval assertions. Git-aware: inspects tracked and nonignored untracked files.
 - [x] `.claude/INTERNAL-SOURCE-POINTERS.md` (gitignored) captures the developer-machine paths under `~/topaz/topaz-{contracts,slipstream,interface,v2-subgraph,v3-subgraph}/`. Those pointers were removed from all tracked public docs and `scripts/src/config/addresses.ts`; the validator now rejects any future leak of those paths.
 - [x] `scripts/.yarn/install-state.gz` untracked + `**/.yarn/{cache,unplugged,build-state.yml,install-state.gz}` gitignored.
 - [x] Doc-only addresses (`BalanceLogicLibrary`, `DelegationLogicLibrary`, `NFTDescriptor`, `NFTSVG`, legacy `NonfungibleTokenPositionDescriptor_V1`) added to `scripts/src/config/addresses.ts` and `README.md` to satisfy strict byte-for-byte parity with `references/addresses.md`.

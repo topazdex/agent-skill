@@ -1,0 +1,1408 @@
+{
+  "schemaVersion": 1,
+  "reviewedAt": "2026-09-20",
+  "sources": [
+    "https://www.topazdex.com/docs/contracts",
+    "https://api.topazdex.com/v1/deployments",
+    "https://api.topazdex.com/v1/chains"
+  ],
+  "verification": "Deployment-record snapshot; use verify:deployments for current RPC code and wiring checks. Not a guarantee of current feature availability.",
+  "chains": [
+    {
+      "chainId": 56,
+      "slug": "bnb",
+      "name": "BNB Chain",
+      "lzEid": 30102,
+      "role": "hub",
+      "nativeSymbol": "BNB",
+      "nativeDecimals": 18,
+      "rpcUrl": "https://bsc-rpc.publicnode.com",
+      "explorer": "https://bscscan.com",
+      "wrappedNative": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "nativeRouterLegs": true,
+      "contracts": {
+        "RelayManager": {
+          "address": "0x243846421d3c9bf34a3db4982344a23cf171397c",
+          "abi": "abis/deployed/RelayManager.json",
+          "blockNumber": 111965203,
+          "transactionHash": "0x0877db16848c9a139a93a0b4a30361b542c552cdcb65ac35c6a4c80423d13993",
+          "runtimeCodeHash": "0x4acf1cf5475fc7204c4f9c792c2b322e2a1d3348ddf05e127c91985d1de2b4d0"
+        },
+        "CLZap": {
+          "address": "0x475FEe1722e7F56A9d341492A67DB830d3A3A7DE",
+          "abi": "abis/deployed/CLZap.json"
+        },
+        "WrappedNative": {
+          "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c"
+        },
+        "Pool": {
+          "address": "0xdC942D8e37cC20BCf9aD1Fe0111eE6c5908f3678"
+        },
+        "GaugeFactory": {
+          "address": "0xFc080D1EcD7c332022cebf942AEb62d5E1d4Cb08"
+        },
+        "ManagedRewardsFactory": {
+          "address": "0xe4b23F13b24232C1E68AD0575191216152AA9480"
+        },
+        "Forwarder": {
+          "address": "0xE79EB7c4D06ff38e6483921DE8e85A37eC7c731b"
+        },
+        "VeArtProxy": {
+          "address": "0x9612305fe63DFb84Da8f6d6261169F6B85026601"
+        },
+        "AirdropDistributor": {
+          "address": "0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348"
+        },
+        "BalanceLogicLibrary": {
+          "address": "0xeF6724ad68Fd2f8526765e08afa6627850c8a589"
+        },
+        "DelegationLogicLibrary": {
+          "address": "0xCb24e31896d7476EFB7B76A366566cfbcf375033"
+        },
+        "RelayFactoryRegistry": {
+          "address": "0x987097eF2fBd740436166f49700a40ac5eD49FE4"
+        },
+        "AutoCompounderFactory": {
+          "address": "0x717bB82888F103A1Ff8E07A0f96aD6497744feeA"
+        },
+        "CompoundConverterFactory": {
+          "address": "0x64FaeF44D4b9bF1AbeF56878D0188084355fd5Ad"
+        },
+        "RelayOptimizer": {
+          "address": "0x62B3cea3C6028029E56A880E71b659aF523F06B6"
+        },
+        "RelayOptimizerRegistry": {
+          "address": "0x70008f088e60DE590ca63F93814692503e96Fcbd"
+        },
+        "RelayKeeperRegistry": {
+          "address": "0xDB93DCfd7a560fB0757857787b6B3c2dBF6E56aA"
+        },
+        "RelayMaxi": {
+          "address": "0xC3b3d7037DA1216A1770b3aC5cB8e2D4241AF251"
+        },
+        "RelayRewardDistribute": {
+          "address": "0xb30d44B5E6Ab16494EA2B8455BB430926A935b84"
+        },
+        "EpochCoordinator": {
+          "address": "0x7A8F5eEDC0136a76Dbffa209f00622074e29C01B",
+          "abi": "abis/deployed/EpochCoordinator-4a04dcf0.json",
+          "abiSha256": "4a04dcf098d53c0f7b34054c42c51b77b30a6bdd9667b4dfd0aa2f130b4c883c",
+          "transactionHash": "0xe8fd8fdfcca20a5ffbbb7e9e9eb9e5b20f4961f4679c0c2f851b48fb96fdd31a",
+          "blockNumber": 121371628
+        },
+        "FactoryRegistry": {
+          "address": "0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+          "abi": "abis/deployed/FactoryRegistry-75e428f0.json",
+          "abiSha256": "75e428f0259650c95358a52e3bc5a0a2cb72818c6cbca95b9430b430e181caf4",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "HubUnwrapComposer": {
+          "address": "0x64540da4816abf969E7C5c520924dd3d6A5ACb58",
+          "abi": "abis/deployed/HubUnwrapComposer-846fb636.json",
+          "abiSha256": "846fb6360048c30620a48f751ebebe996955ff618ec47b6b5ce2492686610d63",
+          "transactionHash": "0x2872f16be4051c4dcfc6077665a4e4ae8a23901c128075e7b0fb7c825409366c",
+          "blockNumber": 121371702
+        },
+        "Minter": {
+          "address": "0x606794d37991A426a189fD9FA8664D339A77f8ae",
+          "abi": "abis/deployed/Minter-fad3f7b1.json",
+          "abiSha256": "fad3f7b182718fe60257831f86d02f7a9abf8b646f1ba857361cc8d2476eb702",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "PoolFactory": {
+          "address": "0x65E6cD0eF5D3467030103cf3d433034E570b5784",
+          "abi": "abis/deployed/PoolFactory-4096928a.json",
+          "abiSha256": "4096928a6e95e14cb8313e9f9499f4a05034247d5bb54f33a8074b5d2541c622",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "RewardsDistributor": {
+          "address": "0x85e15e7Ad4f20d5ca3A1104B1c2CcE72f5F683dB",
+          "abi": "abis/deployed/RewardsDistributor-8b4babba.json",
+          "abiSha256": "8b4babba5a81e257f5d8541ce1b79408223acbf6e7507dad84a852a18328efb4",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "Router": {
+          "address": "0x1E98c8226e7d452e1888e3d3d2F929346321c6c3",
+          "abi": "abis/deployed/Router-ddffb82c.json",
+          "abiSha256": "ddffb82c97b8c59a1d3a854d04eeae8ae88cda19f4694b8e909bae8e369f110c",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "SystemDummyTokenA": {
+          "address": "0xAaFa47d89342EcA6cC3E56273278a5BbBC90c195",
+          "abi": "abis/deployed/SystemDummyTokenA-c97256c3.json",
+          "abiSha256": "c97256c35949dc7db7f042071a5199944ce238dffba4c7f32a1904d273814d90",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "SystemDummyTokenB": {
+          "address": "0x41BF6c044B2B39F68A4d4D54Ec3e2ec46C93114b",
+          "abi": "abis/deployed/SystemDummyTokenB-c97256c3.json",
+          "abiSha256": "c97256c35949dc7db7f042071a5199944ce238dffba4c7f32a1904d273814d90",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "SystemGauge": {
+          "address": "0xB12A5E332131091a226a23652418b54F80b2cda9",
+          "abi": "abis/deployed/SystemGauge-aa63119a.json",
+          "abiSha256": "aa63119a986bf730292e0f09a6476850b7e04eb69932936012997039b2cd308a",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "SystemGaugeFactory": {
+          "address": "0x36E9c2d819CBEFc316C400e74185273308D3273c",
+          "abi": "abis/deployed/SystemGaugeFactory-342447d9.json",
+          "abiSha256": "342447d9a2b9ac90c5fd71d491fa5406ca61ead66fae3598c0042ff91abfd6e0",
+          "transactionHash": "0x7e9cb600c6957e8b88026bc694d8e2909acb784d7ebed99ce4c1794f9fbbf16f",
+          "blockNumber": 121370789
+        },
+        "SystemGaugeStrategy": {
+          "address": "0x32431D0E4E17868b19850Df9d13c15f8aC090C8f",
+          "abi": "abis/deployed/SystemGaugeStrategy-1f8c2746.json",
+          "abiSha256": "1f8c274674f4338ea2ad4769ec6aa18f502c58cf82512455099befd25596c1e8",
+          "transactionHash": "0xc79665271e11f9293ea19b5d129f7adf6e612a8852cfbd8050be8e9584681731",
+          "blockNumber": 121370711
+        },
+        "SystemPool": {
+          "address": "0x8b29025838dCBe9098DE563C063233a51B3Dd5A1",
+          "abi": "abis/deployed/SystemPool-7a8ace0b.json",
+          "abiSha256": "7a8ace0be9c577fa0f476073d8ee05eaa08599822170c416c9d639af5509ae65",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "SystemPoolBootstrap": {
+          "address": "0x84C8c77a894C4992c1F345Bdec7F89Ca7447622F",
+          "abi": "abis/deployed/SystemPoolBootstrap-ca627496.json",
+          "abiSha256": "ca6274960ad25f73c296d65a742911b30058ee94f525d057d9d980684ea8ea77",
+          "transactionHash": "0xfd2b0eaca676714f7244c7533a3e6d132fe6edbf05619630782051e18da8a6f8",
+          "blockNumber": 121370772
+        },
+        "SystemPoolFactory": {
+          "address": "0x0A0483F8623BFEE18B7f31FE1Ea027367b5Cb15e",
+          "abi": "abis/deployed/SystemPoolFactory-4096928a.json",
+          "abiSha256": "4096928a6e95e14cb8313e9f9499f4a05034247d5bb54f33a8074b5d2541c622",
+          "transactionHash": "0xdc92dc6598c74736f604444c0675966f6e80fa2b8a53c9d058eaa3fb73cbc551",
+          "blockNumber": 121370761
+        },
+        "Topaz": {
+          "address": "0xdf002282C1474C9592780618Adda7EaA99998Abd",
+          "abi": "abis/deployed/Topaz-d014ee15.json",
+          "abiSha256": "d014ee1503983191fb54229d7bcafc877e0b3f723d7e25608076d4997d878525",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "VeTopazVault": {
+          "address": "0x875Acc3f094f10F9a7A8c32C79D509c13A3DE5B8",
+          "abi": "abis/deployed/VeTopazVault-5477083e.json",
+          "abiSha256": "5477083ec601600a0000b0486c98a9700f75480d6954c35c299e75777b7248d8",
+          "transactionHash": "0xc11a679905dc1062a701e826e17d98b42981e639f2c6b54d987541a1d5592ab2",
+          "blockNumber": 121370613
+        },
+        "Voter": {
+          "address": "0x2F80F810a114223AC69E34E84E735CaD515dAD67",
+          "abi": "abis/deployed/Voter-19456e5a.json",
+          "abiSha256": "19456e5ad60c62847d7fba696bb8acacc448e3c0a785506cd04354c86638419e",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "VotingEscrow": {
+          "address": "0xe951aC65EFE86682311ab0d8995E7A58750c5eB3",
+          "abi": "abis/deployed/VotingEscrow-5eec94af.json",
+          "abiSha256": "5eec94af3174d71507fc8197259d1ee8ba0988014779fe61da9242d32556f9a2",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "VotingRewardsFactory": {
+          "address": "0x4C303f7af7b8b05226440e4e12FF9a82F513716c",
+          "abi": "abis/deployed/VotingRewardsFactory-2f196ac8.json",
+          "abiSha256": "2f196ac8ca0ed55c9434643889e53a05083a38c431467b93687cdb5bc71fe278",
+          "transactionHash": null,
+          "blockNumber": null
+        },
+        "WrapRouter": {
+          "address": "0xB12D10065bcD591D9C9FF2f12B3CBF1d9741D885",
+          "abi": "abis/deployed/WrapRouter-e9c3f95b.json",
+          "abiSha256": "e9c3f95bd3ffae1db6fe8f2ab9ba12431a5f68980dadd8f6c991e4522718ccc0",
+          "transactionHash": "0xc08e4dba2fc10ce1570925f95fc6ca8da04a9280803481a63d8cf914c65c4928",
+          "blockNumber": 121371688
+        },
+        "XTopaz": {
+          "address": "0xf7aDFfE50D6369eF19dF3aF8d4dDbC15Ace175FD",
+          "abi": "abis/deployed/XTopaz-143546bc.json",
+          "abiSha256": "143546bc0acfaf2280e61597a0c7e461a55622408f80fee1c990d28c4a1d2009",
+          "transactionHash": "0x527daf5e9e2df4febb68b3fde1776aef727529361e9c32f3ae61d7f7e2ce66d1",
+          "blockNumber": 121370594
+        },
+        "XTopazOFTAdapter": {
+          "address": "0x7947b32E4B30413c83ee3602996eDF97F6093748",
+          "abi": "abis/deployed/XTopazOFTAdapter-acf95c08.json",
+          "abiSha256": "acf95c08387da8cecde99faf472728e34776dc35ecd576d566e05ff47201b24a",
+          "transactionHash": "0x74b277629b1468bbdf20705ac964beeaafe5fa2a1475693c981d1599871f0894",
+          "blockNumber": 121371568
+        },
+        "XTopazZap": {
+          "address": "0xdA75765e4Eb2D0ebABA24bBb4a4359c88C8C229B",
+          "abi": "abis/deployed/XTopazZap-ccda6067.json",
+          "abiSha256": "ccda6067cf02221dff2a3ce16ccb4c672d9c2dc845d992e4976339b2d68b37d8",
+          "transactionHash": "0x00e2861cdf7817f462b9e38ff24b4b4481abdc510e26329b9fb66a65bad0f0d6",
+          "blockNumber": 121371691
+        },
+        "CLFactory": {
+          "address": "0x73DC984D9490286E735548f61dfCCec67Af82ed9",
+          "abi": "abis/deployed/CLFactory-d0ad6e33.json",
+          "abiSha256": "d0ad6e33d1d28a3a3b6b4635374cca776baea71bc33cfdf83f639f4f8315db53",
+          "transactionHash": "0x153f1296169a27f500f7798a651c80257766816bca36fa170a58479e21ecde65",
+          "blockNumber": 98756164
+        },
+        "CLGauge": {
+          "address": "0xc2f777a2e9f54f195212a5a2d394399252958b97",
+          "abi": "abis/deployed/CLGauge-58301f73.json",
+          "abiSha256": "58301f73812ff154c8964f6095c1254273194e2505b308ac3f5e4a362a25d16e",
+          "transactionHash": "0xe7b2c13587b3ffc2b57e9b20ddf8283dbd9d0db9d974927a1e8f8ed1908b1c51",
+          "blockNumber": 98756253
+        },
+        "CLGaugeFactory": {
+          "address": "0xeD2ED418f104E18B1D11eA5C26236A1caa675839",
+          "abi": "abis/deployed/CLGaugeFactory-7c1194af.json",
+          "abiSha256": "7c1194aff80d3382cbbc66b9d1c501df9ef1fcbc47d88ffb1ce640c33a31f54c",
+          "transactionHash": "0xa2c2f8f870d63d354fb3dc953ce96f8ba6e0f2e67ec6467913db39cb822747e1",
+          "blockNumber": 98756256
+        },
+        "CLPool": {
+          "address": "0x18e68051d1b1fB44cb539cA4436F112D28577AF7",
+          "abi": "abis/deployed/CLPool-eef316ee.json",
+          "abiSha256": "eef316ee9ca00f24e857ce365c02d90bc845d0bf9a1c7689740a8578690766c8",
+          "transactionHash": "0x6c0d933c38154b77b53dc829d6c39408f72a579c2e98a538e5f5309c3d00e9c5",
+          "blockNumber": 98756152
+        },
+        "CustomSwapFeeModule": {
+          "address": "0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2",
+          "abi": "abis/deployed/CustomSwapFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x11dd4058d97b4a9ea9fea3da3e60cc457cda971cd63fd6bd40fb57142e0c5ef5",
+          "blockNumber": 98757049
+        },
+        "CustomUnstakedFeeModule": {
+          "address": "0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582",
+          "abi": "abis/deployed/CustomUnstakedFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x1a0bb4dcb9e63af9f6876f26a6303dcc825f33553253b28fb2a67bf0c7597e88",
+          "blockNumber": 98757060
+        },
+        "DynamicSwapFeeModule": {
+          "address": "0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541",
+          "abi": "abis/deployed/DynamicSwapFeeModule-2ee04b19.json",
+          "abiSha256": "2ee04b19d39bb2a575de08024c5e8ca7c3f999383865444543eb0833372d9977",
+          "transactionHash": "0xe2a0dc25b3504c92b0a1ba585ee154b0ff6576c28c61c59d135471e7b5cb5df9",
+          "blockNumber": 98757661
+        },
+        "MixedRouteQuoterV1": {
+          "address": "0x47c3570b90e7234FE695Ad5F1bE69E21fe1a9ee2",
+          "abi": "abis/deployed/MixedRouteQuoterV1-df3f80c3.json",
+          "abiSha256": "df3f80c33e8124da44cfa9ca0284d3a54dfc264eb3e44adda0a1911e50e27a08",
+          "transactionHash": "0xd491736a6b5bb4afda372ea2513c7692238eb6e7f0157ef02cacab3341a60cbd",
+          "blockNumber": 98757133
+        },
+        "NFTDescriptor": {
+          "address": "0xdE9A5d34A9fe0177544E8a70C691c3f1F9c9c63a",
+          "abi": "abis/deployed/NFTDescriptor-2c62783e.json",
+          "abiSha256": "2c62783e1db01046576162576571aef2344d6bc95edd5c041b99dd1550925cce",
+          "transactionHash": "0xf69e8264f700d2f4a2c02eb36cdaaec34a3e415ceda1cc865c6fa95383798b12",
+          "blockNumber": 105421247
+        },
+        "NFTSVG": {
+          "address": "0x2427C741f45E7e232e06fd2b60279A771d634Fb0",
+          "abi": "abis/deployed/NFTSVG-02770c5a.json",
+          "abiSha256": "02770c5a38df80a30f34937a76fa68e2c0ecc98016b0e1192f02ca969ec7b023",
+          "transactionHash": "0x211f4923ae880b74a880eec8bf7d49f69c1837b9941eb2f7951000d86dbedd0b",
+          "blockNumber": 105421244
+        },
+        "NonfungiblePositionManager": {
+          "address": "0xf8c30c3C362941C23025f2eA30B066A73C982f63",
+          "abi": "abis/deployed/NonfungiblePositionManager-4f7e8ab1.json",
+          "abiSha256": "4f7e8ab13c8ed413fd92092acc6c6a6600fbaa8c329d81d0d511b76656871c03",
+          "transactionHash": "0x5a6dfd88fbc6e96c42ab6a019afa2b8b451dc242fad46f8188779472cf24a4bc",
+          "blockNumber": 98756925
+        },
+        "NonfungibleTokenPositionDescriptor": {
+          "address": "0x239BD25E86e4A3B931B1C6Cf7849C27cA9f0498A",
+          "abi": "abis/deployed/NonfungibleTokenPositionDescriptor-e5d817ef.json",
+          "abiSha256": "e5d817ef76323f6ad98ad3d314e698f4efbea4b1f1b5e91a1ef4226d4c63d404",
+          "transactionHash": "0x738c2d667e23d5c67256df2f2c3e8d9236f9a56892f98a3815a0109e575d8e43",
+          "blockNumber": 105421259
+        },
+        "PositionBurnHelper": {
+          "address": "0x2764db7bca0ccf98a1611f36879ebffd06ffc02b",
+          "abi": "abis/deployed/PositionBurnHelper-ab59405c.json",
+          "abiSha256": "ab59405cb0969f725d68aeda41b5ccd634be6f798b7f6003c49de3588968b0f5",
+          "transactionHash": "0xf93405c4ffa712269bd3d34c5db6d296283855b845ee45413d4c56a9f2de5c63",
+          "blockNumber": null
+        },
+        "QuoterV2": {
+          "address": "0x7CCB89bB9BdEF68688F39a2c22d249fD1D9759f1",
+          "abi": "abis/deployed/QuoterV2-1e478f28.json",
+          "abiSha256": "1e478f280996c05859c305b4d9c6a2df56c4b3bd84be29e788a381292b953d31",
+          "transactionHash": "0x722c7f6a56cffd1bbd7abed59a272620392ac3807ce8449d25c8538c5d200cfc",
+          "blockNumber": 98757135
+        },
+        "SwapRouter": {
+          "address": "0x9B63CA87919617d042A89663492dB3c8686e0CaE",
+          "abi": "abis/deployed/SwapRouter-6723eb22.json",
+          "abiSha256": "6723eb22409036c418032c077d5889416fcb0cdb454600efb46c9a250137b11a",
+          "transactionHash": "0xa2143f6a48706e27e311d574a1da0dde356e47ef87431ee40f7dc401540853be",
+          "blockNumber": 98757138
+        },
+        "TopazSlipstreamStateMulticall": {
+          "address": "0xa1941194be7c2607FfbC27DE23B1aCA357C45e3D",
+          "abi": "abis/deployed/TopazSlipstreamStateMulticall-528c9eb2.json",
+          "abiSha256": "528c9eb2054e0b5a1a8076aafab480e251054d86534789bf04cfa92b28776c60",
+          "transactionHash": "0x2de17fc9d1f27bb7f85ea0ff5631771a8c5dff97a60ba1b7c64fe56e535d11c1",
+          "blockNumber": 100816136
+        },
+        "UniversalRouter": {
+          "address": "0x691e6171e0a434FfE5C9f1759621D05b9efcF6A6",
+          "abi": "abis/deployed/UniversalRouter.json"
+        },
+        "Permit2": {
+          "address": "0x000000000022D473030F116dDEE9F6B43aC78BA3"
+        },
+        "Multicall3": {
+          "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
+          "abi": "abis/Multicall3.json"
+        }
+      }
+    },
+    {
+      "chainId": 4663,
+      "slug": "robinhood",
+      "name": "Robinhood Chain",
+      "lzEid": 30416,
+      "role": "spoke",
+      "nativeSymbol": "ETH",
+      "nativeDecimals": 18,
+      "rpcUrl": "https://rpc.mainnet.chain.robinhood.com",
+      "explorer": "https://robin.etherscan.io",
+      "wrappedNative": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+      "nativeRouterLegs": true,
+      "contracts": {
+        "CLZap": {
+          "address": "0x0B8aD16647d392F5f34A88097Cb01d2f074334AE",
+          "abi": "abis/deployed/CLZap.json"
+        },
+        "SpokeBudgetComposer": {
+          "address": "0x5DA6456fa2560071DD29871ca045908f98932865",
+          "abi": "abis/deployed/SpokeBudgetComposer-b6773a3c.json",
+          "abiSha256": "b6773a3c20589fe9a6f12cd545425614503854717e2843ba00d5bf9f37d2f43e",
+          "transactionHash": "0xc474bb5cc2ab4cc655d152e5ddffdbc2572575565efe10ad5ad04ec2466572c2",
+          "blockNumber": 60745022
+        },
+        "SpokeStakeComposer": {
+          "address": "0xbba1C3b415cF8212Cf3Ce11e726ab62125BDc6dB",
+          "abi": "abis/deployed/SpokeStakeComposer-54ed51ad.json",
+          "abiSha256": "54ed51ad3944a1127b7b4dc8085c8ef697eb0e897cad814aa6e04f6679ef3c60",
+          "transactionHash": "0x31f1dd8c5bc044b19d25aff5f5fcb8500330920015e4e42a186ae7cb219f6fbd",
+          "blockNumber": 60745080
+        },
+        "XTopazOFT": {
+          "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "abi": "abis/deployed/XTopazOFT-7f2afbed.json",
+          "abiSha256": "7f2afbed13d9db0c7e8ae4f6e288082f9ae57f0a1c9bb45204c4a1bd2fb2c959",
+          "transactionHash": "0xe6af6b7121f1ea7721aa2c5b11885e23ae6760ba61f3e45be1cd37c92827f11a",
+          "blockNumber": 60742566
+        },
+        "FactoryRegistry": {
+          "address": "0x6f701F163a7372C27275e76Af21b6cF06ca6D498",
+          "abi": "abis/deployed/FactoryRegistry-75e428f0.json",
+          "abiSha256": "75e428f0259650c95358a52e3bc5a0a2cb72818c6cbca95b9430b430e181caf4",
+          "transactionHash": "0x13b63d97a27fdec0e760ff251751995dfbfca2f58a2c4ab0051b24051f26ce9c",
+          "blockNumber": 60743271
+        },
+        "GaugeFactory": {
+          "address": "0x60E60B6D0B77f3Af83Fd6Ed35Db6D0664693E39A",
+          "abi": "abis/deployed/GaugeFactory-7a2a5e1a.json",
+          "abiSha256": "7a2a5e1a7c8dd7f4f59ebd366564c50ce38683af6520b917851e73f24f0e05fe",
+          "transactionHash": "0xe39446fa78b5586a5b8b859786c16f4d6acd278c769b28d4069fd82112d93fea",
+          "blockNumber": 60743156
+        },
+        "ManagedRewardsFactory": {
+          "address": "0xab2df5A1C8bB46a28D26a74c64eeAfFE89eD3714",
+          "abi": "abis/deployed/ManagedRewardsFactory-8dace021.json",
+          "abiSha256": "8dace0218671552ceb771a8152d5a93f805b2160d0b03c36c151fb7cfc826728",
+          "transactionHash": "0x9ca0db773255136a8d36b24679e3f960ba5e5a27446e586af97180d2fec5b5a1",
+          "blockNumber": 60743214
+        },
+        "Pool": {
+          "address": "0x8776BE6cd50BB78414c655bc8bF9e86A0989722F",
+          "abi": "abis/deployed/Pool-7a8ace0b.json",
+          "abiSha256": "7a8ace0be9c577fa0f476073d8ee05eaa08599822170c416c9d639af5509ae65",
+          "transactionHash": "0x909c1ad2c3ac2e00af721943286b15a6226151fb589f5d65dda889af2d2f0d28",
+          "blockNumber": 60742982
+        },
+        "PoolFactory": {
+          "address": "0x1E3aC31cF96b20619c913384C9bf6010A824fB95",
+          "abi": "abis/deployed/PoolFactory-4096928a.json",
+          "abiSha256": "4096928a6e95e14cb8313e9f9499f4a05034247d5bb54f33a8074b5d2541c622",
+          "transactionHash": "0x8e26f1b1e3e845cdb2ce748eb21c87c7691a6ab3b0707777e0fee60f151dbf4d",
+          "blockNumber": 60743041
+        },
+        "ProtocolForwarder": {
+          "address": "0xcaFA164098cE984799413daA2Ee7579Eb9f471DF",
+          "abi": "abis/deployed/ProtocolForwarder-5b9de979.json",
+          "abiSha256": "5b9de979d87295aef6ddd9fb21e2a5ab90fc660b18d639e6051778fc95d9f568",
+          "transactionHash": "0xe378f2a6336bafe28f25708056f4b8eb226ed7774ac465b692f3f499a41b48fb",
+          "blockNumber": 60742924
+        },
+        "Router": {
+          "address": "0x18226f64a850163C0f0ABA453653Cc206EaE99f3",
+          "abi": "abis/deployed/Router-ddffb82c.json",
+          "abiSha256": "ddffb82c97b8c59a1d3a854d04eeae8ae88cda19f4694b8e909bae8e369f110c",
+          "transactionHash": "0x18abaf8929ee3f1b0b4a1a59123833c1c01d0b51829e56e92aebca6843703ecf",
+          "blockNumber": 60743619
+        },
+        "SpokeEmissionReceiver": {
+          "address": "0xb6286AaE59580F504471Bf5031A2Aa688C5aC140",
+          "abi": "abis/deployed/SpokeEmissionReceiver-37f32161.json",
+          "abiSha256": "37f321610f4e42175dc884355c5db09300bcd56c9748b27dab532db4187a394e",
+          "transactionHash": "0xd2bd9ce6def692aeb8a6c4af293397d84677d16aabb63badbcfcba72a26d2106",
+          "blockNumber": 60743503
+        },
+        "Voter": {
+          "address": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+          "abi": "abis/deployed/Voter-19456e5a.json",
+          "abiSha256": "19456e5ad60c62847d7fba696bb8acacc448e3c0a785506cd04354c86638419e",
+          "transactionHash": "0xde65a2ef7343cf0f0a1351a04ef34ac6678d78251b376ee6ee6caa1ba1914345",
+          "blockNumber": 60743386
+        },
+        "VotingRewardsFactory": {
+          "address": "0x28e686ffA9CAF74411FBa0923dC3729CD513e3D4",
+          "abi": "abis/deployed/VotingRewardsFactory-2f196ac8.json",
+          "abiSha256": "2f196ac8ca0ed55c9434643889e53a05083a38c431467b93687cdb5bc71fe278",
+          "transactionHash": "0x2503e0d23f5c49d2a49d9de5954587060964eacf96ab9ee03f68a3bff858cbda",
+          "blockNumber": 60743099
+        },
+        "XTopazVotingVault": {
+          "address": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+          "abi": "abis/deployed/XTopazVotingVault-67434da3.json",
+          "abiSha256": "67434da36ef08d957c3898ea33d439d4358296816a72a0dfe61b5ed76a5a8a48",
+          "transactionHash": "0x2f47c3e338ca95e0583bf13aabf7c480a8eee174695797c64a48439d4e9ae365",
+          "blockNumber": 60743329
+        },
+        "CLFactory": {
+          "address": "0xaa5865dC3A60b25D305226d66fd573021f0D8fFB",
+          "abi": "abis/deployed/CLFactory-d0ad6e33.json",
+          "abiSha256": "d0ad6e33d1d28a3a3b6b4635374cca776baea71bc33cfdf83f639f4f8315db53",
+          "transactionHash": "0x6e9f1894fedcfad21f2a900e0010832525220c0cc3d55a80b3c4f3f4d3c46d59",
+          "blockNumber": 60744015
+        },
+        "CLGauge": {
+          "address": "0xE6ab7AA7cCe6C3e11E709408BD985828a98b6553",
+          "abi": "abis/deployed/CLGauge-58301f73.json",
+          "abiSha256": "58301f73812ff154c8964f6095c1254273194e2505b308ac3f5e4a362a25d16e",
+          "transactionHash": "0x2a3d035fc9ee40d7bb74a17c97481a57f4ab1ea85b1fe138a652e28af6414071",
+          "blockNumber": 60744073
+        },
+        "CLGaugeFactory": {
+          "address": "0xc99B3e03e8dE70318f705155a3195c18d6344dFE",
+          "abi": "abis/deployed/CLGaugeFactory-7c1194af.json",
+          "abiSha256": "7c1194aff80d3382cbbc66b9d1c501df9ef1fcbc47d88ffb1ce640c33a31f54c",
+          "transactionHash": "0x940ad2188617913c52eb95df10d2ebe4fe49eb7b9aed5ed64b596e283516917e",
+          "blockNumber": 60744130
+        },
+        "CLInterfaceMulticall": {
+          "address": "0x1b4c8adC09D4c2940C0e536fF11266013D15B38a",
+          "abi": "abis/deployed/CLInterfaceMulticall-e21ccbab.json",
+          "abiSha256": "e21ccbabd6e33b8b60829a3023ad0958d67f339bd9d0c10ac1f43d7cbe4a52ac",
+          "transactionHash": "0x093c25e621a5969548dbc04e1853278995b9b6b082b094ade64617f00a077ca0",
+          "blockNumber": 60854612
+        },
+        "CLPool": {
+          "address": "0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE",
+          "abi": "abis/deployed/CLPool-eef316ee.json",
+          "abiSha256": "eef316ee9ca00f24e857ce365c02d90bc845d0bf9a1c7689740a8578690766c8",
+          "transactionHash": "0x3c88bac3e287ae79617b516b5ff8c404cf25a1e346c5be187b30086d3e234d21",
+          "blockNumber": 60743958
+        },
+        "CustomSwapFeeModule": {
+          "address": "0x3Ae3642ECebB720e48Fe3F8fefF5F7B5C50F98f6",
+          "abi": "abis/deployed/CustomSwapFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x5cc84ac41e153d1a021924249a6bf7c3116a1dabe2b14f201cd359b231979764",
+          "blockNumber": 60744543
+        },
+        "CustomUnstakedFeeModule": {
+          "address": "0xCe6BE50Cf7a6a868E5993Aaa505b905B31c011e0",
+          "abi": "abis/deployed/CustomUnstakedFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x8bbdcc2146435c17a840357731354633f36f4029601e87211affeb9666e28360",
+          "blockNumber": 60744602
+        },
+        "DynamicSwapFeeModule": {
+          "address": "0x0Dca13b1039277d82B27ADd86d06195B8E9BBfDb",
+          "abi": "abis/deployed/DynamicSwapFeeModule-2ee04b19.json",
+          "abiSha256": "2ee04b19d39bb2a575de08024c5e8ca7c3f999383865444543eb0833372d9977",
+          "transactionHash": "0x004388bce7ce549e16c73031c895be24497f8db4d201f7c71d31c07ef6a1bd4e",
+          "blockNumber": 60854474
+        },
+        "MixedRouteQuoterV1": {
+          "address": "0x39A344d192D1D34a6Bee24DCF11093e93Fbb3993",
+          "abi": "abis/deployed/MixedRouteQuoterV1-df3f80c3.json",
+          "abiSha256": "df3f80c33e8124da44cfa9ca0284d3a54dfc264eb3e44adda0a1911e50e27a08",
+          "transactionHash": "0xcbd0fd9182395cb0651606493ee291eab00af1d87840325d768285e589988d31",
+          "blockNumber": 60744803
+        },
+        "NFTDescriptor": {
+          "address": "0xf09d42Dbd9F867422339F13F40A936Fc54B28133",
+          "abi": "abis/deployed/NFTDescriptor-2c62783e.json",
+          "abiSha256": "2c62783e1db01046576162576571aef2344d6bc95edd5c041b99dd1550925cce",
+          "transactionHash": "0x5e9f5652565226633d81e04c34ceccf92fafed573cfd5600cbbc1ba19ecc6926",
+          "blockNumber": 60743898
+        },
+        "NFTSVG": {
+          "address": "0x1328cfCcB9d670fa478f0D5249f41A38f23aF592",
+          "abi": "abis/deployed/NFTSVG-02770c5a.json",
+          "abiSha256": "02770c5a38df80a30f34937a76fa68e2c0ecc98016b0e1192f02ca969ec7b023",
+          "transactionHash": "0x10f41e0ebabb1a8d930e3b0621f619e3b1770e479420e382db8376ea63263286",
+          "blockNumber": 60743840
+        },
+        "NonfungiblePositionManager": {
+          "address": "0x522bf4b5c9280BB6bB719f2CE7f514Dd63c8c0C5",
+          "abi": "abis/deployed/NonfungiblePositionManager-4f7e8ab1.json",
+          "abiSha256": "4f7e8ab13c8ed413fd92092acc6c6a6600fbaa8c329d81d0d511b76656871c03",
+          "transactionHash": "0x7a3f2389fc6a7a930cfda0b948b8bbd508b43cffee192844ddfeadb517404007",
+          "blockNumber": 60744344
+        },
+        "NonfungibleTokenPositionDescriptor": {
+          "address": "0xB17cd823450ec44462399ED02f8c72Dce1Bf1D5f",
+          "abi": "abis/deployed/NonfungibleTokenPositionDescriptor-e5d817ef.json",
+          "abiSha256": "e5d817ef76323f6ad98ad3d314e698f4efbea4b1f1b5e91a1ef4226d4c63d404",
+          "transactionHash": "0xd5aa403f43d9e58c76745ed58d10b822008a7d4c028974d4c0e0fc002b17a436",
+          "blockNumber": 60744282
+        },
+        "PositionBurnHelper": {
+          "address": "0xc2f7F923CAd652038DbD5cb8acAd60BE0b840bf5",
+          "abi": "abis/deployed/PositionBurnHelper-a77f546d.json",
+          "abiSha256": "a77f546db426aac4ce1d23f4a6d71031695c6b31ed651b12d421fa35eaf19e6a",
+          "transactionHash": "0x20e68ea5195de83b0207fe8d1bb893a6650bcce228f4389d58d4b7ee9397ddd0",
+          "blockNumber": 60854568
+        },
+        "QuoterV2": {
+          "address": "0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be",
+          "abi": "abis/deployed/QuoterV2-1e478f28.json",
+          "abiSha256": "1e478f280996c05859c305b4d9c6a2df56c4b3bd84be29e788a381292b953d31",
+          "transactionHash": "0x4b7ea1c3065bb9725bdd8310536ab444e1647165de944a91763193f5b91e32b7",
+          "blockNumber": 60744862
+        },
+        "SugarHelper": {
+          "address": "0x8C29f85a151E16c94BC845D14A7A4Cd44345F168",
+          "abi": "abis/deployed/SugarHelper-7d78a37a.json",
+          "abiSha256": "7d78a37a9bc8583bc3c73fd64572009915f405705f083a5e356c2b46aaefeb9a",
+          "transactionHash": "0xfbeea10bd8bf43b81ee5aa5be230dce2a2ca09d147c1e7b73c7facd142519549",
+          "blockNumber": 60854426
+        },
+        "SwapRouter": {
+          "address": "0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572",
+          "abi": "abis/deployed/SwapRouter-6723eb22.json",
+          "abiSha256": "6723eb22409036c418032c077d5889416fcb0cdb454600efb46c9a250137b11a",
+          "transactionHash": "0x3a6bcc0de7a26dae634bdb250751f71afcd3c3a49fafbf81b4e60e2b57cbc800",
+          "blockNumber": 60744920
+        },
+        "TopazSlipstreamStateMulticall": {
+          "address": "0x8Bc9B86eBCd30A724bf486536507B7f6bf1A5a46",
+          "abi": "abis/deployed/TopazSlipstreamStateMulticall-528c9eb2.json",
+          "abiSha256": "528c9eb2054e0b5a1a8076aafab480e251054d86534789bf04cfa92b28776c60",
+          "transactionHash": "0xf2a9a7f51a31f9e881c6f687df8d97ec2d6ee1b98edeb3c71a316e981369959c",
+          "blockNumber": 60854522
+        },
+        "UniversalRouter": {
+          "address": "0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4",
+          "abi": "abis/deployed/UniversalRouter.json",
+          "transactionHash": "0xf6df9f7454c626e00c62eddcab0c9f9b89cf85ec4a4fee7b633d22fc666d4a2b",
+          "blockNumber": 60779600,
+          "runtimeCodeHash": "0xc1944010f4f0469041aca0b574f0cf1fd7db9634998ac17be1d2c52d2dcb70c4"
+        },
+        "Permit2": {
+          "address": "0x000000000022D473030F116dDEE9F6B43aC78BA3"
+        },
+        "Multicall3": {
+          "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
+          "abi": "abis/Multicall3.json"
+        }
+      }
+    },
+    {
+      "chainId": 8453,
+      "slug": "base",
+      "name": "Base",
+      "lzEid": 30184,
+      "role": "spoke",
+      "nativeSymbol": "ETH",
+      "nativeDecimals": 18,
+      "rpcUrl": "https://mainnet.base.org",
+      "explorer": "https://basescan.org",
+      "wrappedNative": "0x4200000000000000000000000000000000000006",
+      "nativeRouterLegs": true,
+      "contracts": {
+        "CLZap": {
+          "address": "0x8C29f85a151E16c94BC845D14A7A4Cd44345F168",
+          "abi": "abis/deployed/CLZap.json"
+        },
+        "SpokeBudgetComposer": {
+          "address": "0xbba1C3b415cF8212Cf3Ce11e726ab62125BDc6dB",
+          "abi": "abis/deployed/SpokeBudgetComposer-b6773a3c.json",
+          "abiSha256": "b6773a3c20589fe9a6f12cd545425614503854717e2843ba00d5bf9f37d2f43e",
+          "transactionHash": "0x9302325bf3c9454435070cf6b0152efbc7a64f6f8aedba7c60a0c681c73346fd",
+          "blockNumber": 51196832
+        },
+        "SpokeStakeComposer": {
+          "address": "0x2c359C5C680e2b1BcA465e63d1904afac6b308F1",
+          "abi": "abis/deployed/SpokeStakeComposer-54ed51ad.json",
+          "abiSha256": "54ed51ad3944a1127b7b4dc8085c8ef697eb0e897cad814aa6e04f6679ef3c60",
+          "transactionHash": "0x271f6c94f427eff15d7a0cc4af8479afd08056fa28755b28eb90ac82f5df34ab",
+          "blockNumber": 51196836
+        },
+        "XTopazOFT": {
+          "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "abi": "abis/deployed/XTopazOFT-7f2afbed.json",
+          "abiSha256": "7f2afbed13d9db0c7e8ae4f6e288082f9ae57f0a1c9bb45204c4a1bd2fb2c959",
+          "transactionHash": "0xcf1ae47cbc064e6aada25262097609367e8a04ad05d3ffe1d4a9e9058c34f4dc",
+          "blockNumber": 51195379
+        },
+        "FactoryRegistry": {
+          "address": "0x6f701F163a7372C27275e76Af21b6cF06ca6D498",
+          "abi": "abis/deployed/FactoryRegistry-75e428f0.json",
+          "abiSha256": "75e428f0259650c95358a52e3bc5a0a2cb72818c6cbca95b9430b430e181caf4",
+          "transactionHash": "0xd15987095c528cb1b85a21ea6ee7bf3c8af24c228b41805aa9e2b00708c2112c",
+          "blockNumber": 51196325
+        },
+        "GaugeFactory": {
+          "address": "0x60E60B6D0B77f3Af83Fd6Ed35Db6D0664693E39A",
+          "abi": "abis/deployed/GaugeFactory-7a2a5e1a.json",
+          "abiSha256": "7a2a5e1a7c8dd7f4f59ebd366564c50ce38683af6520b917851e73f24f0e05fe",
+          "transactionHash": "0x4b9e73117106878a0953f0e573c1dc9c36e8d4e94b396758d5d08c616df08af0",
+          "blockNumber": 51196320
+        },
+        "ManagedRewardsFactory": {
+          "address": "0xab2df5A1C8bB46a28D26a74c64eeAfFE89eD3714",
+          "abi": "abis/deployed/ManagedRewardsFactory-8dace021.json",
+          "abiSha256": "8dace0218671552ceb771a8152d5a93f805b2160d0b03c36c151fb7cfc826728",
+          "transactionHash": "0x7663f20ff0646c8e632faa1a1f3afba74f0874a1d9ec66e88aa7cd49d7944db3",
+          "blockNumber": 51196323
+        },
+        "Pool": {
+          "address": "0x8776BE6cd50BB78414c655bc8bF9e86A0989722F",
+          "abi": "abis/deployed/Pool-7a8ace0b.json",
+          "abiSha256": "7a8ace0be9c577fa0f476073d8ee05eaa08599822170c416c9d639af5509ae65",
+          "transactionHash": "0xbf2827fa8a4c845314a97d5731af532c2656b4907db53bc2edc3bd4d58a2e264",
+          "blockNumber": 51195498
+        },
+        "PoolFactory": {
+          "address": "0x1E3aC31cF96b20619c913384C9bf6010A824fB95",
+          "abi": "abis/deployed/PoolFactory-4096928a.json",
+          "abiSha256": "4096928a6e95e14cb8313e9f9499f4a05034247d5bb54f33a8074b5d2541c622",
+          "transactionHash": "0x888a75df75c1ce5c6980fb3a1ad9d29efc5abe7d06ce6bdb83d17072461c37e4",
+          "blockNumber": 51195798
+        },
+        "ProtocolForwarder": {
+          "address": "0xcaFA164098cE984799413daA2Ee7579Eb9f471DF",
+          "abi": "abis/deployed/ProtocolForwarder-5b9de979.json",
+          "abiSha256": "5b9de979d87295aef6ddd9fb21e2a5ab90fc660b18d639e6051778fc95d9f568",
+          "transactionHash": "0x2b3aad4b7b98f642b197feeafe501f482cfbac24414c90b0aed9b8f219150d8a",
+          "blockNumber": 51195497
+        },
+        "Router": {
+          "address": "0x18226f64a850163C0f0ABA453653Cc206EaE99f3",
+          "abi": "abis/deployed/Router-ddffb82c.json",
+          "abiSha256": "ddffb82c97b8c59a1d3a854d04eeae8ae88cda19f4694b8e909bae8e369f110c",
+          "transactionHash": "0xc7637bc58bf0d4c2d1718d3ed5bfdaf2c706d9397ca490a3db71dd4d9d047df5",
+          "blockNumber": 51196342
+        },
+        "SpokeEmissionReceiver": {
+          "address": "0xb6286AaE59580F504471Bf5031A2Aa688C5aC140",
+          "abi": "abis/deployed/SpokeEmissionReceiver-37f32161.json",
+          "abiSha256": "37f321610f4e42175dc884355c5db09300bcd56c9748b27dab532db4187a394e",
+          "transactionHash": "0x01a646782019abd77540d50edf0ea5f322a38c8fcfbb6cc7e16269bb29fe59a8",
+          "blockNumber": 51196335
+        },
+        "Voter": {
+          "address": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+          "abi": "abis/deployed/Voter-19456e5a.json",
+          "abiSha256": "19456e5ad60c62847d7fba696bb8acacc448e3c0a785506cd04354c86638419e",
+          "transactionHash": "0xf1e2ba8d57c603445761987e0d03f7ddac2b09233e1f3d5796a0e84708c17cda",
+          "blockNumber": 51196330
+        },
+        "VotingRewardsFactory": {
+          "address": "0x28e686ffA9CAF74411FBa0923dC3729CD513e3D4",
+          "abi": "abis/deployed/VotingRewardsFactory-2f196ac8.json",
+          "abiSha256": "2f196ac8ca0ed55c9434643889e53a05083a38c431467b93687cdb5bc71fe278",
+          "transactionHash": "0x5a5d4009cc28a2a250e4021c08c8ddf7a2b009d7a6660bff1cc358ce3cf6b7f6",
+          "blockNumber": 51196318
+        },
+        "XTopazVotingVault": {
+          "address": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+          "abi": "abis/deployed/XTopazVotingVault-67434da3.json",
+          "abiSha256": "67434da36ef08d957c3898ea33d439d4358296816a72a0dfe61b5ed76a5a8a48",
+          "transactionHash": "0x6e5fbefdefdbc7d3158bde3ac9c79ffb2c36901816b465955722284fd9d5e0ae",
+          "blockNumber": 51196327
+        },
+        "CLFactory": {
+          "address": "0xaa5865dC3A60b25D305226d66fd573021f0D8fFB",
+          "abi": "abis/deployed/CLFactory-d0ad6e33.json",
+          "abiSha256": "d0ad6e33d1d28a3a3b6b4635374cca776baea71bc33cfdf83f639f4f8315db53",
+          "transactionHash": "0xe6435a42d97a9f2ca4e85745d2b316523c3ee685a20175b579ee020dc0407ff1",
+          "blockNumber": 51196358
+        },
+        "CLGauge": {
+          "address": "0xE6ab7AA7cCe6C3e11E709408BD985828a98b6553",
+          "abi": "abis/deployed/CLGauge-58301f73.json",
+          "abiSha256": "58301f73812ff154c8964f6095c1254273194e2505b308ac3f5e4a362a25d16e",
+          "transactionHash": "0x9cd5b503e35e4b58e0e9ccbbd02789bbeafc709b3f329d4c0ce299a62e0e5995",
+          "blockNumber": 51196361
+        },
+        "CLGaugeFactory": {
+          "address": "0xc99B3e03e8dE70318f705155a3195c18d6344dFE",
+          "abi": "abis/deployed/CLGaugeFactory-7c1194af.json",
+          "abiSha256": "7c1194aff80d3382cbbc66b9d1c501df9ef1fcbc47d88ffb1ce640c33a31f54c",
+          "transactionHash": "0x44f9287ff7ca57454d8e16e107db4057e8a69e25b9df7fc174f1c6a2f76e9915",
+          "blockNumber": 51196363
+        },
+        "CLInterfaceMulticall": {
+          "address": "0x7F128593d76D9df3a6e6d1Aec414602aFF11804d",
+          "abi": "abis/deployed/CLInterfaceMulticall-e21ccbab.json",
+          "abiSha256": "e21ccbabd6e33b8b60829a3023ad0958d67f339bd9d0c10ac1f43d7cbe4a52ac",
+          "transactionHash": "0x785623d033bcd224d4db4c42d3395193178916d44efadbc9d5d6e3be6b046a78",
+          "blockNumber": 51200653
+        },
+        "CLPool": {
+          "address": "0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE",
+          "abi": "abis/deployed/CLPool-eef316ee.json",
+          "abiSha256": "eef316ee9ca00f24e857ce365c02d90bc845d0bf9a1c7689740a8578690766c8",
+          "transactionHash": "0xf5b66dbdbd4e300fa23f805b9b043947d809ae2e88d908131607ca01ca34b439",
+          "blockNumber": 51196356
+        },
+        "CustomSwapFeeModule": {
+          "address": "0xCe6BE50Cf7a6a868E5993Aaa505b905B31c011e0",
+          "abi": "abis/deployed/CustomSwapFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0xf90c0c4daaf747525a1ba4cd07406dcbb9425af176520e22621931dcf7c0d8db",
+          "blockNumber": 51196812
+        },
+        "CustomUnstakedFeeModule": {
+          "address": "0x5E29d449199e1c2e5A5557145075ccBAE0Be0920",
+          "abi": "abis/deployed/CustomUnstakedFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0xf57a7aaf88374536fad82920212d3da7649882389bd0def39a8548914d963cb7",
+          "blockNumber": 51196815
+        },
+        "DynamicSwapFeeModule": {
+          "address": "0x8Bc9B86eBCd30A724bf486536507B7f6bf1A5a46",
+          "abi": "abis/deployed/DynamicSwapFeeModule-2ee04b19.json",
+          "abiSha256": "2ee04b19d39bb2a575de08024c5e8ca7c3f999383865444543eb0833372d9977",
+          "transactionHash": "0x9b5c1df57244b00f1f6e44af470e50c66d569dc3f5c41cedd9da485ccd969086",
+          "blockNumber": 51200645
+        },
+        "MixedRouteQuoterV1": {
+          "address": "0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be",
+          "abi": "abis/deployed/MixedRouteQuoterV1-df3f80c3.json",
+          "abiSha256": "df3f80c33e8124da44cfa9ca0284d3a54dfc264eb3e44adda0a1911e50e27a08",
+          "transactionHash": "0xb15a7a8bb1b2b2cb0728d1817f4c839fcbc160081effbeca9bbe318914983ae5",
+          "blockNumber": 51196823
+        },
+        "NFTDescriptor": {
+          "address": "0xf09d42Dbd9F867422339F13F40A936Fc54B28133",
+          "abi": "abis/deployed/NFTDescriptor-2c62783e.json",
+          "abiSha256": "2c62783e1db01046576162576571aef2344d6bc95edd5c041b99dd1550925cce",
+          "transactionHash": "0x88f571597b19f2724f012fa5fd1f4c17b696e0e8545b3fcd929ff77e9d24a5a7",
+          "blockNumber": 51196353
+        },
+        "NFTSVG": {
+          "address": "0x1328cfCcB9d670fa478f0D5249f41A38f23aF592",
+          "abi": "abis/deployed/NFTSVG-02770c5a.json",
+          "abiSha256": "02770c5a38df80a30f34937a76fa68e2c0ecc98016b0e1192f02ca969ec7b023",
+          "transactionHash": "0xa55380278705ca48914221734ca2cae42b07596f67521d26857a631b97662dee",
+          "blockNumber": 51196351
+        },
+        "NonfungiblePositionManager": {
+          "address": "0x522bf4b5c9280BB6bB719f2CE7f514Dd63c8c0C5",
+          "abi": "abis/deployed/NonfungiblePositionManager-4f7e8ab1.json",
+          "abiSha256": "4f7e8ab13c8ed413fd92092acc6c6a6600fbaa8c329d81d0d511b76656871c03",
+          "transactionHash": "0xbec4148867eee31d564f5a053e39d12eab777e8005516a6f31a9823c7b0bdcd2",
+          "blockNumber": 51196372
+        },
+        "NonfungibleTokenPositionDescriptor": {
+          "address": "0xB17cd823450ec44462399ED02f8c72Dce1Bf1D5f",
+          "abi": "abis/deployed/NonfungibleTokenPositionDescriptor-e5d817ef.json",
+          "abiSha256": "e5d817ef76323f6ad98ad3d314e698f4efbea4b1f1b5e91a1ef4226d4c63d404",
+          "transactionHash": "0xb129d2516e17f6fbfd01d26152125e71fd19eb14838c52132c0dff8e66ac60a7",
+          "blockNumber": 51196369
+        },
+        "PositionBurnHelper": {
+          "address": "0x1b4c8adC09D4c2940C0e536fF11266013D15B38a",
+          "abi": "abis/deployed/PositionBurnHelper-a77f546d.json",
+          "abiSha256": "a77f546db426aac4ce1d23f4a6d71031695c6b31ed651b12d421fa35eaf19e6a",
+          "transactionHash": "0x89eae6ae0ccaa3791ee395f34e5451681be205dd7331faa8a43288c6c6507a69",
+          "blockNumber": 51200650
+        },
+        "QuoterV2": {
+          "address": "0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572",
+          "abi": "abis/deployed/QuoterV2-1e478f28.json",
+          "abiSha256": "1e478f280996c05859c305b4d9c6a2df56c4b3bd84be29e788a381292b953d31",
+          "transactionHash": "0x6fde9315632e401419de592ca5dfeba2d42d49818361964503813363982d0e1b",
+          "blockNumber": 51196825
+        },
+        "SugarHelper": {
+          "address": "0x0Dca13b1039277d82B27ADd86d06195B8E9BBfDb",
+          "abi": "abis/deployed/SugarHelper-7d78a37a.json",
+          "abiSha256": "7d78a37a9bc8583bc3c73fd64572009915f405705f083a5e356c2b46aaefeb9a",
+          "transactionHash": "0xbb8f1aa5dc066ebb5b51c37a305f525433d186601c3a0e7399a7a46bd11aa157",
+          "blockNumber": 51200643
+        },
+        "SwapRouter": {
+          "address": "0x5DA6456fa2560071DD29871ca045908f98932865",
+          "abi": "abis/deployed/SwapRouter-6723eb22.json",
+          "abiSha256": "6723eb22409036c418032c077d5889416fcb0cdb454600efb46c9a250137b11a",
+          "transactionHash": "0x766811081c1b12c18905c413df6292f9788f812b1a405c706474c479e67fa6c0",
+          "blockNumber": 51196828
+        },
+        "TopazSlipstreamStateMulticall": {
+          "address": "0xc2f7F923CAd652038DbD5cb8acAd60BE0b840bf5",
+          "abi": "abis/deployed/TopazSlipstreamStateMulticall-528c9eb2.json",
+          "abiSha256": "528c9eb2054e0b5a1a8076aafab480e251054d86534789bf04cfa92b28776c60",
+          "transactionHash": "0x17c4a850057bc21c1b5c2e038c914a80ea4d19b8a9f34242d6292539ef4f702b",
+          "blockNumber": 51200648
+        },
+        "UniversalRouter": {
+          "address": "0xe4b23F13b24232C1E68AD0575191216152AA9480",
+          "abi": "abis/deployed/UniversalRouter.json",
+          "transactionHash": "0x72bcf4bae1e30dba5d1d03e5d21fb25a85c3dba48d17ae822fe01b33e90c6e18",
+          "blockNumber": 51197232,
+          "runtimeCodeHash": "0x0e4ab11bb3a6690689e045812d55b8103a5ef8a6a3e58f91291756449aea7eab"
+        },
+        "Permit2": {
+          "address": "0x000000000022D473030F116dDEE9F6B43aC78BA3"
+        },
+        "Multicall3": {
+          "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
+          "abi": "abis/Multicall3.json"
+        }
+      }
+    },
+    {
+      "chainId": 1,
+      "slug": "ethereum",
+      "name": "Ethereum",
+      "lzEid": 30101,
+      "role": "spoke",
+      "nativeSymbol": "ETH",
+      "nativeDecimals": 18,
+      "rpcUrl": "https://ethereum-rpc.publicnode.com",
+      "explorer": "https://etherscan.io",
+      "wrappedNative": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+      "nativeRouterLegs": true,
+      "contracts": {
+        "CLZap": {
+          "address": "0x1b4c8adC09D4c2940C0e536fF11266013D15B38a",
+          "abi": "abis/deployed/CLZap.json"
+        },
+        "SpokeBudgetComposer": {
+          "address": "0x5DA6456fa2560071DD29871ca045908f98932865",
+          "abi": "abis/deployed/SpokeBudgetComposer-b6773a3c.json",
+          "abiSha256": "b6773a3c20589fe9a6f12cd545425614503854717e2843ba00d5bf9f37d2f43e",
+          "transactionHash": "0xea28cafb687f996daa3cf3ed6b4ebec913c4a61f84c72e8ad18632681eda5d14",
+          "blockNumber": 25958769
+        },
+        "SpokeStakeComposer": {
+          "address": "0xbba1C3b415cF8212Cf3Ce11e726ab62125BDc6dB",
+          "abi": "abis/deployed/SpokeStakeComposer-54ed51ad.json",
+          "abiSha256": "54ed51ad3944a1127b7b4dc8085c8ef697eb0e897cad814aa6e04f6679ef3c60",
+          "transactionHash": "0x18012cfca92fa68acb53c15fdacb80c01b1db1971d8e6e415b86b30b67cfcd58",
+          "blockNumber": 25958771
+        },
+        "XTopazOFT": {
+          "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "abi": "abis/deployed/XTopazOFT-7f2afbed.json",
+          "abiSha256": "7f2afbed13d9db0c7e8ae4f6e288082f9ae57f0a1c9bb45204c4a1bd2fb2c959",
+          "transactionHash": "0x54b704622d2c60ae203690d9abdd49de6be83758db1c1837b3e8a480dba1a601",
+          "blockNumber": 25958694
+        },
+        "FactoryRegistry": {
+          "address": "0x6f701F163a7372C27275e76Af21b6cF06ca6D498",
+          "abi": "abis/deployed/FactoryRegistry-75e428f0.json",
+          "abiSha256": "75e428f0259650c95358a52e3bc5a0a2cb72818c6cbca95b9430b430e181caf4",
+          "transactionHash": "0x9ffb8a9e5f8ccf8f3015f4df71b8d101ecec8eec786e0e8b34134a8464fbe81b",
+          "blockNumber": 25958715
+        },
+        "GaugeFactory": {
+          "address": "0x60E60B6D0B77f3Af83Fd6Ed35Db6D0664693E39A",
+          "abi": "abis/deployed/GaugeFactory-7a2a5e1a.json",
+          "abiSha256": "7a2a5e1a7c8dd7f4f59ebd366564c50ce38683af6520b917851e73f24f0e05fe",
+          "transactionHash": "0x98236ff8bdaa2c65e6b6c4af0ace451555dc4e7ac2cc03b301d1171bd17e2764",
+          "blockNumber": 25958711
+        },
+        "ManagedRewardsFactory": {
+          "address": "0xab2df5A1C8bB46a28D26a74c64eeAfFE89eD3714",
+          "abi": "abis/deployed/ManagedRewardsFactory-8dace021.json",
+          "abiSha256": "8dace0218671552ceb771a8152d5a93f805b2160d0b03c36c151fb7cfc826728",
+          "transactionHash": "0x1529397f37e2c71333d7b3b9d3aafc81ef84d746ca3327102626f9f706908ee3",
+          "blockNumber": 25958713
+        },
+        "Pool": {
+          "address": "0x8776BE6cd50BB78414c655bc8bF9e86A0989722F",
+          "abi": "abis/deployed/Pool-7a8ace0b.json",
+          "abiSha256": "7a8ace0be9c577fa0f476073d8ee05eaa08599822170c416c9d639af5509ae65",
+          "transactionHash": "0x8afd85b20cd1298450c3a62a9e77b130abbaa56f8f2bbab5cc2d655831fb260b",
+          "blockNumber": 25958705
+        },
+        "PoolFactory": {
+          "address": "0x1E3aC31cF96b20619c913384C9bf6010A824fB95",
+          "abi": "abis/deployed/PoolFactory-4096928a.json",
+          "abiSha256": "4096928a6e95e14cb8313e9f9499f4a05034247d5bb54f33a8074b5d2541c622",
+          "transactionHash": "0x6edc798f008346f2fb0a0d72d6613dd0ab42384524e98681b33e6722f33cdffa",
+          "blockNumber": 25958707
+        },
+        "ProtocolForwarder": {
+          "address": "0xcaFA164098cE984799413daA2Ee7579Eb9f471DF",
+          "abi": "abis/deployed/ProtocolForwarder-5b9de979.json",
+          "abiSha256": "5b9de979d87295aef6ddd9fb21e2a5ab90fc660b18d639e6051778fc95d9f568",
+          "transactionHash": "0xd689e18c6d930bf15f83e1b820759ea7790cfc7db123f578a8017a96ab182e49",
+          "blockNumber": 25958703
+        },
+        "Router": {
+          "address": "0x18226f64a850163C0f0ABA453653Cc206EaE99f3",
+          "abi": "abis/deployed/Router-ddffb82c.json",
+          "abiSha256": "ddffb82c97b8c59a1d3a854d04eeae8ae88cda19f4694b8e909bae8e369f110c",
+          "transactionHash": "0xd5509fbdf47fb9b344fee59f828148882f1540b4d2db05229abc589ce995d36b",
+          "blockNumber": 25958728
+        },
+        "SpokeEmissionReceiver": {
+          "address": "0xb6286AaE59580F504471Bf5031A2Aa688C5aC140",
+          "abi": "abis/deployed/SpokeEmissionReceiver-37f32161.json",
+          "abiSha256": "37f321610f4e42175dc884355c5db09300bcd56c9748b27dab532db4187a394e",
+          "transactionHash": "0x6507505f051b49af658b2e277bf376a64d85343601e5a787746a84a477e90ac8",
+          "blockNumber": 25958723
+        },
+        "Voter": {
+          "address": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+          "abi": "abis/deployed/Voter-19456e5a.json",
+          "abiSha256": "19456e5ad60c62847d7fba696bb8acacc448e3c0a785506cd04354c86638419e",
+          "transactionHash": "0x5fa7a5c4e0a7d70db186928854e72af117ad439f008e149378ea6d12e6a7790f",
+          "blockNumber": 25958719
+        },
+        "VotingRewardsFactory": {
+          "address": "0x28e686ffA9CAF74411FBa0923dC3729CD513e3D4",
+          "abi": "abis/deployed/VotingRewardsFactory-2f196ac8.json",
+          "abiSha256": "2f196ac8ca0ed55c9434643889e53a05083a38c431467b93687cdb5bc71fe278",
+          "transactionHash": "0x364b077eb34dad051c8a824155f6457d4de3a2f0939ab990cb8d9581ed9878c3",
+          "blockNumber": 25958709
+        },
+        "XTopazVotingVault": {
+          "address": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+          "abi": "abis/deployed/XTopazVotingVault-67434da3.json",
+          "abiSha256": "67434da36ef08d957c3898ea33d439d4358296816a72a0dfe61b5ed76a5a8a48",
+          "transactionHash": "0xf1c6d03c2c03341daf9abe4ecd817fd073d2e1973eda1ed4deb1ff8bc8c15d22",
+          "blockNumber": 25958717
+        },
+        "CLFactory": {
+          "address": "0xaa5865dC3A60b25D305226d66fd573021f0D8fFB",
+          "abi": "abis/deployed/CLFactory-d0ad6e33.json",
+          "abiSha256": "d0ad6e33d1d28a3a3b6b4635374cca776baea71bc33cfdf83f639f4f8315db53",
+          "transactionHash": "0x9e980b2e37814318484ac690fa687472dc07f6f695cbf56ed18b0d949a259135",
+          "blockNumber": 25958738
+        },
+        "CLGauge": {
+          "address": "0xE6ab7AA7cCe6C3e11E709408BD985828a98b6553",
+          "abi": "abis/deployed/CLGauge-58301f73.json",
+          "abiSha256": "58301f73812ff154c8964f6095c1254273194e2505b308ac3f5e4a362a25d16e",
+          "transactionHash": "0xaf463c14d567bd7240a22dc6dfca5cecc425f0dbaa5711a261381b254b5d2e29",
+          "blockNumber": 25958740
+        },
+        "CLGaugeFactory": {
+          "address": "0xc99B3e03e8dE70318f705155a3195c18d6344dFE",
+          "abi": "abis/deployed/CLGaugeFactory-7c1194af.json",
+          "abiSha256": "7c1194aff80d3382cbbc66b9d1c501df9ef1fcbc47d88ffb1ce640c33a31f54c",
+          "transactionHash": "0x861d5c389afdddd4debdbd1b9e18e98108e26079712e2bf80f6f2f97359329e1",
+          "blockNumber": 25958743
+        },
+        "CLInterfaceMulticall": {
+          "address": "0xc2f7F923CAd652038DbD5cb8acAd60BE0b840bf5",
+          "abi": "abis/deployed/CLInterfaceMulticall-e21ccbab.json",
+          "abiSha256": "e21ccbabd6e33b8b60829a3023ad0958d67f339bd9d0c10ac1f43d7cbe4a52ac",
+          "transactionHash": "0xfa0dbc595502edefa75b51d22fdaca9afd3cd896a0845de7339404dfa4cfc6ab",
+          "blockNumber": 25959252
+        },
+        "CLPool": {
+          "address": "0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE",
+          "abi": "abis/deployed/CLPool-eef316ee.json",
+          "abiSha256": "eef316ee9ca00f24e857ce365c02d90bc845d0bf9a1c7689740a8578690766c8",
+          "transactionHash": "0xea279824d758aa0c0a7b39e9a315aa0cd9a98e92c3f4ffb030efeb715f8d3d41",
+          "blockNumber": 25958736
+        },
+        "CustomSwapFeeModule": {
+          "address": "0x3Ae3642ECebB720e48Fe3F8fefF5F7B5C50F98f6",
+          "abi": "abis/deployed/CustomSwapFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x7b3995e7e0a330ee14d13dfb7996cd0829557d4280d2df2de5b20c3665728b8f",
+          "blockNumber": 25958752
+        },
+        "CustomUnstakedFeeModule": {
+          "address": "0xCe6BE50Cf7a6a868E5993Aaa505b905B31c011e0",
+          "abi": "abis/deployed/CustomUnstakedFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x7e60c199e7df1764ebc49830ad4ce9193524fd92688e1748b2f1b50582cbd48a",
+          "blockNumber": 25958754
+        },
+        "DynamicSwapFeeModule": {
+          "address": "0x8C29f85a151E16c94BC845D14A7A4Cd44345F168",
+          "abi": "abis/deployed/DynamicSwapFeeModule-2ee04b19.json",
+          "abiSha256": "2ee04b19d39bb2a575de08024c5e8ca7c3f999383865444543eb0833372d9977",
+          "transactionHash": "0xdb820d226f02d28b073362d653563a2e6aeb7c4b2c18475b789689f152553921",
+          "blockNumber": 25959244
+        },
+        "MixedRouteQuoterV1": {
+          "address": "0x39A344d192D1D34a6Bee24DCF11093e93Fbb3993",
+          "abi": "abis/deployed/MixedRouteQuoterV1-df3f80c3.json",
+          "abiSha256": "df3f80c33e8124da44cfa9ca0284d3a54dfc264eb3e44adda0a1911e50e27a08",
+          "transactionHash": "0xf9af8711e31adf519b6c67070be385d549e52742156acf0c4b53ff9b696ab6c4",
+          "blockNumber": 25958763
+        },
+        "NFTDescriptor": {
+          "address": "0xf09d42Dbd9F867422339F13F40A936Fc54B28133",
+          "abi": "abis/deployed/NFTDescriptor-2c62783e.json",
+          "abiSha256": "2c62783e1db01046576162576571aef2344d6bc95edd5c041b99dd1550925cce",
+          "transactionHash": "0x0b8d0b0435ed98fa35d60e7f705b391eae8e520a9ff076d3f43dc6b3421f263b",
+          "blockNumber": 25958734
+        },
+        "NFTSVG": {
+          "address": "0x1328cfCcB9d670fa478f0D5249f41A38f23aF592",
+          "abi": "abis/deployed/NFTSVG-02770c5a.json",
+          "abiSha256": "02770c5a38df80a30f34937a76fa68e2c0ecc98016b0e1192f02ca969ec7b023",
+          "transactionHash": "0x59d0c9bcad5054d4027dfedbe007dd62604e78afba82c148535614f7f28b8d69",
+          "blockNumber": 25958732
+        },
+        "NonfungiblePositionManager": {
+          "address": "0x522bf4b5c9280BB6bB719f2CE7f514Dd63c8c0C5",
+          "abi": "abis/deployed/NonfungiblePositionManager-4f7e8ab1.json",
+          "abiSha256": "4f7e8ab13c8ed413fd92092acc6c6a6600fbaa8c329d81d0d511b76656871c03",
+          "transactionHash": "0x16c1ec35789f09f7bcf4797cd76d663f360798c65a19bcd2bdcc6ca9235b6e67",
+          "blockNumber": 25958747
+        },
+        "NonfungibleTokenPositionDescriptor": {
+          "address": "0xB17cd823450ec44462399ED02f8c72Dce1Bf1D5f",
+          "abi": "abis/deployed/NonfungibleTokenPositionDescriptor-e5d817ef.json",
+          "abiSha256": "e5d817ef76323f6ad98ad3d314e698f4efbea4b1f1b5e91a1ef4226d4c63d404",
+          "transactionHash": "0x5c00ef5523d207b493e325319bfd3ced911755300eae9987d9ef9e14bdf6f00b",
+          "blockNumber": 25958745
+        },
+        "PositionBurnHelper": {
+          "address": "0x8Bc9B86eBCd30A724bf486536507B7f6bf1A5a46",
+          "abi": "abis/deployed/PositionBurnHelper-a77f546d.json",
+          "abiSha256": "a77f546db426aac4ce1d23f4a6d71031695c6b31ed651b12d421fa35eaf19e6a",
+          "transactionHash": "0xb0ac1ff5422f5af49d46c7fc226fd2ac5afeb79e89799dc661805a4bd9120564",
+          "blockNumber": 25959249
+        },
+        "QuoterV2": {
+          "address": "0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be",
+          "abi": "abis/deployed/QuoterV2-1e478f28.json",
+          "abiSha256": "1e478f280996c05859c305b4d9c6a2df56c4b3bd84be29e788a381292b953d31",
+          "transactionHash": "0x630de169cba10e2108f84913341f745faa644b7018d79dfd31d9482fb2af6972",
+          "blockNumber": 25958765
+        },
+        "SugarHelper": {
+          "address": "0x0B8aD16647d392F5f34A88097Cb01d2f074334AE",
+          "abi": "abis/deployed/SugarHelper-7d78a37a.json",
+          "abiSha256": "7d78a37a9bc8583bc3c73fd64572009915f405705f083a5e356c2b46aaefeb9a",
+          "transactionHash": "0x96b71d43e0935eee1d5f077e88fd4b58f966dee4bc24d322c509860265555363",
+          "blockNumber": 25959242
+        },
+        "SwapRouter": {
+          "address": "0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572",
+          "abi": "abis/deployed/SwapRouter-6723eb22.json",
+          "abiSha256": "6723eb22409036c418032c077d5889416fcb0cdb454600efb46c9a250137b11a",
+          "transactionHash": "0x676f8176477eab0857f0fb854ba534d4069626a883d0b6f3f9dbefebcc9777a8",
+          "blockNumber": 25958767
+        },
+        "TopazSlipstreamStateMulticall": {
+          "address": "0x0Dca13b1039277d82B27ADd86d06195B8E9BBfDb",
+          "abi": "abis/deployed/TopazSlipstreamStateMulticall-528c9eb2.json",
+          "abiSha256": "528c9eb2054e0b5a1a8076aafab480e251054d86534789bf04cfa92b28776c60",
+          "transactionHash": "0x2f19bd063a29b89c8a62abe97fe6d6abd19b537123b93a2a7b0587b09b4a2a48",
+          "blockNumber": 25959247
+        },
+        "UniversalRouter": {
+          "address": "0x606794d37991A426a189fD9FA8664D339A77f8ae",
+          "abi": "abis/deployed/UniversalRouter.json",
+          "transactionHash": "0x292d58b69f4cd791bd7a60b9c179177003dc644726a2da92eb8956107da5636c",
+          "blockNumber": 25958895,
+          "runtimeCodeHash": "0x4823f62b24dca58ea554465dd16b95b8a3b8981f458ccba0276318a532eb9d0a"
+        },
+        "Permit2": {
+          "address": "0x000000000022D473030F116dDEE9F6B43aC78BA3"
+        },
+        "Multicall3": {
+          "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
+          "abi": "abis/Multicall3.json"
+        }
+      }
+    },
+    {
+      "chainId": 5042,
+      "slug": "arc",
+      "name": "Arc",
+      "lzEid": 30417,
+      "role": "spoke",
+      "nativeSymbol": "USDC",
+      "nativeDecimals": 18,
+      "rpcUrl": "https://rpc.mainnet.arc.io",
+      "explorer": "https://arcscan.app",
+      "wrappedNative": null,
+      "gasToken": {
+        "address": "0x3600000000000000000000000000000000000000",
+        "decimals": 6
+      },
+      "nativeRouterLegs": false,
+      "contracts": {
+        "SpokeBudgetComposer": {
+          "address": "0x5DA6456fa2560071DD29871ca045908f98932865",
+          "abi": "abis/deployed/SpokeBudgetComposer-b6773a3c.json",
+          "abiSha256": "b6773a3c20589fe9a6f12cd545425614503854717e2843ba00d5bf9f37d2f43e",
+          "transactionHash": "0x0aa25ff46085d697af76f110a7c231173939d438e4903cb458f54cc30cca2d88",
+          "blockNumber": 21098359
+        },
+        "SpokeStakeComposer": {
+          "address": "0xbba1C3b415cF8212Cf3Ce11e726ab62125BDc6dB",
+          "abi": "abis/deployed/SpokeStakeComposer-54ed51ad.json",
+          "abiSha256": "54ed51ad3944a1127b7b4dc8085c8ef697eb0e897cad814aa6e04f6679ef3c60",
+          "transactionHash": "0x5b42f1a72daf16d340a4ad819a469f55ae25093974622f88c08d6e34b4707dad",
+          "blockNumber": 21098370
+        },
+        "XTopazOFT": {
+          "address": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "abi": "abis/deployed/XTopazOFT-7f2afbed.json",
+          "abiSha256": "7f2afbed13d9db0c7e8ae4f6e288082f9ae57f0a1c9bb45204c4a1bd2fb2c959",
+          "transactionHash": "0xad9c80beaf5b90b15b75084e49afaf9cdedc05beb129557f3568b4ee2d0c6fd9",
+          "blockNumber": 21097860
+        },
+        "FactoryRegistry": {
+          "address": "0x6f701F163a7372C27275e76Af21b6cF06ca6D498",
+          "abi": "abis/deployed/FactoryRegistry-75e428f0.json",
+          "abiSha256": "75e428f0259650c95358a52e3bc5a0a2cb72818c6cbca95b9430b430e181caf4",
+          "transactionHash": "0x2321143cf2d608aa1610b2cd799d10d39c60cefe20d067c32119f4411de37fa1",
+          "blockNumber": 21097953
+        },
+        "GaugeFactory": {
+          "address": "0x60E60B6D0B77f3Af83Fd6Ed35Db6D0664693E39A",
+          "abi": "abis/deployed/GaugeFactory-7a2a5e1a.json",
+          "abiSha256": "7a2a5e1a7c8dd7f4f59ebd366564c50ce38683af6520b917851e73f24f0e05fe",
+          "transactionHash": "0xef47313046aa0987ba52fddd96ec9492a81bafd5f0d390b109531bccbc3fe914",
+          "blockNumber": 21097930
+        },
+        "ManagedRewardsFactory": {
+          "address": "0xab2df5A1C8bB46a28D26a74c64eeAfFE89eD3714",
+          "abi": "abis/deployed/ManagedRewardsFactory-8dace021.json",
+          "abiSha256": "8dace0218671552ceb771a8152d5a93f805b2160d0b03c36c151fb7cfc826728",
+          "transactionHash": "0x6fde87db9026f8c02ccfc4f7fa0703813a548912fdc795e175b669fb11bd1771",
+          "blockNumber": 21097942
+        },
+        "Pool": {
+          "address": "0x8776BE6cd50BB78414c655bc8bF9e86A0989722F",
+          "abi": "abis/deployed/Pool-7a8ace0b.json",
+          "abiSha256": "7a8ace0be9c577fa0f476073d8ee05eaa08599822170c416c9d639af5509ae65",
+          "transactionHash": "0x3ef79ffaec3664c4f8318ebbeea234a76c07d32fd260c023c0efaca97f868372",
+          "blockNumber": 21097897
+        },
+        "PoolFactory": {
+          "address": "0x1E3aC31cF96b20619c913384C9bf6010A824fB95",
+          "abi": "abis/deployed/PoolFactory-4096928a.json",
+          "abiSha256": "4096928a6e95e14cb8313e9f9499f4a05034247d5bb54f33a8074b5d2541c622",
+          "transactionHash": "0xdd46b2815a91c5de3b56af97c7e2bf5188aa6d2cc8ab1adaf756dbf2eb00e452",
+          "blockNumber": 21097908
+        },
+        "ProtocolForwarder": {
+          "address": "0xcaFA164098cE984799413daA2Ee7579Eb9f471DF",
+          "abi": "abis/deployed/ProtocolForwarder-5b9de979.json",
+          "abiSha256": "5b9de979d87295aef6ddd9fb21e2a5ab90fc660b18d639e6051778fc95d9f568",
+          "transactionHash": "0x8927b911f836b93bcc71bfebcccb73a9e48443790bcc10cd2902efccfaa8eb38",
+          "blockNumber": 21097886
+        },
+        "Router": {
+          "address": "0x18226f64a850163C0f0ABA453653Cc206EaE99f3",
+          "abi": "abis/deployed/Router-ddffb82c.json",
+          "abiSha256": "ddffb82c97b8c59a1d3a854d04eeae8ae88cda19f4694b8e909bae8e369f110c",
+          "transactionHash": "0x610206d493483b1b3b07d87712370107fcc6a4e06e70da94a5de6aacc3ee510a",
+          "blockNumber": 21098019
+        },
+        "SpokeEmissionReceiver": {
+          "address": "0xb6286AaE59580F504471Bf5031A2Aa688C5aC140",
+          "abi": "abis/deployed/SpokeEmissionReceiver-37f32161.json",
+          "abiSha256": "37f321610f4e42175dc884355c5db09300bcd56c9748b27dab532db4187a394e",
+          "transactionHash": "0xeba988238b12ecb8c0b81d969bb7ed5c823b9bb6a5dabed0283ff104a5fac7c3",
+          "blockNumber": 21097997
+        },
+        "Voter": {
+          "address": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+          "abi": "abis/deployed/Voter-19456e5a.json",
+          "abiSha256": "19456e5ad60c62847d7fba696bb8acacc448e3c0a785506cd04354c86638419e",
+          "transactionHash": "0x3b83efc538450e1cf01c73cf577185ad3a3eb06b0ca939ee7a055ea3fad92a9a",
+          "blockNumber": 21097975
+        },
+        "VotingRewardsFactory": {
+          "address": "0x28e686ffA9CAF74411FBa0923dC3729CD513e3D4",
+          "abi": "abis/deployed/VotingRewardsFactory-2f196ac8.json",
+          "abiSha256": "2f196ac8ca0ed55c9434643889e53a05083a38c431467b93687cdb5bc71fe278",
+          "transactionHash": "0x469375b9e0ee88d71ddf42512b036095ad7b2f277bdba0722eccba54206b7bcb",
+          "blockNumber": 21097919
+        },
+        "XTopazVotingVault": {
+          "address": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+          "abi": "abis/deployed/XTopazVotingVault-67434da3.json",
+          "abiSha256": "67434da36ef08d957c3898ea33d439d4358296816a72a0dfe61b5ed76a5a8a48",
+          "transactionHash": "0x7d073174d46791b80923dac100319c4d15909d947e8cb0a5f0d19a48b703d939",
+          "blockNumber": 21097964
+        },
+        "CLFactory": {
+          "address": "0xaa5865dC3A60b25D305226d66fd573021f0D8fFB",
+          "abi": "abis/deployed/CLFactory-d0ad6e33.json",
+          "abiSha256": "d0ad6e33d1d28a3a3b6b4635374cca776baea71bc33cfdf83f639f4f8315db53",
+          "transactionHash": "0xeefb9106c824cdff65767b736596270a5a2fcdb469d41d89620e00f2fc157c93",
+          "blockNumber": 21098115
+        },
+        "CLGauge": {
+          "address": "0xE6ab7AA7cCe6C3e11E709408BD985828a98b6553",
+          "abi": "abis/deployed/CLGauge-58301f73.json",
+          "abiSha256": "58301f73812ff154c8964f6095c1254273194e2505b308ac3f5e4a362a25d16e",
+          "transactionHash": "0x4449dbba7031ca06ebcdbd333dccf36bd67174a29fb2131951a6a03619c89ed9",
+          "blockNumber": 21098126
+        },
+        "CLGaugeFactory": {
+          "address": "0xc99B3e03e8dE70318f705155a3195c18d6344dFE",
+          "abi": "abis/deployed/CLGaugeFactory-7c1194af.json",
+          "abiSha256": "7c1194aff80d3382cbbc66b9d1c501df9ef1fcbc47d88ffb1ce640c33a31f54c",
+          "transactionHash": "0xbcb1c6b308ac8957d03d9714ba089e302a46c7652555e6e66fb9f3573e6e73f9",
+          "blockNumber": 21098137
+        },
+        "CLInterfaceMulticall": {
+          "address": "0xc2f7F923CAd652038DbD5cb8acAd60BE0b840bf5",
+          "abi": "abis/deployed/CLInterfaceMulticall-e21ccbab.json",
+          "abiSha256": "e21ccbabd6e33b8b60829a3023ad0958d67f339bd9d0c10ac1f43d7cbe4a52ac",
+          "transactionHash": "0x41c712168a732b8009a1b430494aa0e36379c4c205c86003a9fa9f4879b2502c",
+          "blockNumber": 21098674
+        },
+        "CLPool": {
+          "address": "0x2DaA7cF731334b4Cd1c2E4E01E97Ca67F4B9C6AE",
+          "abi": "abis/deployed/CLPool-eef316ee.json",
+          "abiSha256": "eef316ee9ca00f24e857ce365c02d90bc845d0bf9a1c7689740a8578690766c8",
+          "transactionHash": "0xf3eaa8883502b1629f3c59bef4eb358e563cbf329e27fc39ee09208364ee243a",
+          "blockNumber": 21098104
+        },
+        "CustomSwapFeeModule": {
+          "address": "0x3Ae3642ECebB720e48Fe3F8fefF5F7B5C50F98f6",
+          "abi": "abis/deployed/CustomSwapFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x0704d61948c38b7b91cbfe696b8c092e00fc03c6357b47a224380c3d499cde5e",
+          "blockNumber": 21098251
+        },
+        "CustomUnstakedFeeModule": {
+          "address": "0xCe6BE50Cf7a6a868E5993Aaa505b905B31c011e0",
+          "abi": "abis/deployed/CustomUnstakedFeeModule-4d7df8e0.json",
+          "abiSha256": "4d7df8e0ffc627460a584a04ea9d5c2aa74992dcaabe2a1bfbb7b62e4bd1d6cc",
+          "transactionHash": "0x4938e815e72a0737aa29c040d34819338218d22575ad9a4fd53d7517fbc0ab4b",
+          "blockNumber": 21098264
+        },
+        "DynamicSwapFeeModule": {
+          "address": "0x8C29f85a151E16c94BC845D14A7A4Cd44345F168",
+          "abi": "abis/deployed/DynamicSwapFeeModule-2ee04b19.json",
+          "abiSha256": "2ee04b19d39bb2a575de08024c5e8ca7c3f999383865444543eb0833372d9977",
+          "transactionHash": "0x1d173cf59196123b709152cfc3fc1be4fbbf787957a4a90a88b4460644568df4",
+          "blockNumber": 21098642
+        },
+        "MixedRouteQuoterV1": {
+          "address": "0x39A344d192D1D34a6Bee24DCF11093e93Fbb3993",
+          "abi": "abis/deployed/MixedRouteQuoterV1-df3f80c3.json",
+          "abiSha256": "df3f80c33e8124da44cfa9ca0284d3a54dfc264eb3e44adda0a1911e50e27a08",
+          "transactionHash": "0xe1ee08f3aad1bc72a332b791fdc71422912e2c381361667a790529e89aeccc62",
+          "blockNumber": 21098318
+        },
+        "NFTDescriptor": {
+          "address": "0xf09d42Dbd9F867422339F13F40A936Fc54B28133",
+          "abi": "abis/deployed/NFTDescriptor-2c62783e.json",
+          "abiSha256": "2c62783e1db01046576162576571aef2344d6bc95edd5c041b99dd1550925cce",
+          "transactionHash": "0xd98707a4c8b17e5ade100431fdcfa38351353f5a5a81446a5b662e6765b475b4",
+          "blockNumber": 21098093
+        },
+        "NFTSVG": {
+          "address": "0x1328cfCcB9d670fa478f0D5249f41A38f23aF592",
+          "abi": "abis/deployed/NFTSVG-02770c5a.json",
+          "abiSha256": "02770c5a38df80a30f34937a76fa68e2c0ecc98016b0e1192f02ca969ec7b023",
+          "transactionHash": "0x6a1f8d6af58cb7f1bd7765c25a71ed2fb7665713bff028adceddd3a736c585f5",
+          "blockNumber": 21098082
+        },
+        "NonfungiblePositionManager": {
+          "address": "0x522bf4b5c9280BB6bB719f2CE7f514Dd63c8c0C5",
+          "abi": "abis/deployed/NonfungiblePositionManager-4f7e8ab1.json",
+          "abiSha256": "4f7e8ab13c8ed413fd92092acc6c6a6600fbaa8c329d81d0d511b76656871c03",
+          "transactionHash": "0x6807dfe771d33f944e07f5f86ed943a9aa79978d57fa8768145290f44066e9f2",
+          "blockNumber": 21098197
+        },
+        "NonfungibleTokenPositionDescriptor": {
+          "address": "0xB17cd823450ec44462399ED02f8c72Dce1Bf1D5f",
+          "abi": "abis/deployed/NonfungibleTokenPositionDescriptor-e5d817ef.json",
+          "abiSha256": "e5d817ef76323f6ad98ad3d314e698f4efbea4b1f1b5e91a1ef4226d4c63d404",
+          "transactionHash": "0xc47faf0fc877b42e3e7023f84f2470162248a3b8d3d4f9c5cdf16551149fd634",
+          "blockNumber": 21098186
+        },
+        "PositionBurnHelper": {
+          "address": "0x8Bc9B86eBCd30A724bf486536507B7f6bf1A5a46",
+          "abi": "abis/deployed/PositionBurnHelper-a77f546d.json",
+          "abiSha256": "a77f546db426aac4ce1d23f4a6d71031695c6b31ed651b12d421fa35eaf19e6a",
+          "transactionHash": "0x72a28e12f2fd11ed00c7bb78e4b38b0214c7435662fddeb39f0bbd119d592713",
+          "blockNumber": 21098664
+        },
+        "QuoterV2": {
+          "address": "0xA9Cd3aC90513663197E7Fd6c932f63f0C40701be",
+          "abi": "abis/deployed/QuoterV2-1e478f28.json",
+          "abiSha256": "1e478f280996c05859c305b4d9c6a2df56c4b3bd84be29e788a381292b953d31",
+          "transactionHash": "0x8edb0a4133a569c95b5d887b8a988264a5d7738848c61dc11cb369e73d9088f5",
+          "blockNumber": 21098329
+        },
+        "SugarHelper": {
+          "address": "0x0B8aD16647d392F5f34A88097Cb01d2f074334AE",
+          "abi": "abis/deployed/SugarHelper-7d78a37a.json",
+          "abiSha256": "7d78a37a9bc8583bc3c73fd64572009915f405705f083a5e356c2b46aaefeb9a",
+          "transactionHash": "0xa78b0a9ea5e5f3222f7d2361cdfcd5f1eb3669f1b0f97759212d1368b83f7f9e",
+          "blockNumber": 21098631
+        },
+        "SwapRouter": {
+          "address": "0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572",
+          "abi": "abis/deployed/SwapRouter-6723eb22.json",
+          "abiSha256": "6723eb22409036c418032c077d5889416fcb0cdb454600efb46c9a250137b11a",
+          "transactionHash": "0xa40d422e00a762142f91dc4f1e2d4c2f0317b4ae277dedf57c2bfd7a9ad48ef1",
+          "blockNumber": 21098341
+        },
+        "TopazSlipstreamStateMulticall": {
+          "address": "0x0Dca13b1039277d82B27ADd86d06195B8E9BBfDb",
+          "abi": "abis/deployed/TopazSlipstreamStateMulticall-528c9eb2.json",
+          "abiSha256": "528c9eb2054e0b5a1a8076aafab480e251054d86534789bf04cfa92b28776c60",
+          "transactionHash": "0x9fd886ee1002c364c4b4d164b1eb3635bedb1750f726051203e8914d0870ef0b",
+          "blockNumber": 21098653
+        },
+        "UniversalRouter": {
+          "address": "0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348",
+          "abi": "abis/deployed/UniversalRouter.json",
+          "transactionHash": "0x2498e94a1a368097ed3e183668f6fab8cf8290bb2001c59c5fbf5eeaccab742b",
+          "blockNumber": 21113580,
+          "runtimeCodeHash": "0x147aec591fe590b9fc4f1ade5c29803280dbccd74a78153590ea354da6d6e34e"
+        },
+        "Permit2": {
+          "address": "0x000000000022D473030F116dDEE9F6B43aC78BA3"
+        },
+        "Multicall3": {
+          "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
+          "abi": "abis/Multicall3.json"
+        }
+      }
+    }
+  ]
+}

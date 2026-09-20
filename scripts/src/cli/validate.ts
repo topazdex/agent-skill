@@ -30,11 +30,9 @@ const SELF_FILE = fileURLToPath(import.meta.url);
 const SCRIPTS_DIR = path.resolve(path.dirname(SELF_FILE), "../..");
 const REPO_ROOT = path.resolve(SCRIPTS_DIR, "..");
 
-// Git-tracked files. The validator only inspects files git actually owns —
-// untracked artifacts (node_modules, local .env, build output) are ignored
-// regardless of where they sit on disk.
+// Include new skill files before staging, but exclude ignored dependencies, env files and build artifacts.
 const TRACKED_FILES: Set<string> = (() => {
-  const out = execSync("git ls-files", { cwd: REPO_ROOT, encoding: "utf8" });
+  const out = execSync("git ls-files --cached --others --exclude-standard", { cwd: REPO_ROOT, encoding: "utf8" });
   return new Set(
     out
       .split("\n")

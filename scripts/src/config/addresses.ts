@@ -39,14 +39,14 @@ export const ADDR = {
   SwapRouter: "0x9B63CA87919617d042A89663492dB3c8686e0CaE",
   QuoterV2: "0x7CCB89bB9BdEF68688F39a2c22d249fD1D9759f1",
   MixedRouteQuoterV1: "0x47c3570b90e7234FE695Ad5F1bE69E21fe1a9ee2",
-  NonfungibleTokenPositionDescriptor: "0xBa4C4f5Ca809C21286ff1a872b3c0CFb57AfE904",
+  NonfungibleTokenPositionDescriptor: "0x239BD25E86e4A3B931B1C6Cf7849C27cA9f0498A",
   NonfungibleTokenPositionDescriptorV1: "0x81aCc35240D19948a56b8b68BcC8706F90baBAb5", // legacy, archived
   NFTDescriptor: "0x50f9756f631266686b9A7EBDF55998dB3dA5ca0a", // linked library
   NFTSVG: "0x21C9257dFCdf04154D34dF5A2204B9402Ef31d9a", // linked library
   CustomSwapFeeModule: "0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2",
   CustomUnstakedFeeModule: "0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582",
   DynamicSwapFeeModule: "0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541",
-  PositionBurnHelper: "0x8EA90c6711bcA4203C689bF0dd6f08E43377e3C5", // bulk-burns the caller's empty CL position NFTs
+  PositionBurnHelper: "0x2764db7bca0ccf98a1611f36879ebffd06ffc02b", // bulk-burns the caller's empty CL position NFTs
 
   // Relays — automated reward managers for managed veTOPAZ (mveTOPAZ). Infra
   // (factories / registries / keeper) plus the two live BSC relays. Each relay owns a
@@ -80,7 +80,7 @@ export const FEE_TO_TICK_SPACING: Record<number, number> = Object.fromEntries(
 // All enabled tick spacings (mirrors CLFactory init)
 export const TICK_SPACINGS = [1, 50, 100, 200, 2000] as const;
 
-// v2 default fees (bps-style, where fee/10000 = bps; e.g. 30 = 0.30%)
+// v2 fees are basis points; fee / 10000 is the fractional rate (30 = 0.30%).
 export const V2_DEFAULT_VOLATILE_FEE = 30;
 export const V2_DEFAULT_STABLE_FEE = 5;
 export const V2_MAX_FEE = 300;

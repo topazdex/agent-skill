@@ -26,6 +26,7 @@ beforeEach(() => {
     return {
       ok: true,
       json: async () => ({
+        chainId: req.chainId,
         blockNumber: 123,
         tradeType: "exactIn",
         amount: "100",
@@ -166,7 +167,7 @@ describe("signature-free Topaz swap batch", () => {
     expect(swap.commands).toBe("0x0800000c");
     expect(coder.decode(["address", "uint256"], swap.inputs[3])[0]).toBe(PAYER);
   });
-  it("rejects other chains, zero payer and third-party recipients", async () => {
+  it("rejects unsupported chains, zero payer and third-party recipients", async () => {
     const request = {
       tokenIn: TOPAZ_WBNB,
       tokenOut: OUT,
@@ -174,7 +175,7 @@ describe("signature-free Topaz swap batch", () => {
       payer: PAYER,
     };
     await expect(
-      buildTopazSwapBatch({ ...request, chainId: 1 }),
+      buildTopazSwapBatch({ ...request, chainId: 97 }),
     ).rejects.toThrow();
     await expect(
       buildTopazSwapBatch({

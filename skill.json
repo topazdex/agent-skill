@@ -2,8 +2,8 @@
   "schema_version": "1.0",
   "name": "topaz",
   "display_name": "Topaz Dex Agent Skill",
-  "version": "3.0.2",
-  "description": "Topaz Dex on BNB Chain: smart order router quotes, signature-free Permit2 swap batches, CL/v2 liquidity, gauges, veTOPAZ, voting, bribes, relays and analytics.",
+  "version": "3.1.0",
+  "description": "Topaz across BNB, Robinhood, Base, Ethereum and Arc: contracts and ABIs, swaps, liquidity, xTOPAZ bridging, vault entry/redemption, spoke voting, rewards and analytics.",
   "homepage": "https://topazdex.com",
   "agents_page": "https://topazdex.com/agents",
   "repository": "https://github.com/topazdex/agent-skill",
@@ -25,7 +25,7 @@
       "claude-code-project": ".claude/skills/topaz",
       "hermes": "~/.hermes/skills/defi/topaz",
       "opencode": "~/.config/opencode/skills/topaz",
-      "codex-or-generic": "any path \u2014 point the agent at it explicitly"
+      "codex-or-generic": "any path — point the agent at it explicitly"
     }
   },
   "consumption_modes": [
@@ -60,9 +60,10 @@
       "cd scripts && yarn validate",
       "cd scripts && yarn build",
       "cd scripts && yarn test",
-      "cd scripts && yarn smoke"
+      "cd scripts && yarn smoke",
+      "cd scripts && yarn verify:deployments"
     ],
-    "notes": "yarn smoke is a live read against BSC mainnet \u2014 requires BSC_RPC_URL in scripts/.env (no PRIVATE_KEY needed for reads)."
+    "notes": "Legacy smoke is BNB-only. verify:deployments checks all five RPC networks without a signer; TOPAZ_RPC_<chainId> overrides a public RPC."
   },
   "compatibility": {
     "agents": [
@@ -82,8 +83,38 @@
   },
   "chains": [
     {
-      "name": "BNB Smart Chain",
+      "name": "BNB Chain",
       "chain_id": 56,
+      "lz_eid": 30102,
+      "role": "hub",
+      "network": "mainnet"
+    },
+    {
+      "name": "Robinhood Chain",
+      "chain_id": 4663,
+      "lz_eid": 30416,
+      "role": "spoke",
+      "network": "mainnet"
+    },
+    {
+      "name": "Base",
+      "chain_id": 8453,
+      "lz_eid": 30184,
+      "role": "spoke",
+      "network": "mainnet"
+    },
+    {
+      "name": "Ethereum",
+      "chain_id": 1,
+      "lz_eid": 30101,
+      "role": "spoke",
+      "network": "mainnet"
+    },
+    {
+      "name": "Arc",
+      "chain_id": 5042,
+      "lz_eid": 30417,
+      "role": "spoke",
       "network": "mainnet"
     }
   ],
@@ -92,10 +123,14 @@
     "human": "README.md",
     "developer": "developers/DEVELOPERS.md",
     "developer_id_connect": "developers/topaz-id-connect.md",
-    "operator_scripts": "scripts/README.md"
+    "operator_scripts": "scripts/README.md",
+    "multichain": "references/multichain.md",
+    "deployments": "references/deployments.json",
+    "website": "references/website.md",
+    "multichain_developer": "developers/multichain-integration.md"
   },
   "topaz_id": {
-    "description": "Topaz ID is the Topaz ecosystem account/identity layer \u2014 a self-custodial BNB Chain global wallet. The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
+    "description": "Topaz ID is the Topaz ecosystem account/identity layer — a self-custodial BNB Chain global wallet. The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
     "profile_host": "https://id.topazdex.com",
     "npm": "https://www.npmjs.com/package/@topazdex/id-connect",
     "package": "@topazdex/id-connect",
@@ -139,6 +174,13 @@
     "topaz-id",
     "id-connect",
     "wallet-login",
-    "identity"
+    "identity",
+    "multichain",
+    "xtopaz",
+    "layerzero",
+    "base",
+    "ethereum",
+    "robinhood-chain",
+    "arc"
   ]
 }

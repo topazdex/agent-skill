@@ -1,6 +1,8 @@
 # Topaz skill — scripts
 
-TypeScript + ethers v6 helpers for interacting with Topaz Dex on BNB Chain Mainnet. Used by the Topaz Claude Code skill, but invokable directly.
+TypeScript + ethers v6 helpers for Topaz. The low-level quote/swap batch builder accepts all five chain IDs; `config/deployments.ts` and `lib/multichain.ts` supply chain-bound contracts and ABIs. See [multichain integration](../developers/multichain-integration.md). Legacy CLIs, human-unit wrappers, and other read/write helpers remain **BNB-only**. Never repoint their BSC RPC to a spoke.
+
+Read-only five-chain verification: `yarn verify:deployments` (optionally followed by chain IDs). Override RPCs with `TOPAZ_RPC_<chainId>`. No private key is used.
 
 ## Setup
 

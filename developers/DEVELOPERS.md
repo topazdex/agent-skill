@@ -2,7 +2,7 @@
 
 This guide is the builder-facing entry point for the Topaz skill repository. `SKILL.md` teaches agents how to operate Topaz; this directory explains how developers can integrate Topaz into applications, dashboards, bots, and analytics pipelines.
 
-Topaz Dex runs on **BNB Chain mainnet (chain id 56)** and combines:
+Topaz Dex runs on **BNB (56), Robinhood (4663), Base (8453), Ethereum (1) and Arc (5042)**. Start with [multichain integration](multichain-integration.md) for chain-specific contracts, ABIs, swaps, bridging and spoke voting. The older examples below use the BNB helper layer. The BNB core combines:
 
 - **v2 pools**: Solidly-style volatile and stable AMMs.
 - **v3 / Slipstream pools**: concentrated liquidity pools keyed by tick spacing.
@@ -164,7 +164,7 @@ See `developers/user-positions.md` and `developers/subgraph-recipes.md`.
 
 - Always quote before building a write transaction.
 - Always show expected output and minimum output after slippage.
-- Never default `amountOutMin` or liquidity minimums to zero.
+- Never default swap protection to zero. Compute CL liquidity minima from the intended range and price tolerance; one side may legitimately reach zero at a boundary.
 - Verify a pool exists before suggesting a route.
 - Make approvals explicit and spender-specific.
 - For BNB-in v3 swaps, set `value = amountIn` and use WBNB as `tokenIn`.
@@ -176,7 +176,7 @@ See `developers/user-positions.md` and `developers/subgraph-recipes.md`.
 
 - BSC testnet deployments.
 - Governance proposal authoring.
-- Deploying new protocol contracts.
+- Deploying replacement protocol infrastructure. Permissionless pools and eligible gauges are covered in [pools and gauges](pools-and-gauges.md).
 - Custodial key management.
 - Production-grade hosted routing infrastructure.
 

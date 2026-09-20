@@ -1,8 +1,10 @@
 # Analytics — Stats API
 
+Scope: **legacy BNB analytics only**. For all-five-chain markets, accounts, xTOPAZ and bridge observations, use [the multichain API guide](analytics-multichain.md). Never relabel a legacy response as another chain.
+
 The Topaz Stats API is a public REST endpoint that serves pre-computed protocol metrics, pool & gauge snapshots, **gauge APRs**, **historical time-series**, token prices, epoch/voting summaries, bribe markets, foundation activity, and system health. It snapshots every 15 minutes and caches responses at 60s ISR.
 
-**This is the easiest, fastest, and most accurate way to read any data the API exposes.** Prefer it over the subgraph or on-chain calls for anything in the catalog below; fall back to subgraph/on-chain only for data the API does not serve (see the decision table).
+Use these snapshots for historical BNB analytics, not transaction preconditions. For current balances, permissions, voting gates and execution, verify on-chain state; cached API data can lag.
 
 **Base URL:** `https://www.topazdex.com/api/stats`
 

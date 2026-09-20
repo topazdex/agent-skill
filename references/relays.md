@@ -25,6 +25,16 @@ New relays may be deployed over time. The two above are the current live BSC set
 
 ## Depositor operations
 
+### Determine custody first: direct owner or RelayManager beneficiary
+
+The direct Voter/FreeManagedReward examples below assume the caller owns or is approved for the veNFT. BNB also has **RelayManager** at `0x243846421d3c9bf34a3db4982344a23cf171397c`; its [full ABI](abis/deployed/RelayManager.json) and chain-bound contract entry are bundled in [deployments.json](deployments.json). A beneficiary is not necessarily the escrow's NFT owner.
+
+Read `ve.ownerOf(id)` and, for manager-held NFTs, `manager.beneficiaryOf(id)`, `activeTokenIdsOf(account)` and `positionSummary(account)`. The summary includes principal, compounded amount, claimable USDT, eligibility/next time and deposit/exit gates. Verify the manager's `ve`, `voter`, `topaz`, `usdt`, `mTokenId` and reward bindings live. Never build direct owner-only calls for an NFT actually held by the manager.
+
+The manager exposes `depositTopazFor(beneficiary,amount)` (TOPAZ allowance to manager), `depositVeTopazFor(beneficiary,id)` (NFT approval to manager), `claimUsdt(recipient)`, `compound(expectedZapper,minTopazOut,deadline)` and `exit(recipient)`. Use the deployed ABI, current `minDeposit`, `maxTokenIdsPerUser`, `depositsPaused` and position eligibility, then simulate the precise call as the real caller. Compounding must pin the current approved zapper and a quote-derived minimum/deadline. Exit returns a veNFT under managed-withdrawal lock rules, not immediately liquid TOPAZ. Do not transfer NFTs to the manager outside its entry method.
+
+The original NFT can be merged/consolidated; use events and current active IDs rather than retaining the original ID as a permanent claim handle. Historical/closed beneficiary relationships carry no current principal or claim rights. This BNB custody manager is separate from both the xTOPAZ hub vault and spoke voting positions. Existing relay builders below cover direct NFT custody only.
+
 ### Deposit a lock into a relay
 
 ```solidity

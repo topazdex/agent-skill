@@ -1,6 +1,6 @@
 # Topaz SDK Layer
 
-This directory documents the SDK-facing layer for developers building on Topaz.
+This directory documents the SDK-facing layer for developers building on Topaz. Start with [multichain integration](../developers/multichain-integration.md) for all five chains. The older ADDR/TOKENS, human-unit builders and protocol read/write helpers below are BNB-only; low-level `fetchTopazQuote` / `buildTopazSwapBatch` and deployment helpers accept explicit chain IDs.
 
 The current implementation lives in the existing scripts package to avoid duplicating protocol logic:
 

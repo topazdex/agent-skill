@@ -1,6 +1,6 @@
 # Topaz — Mainnet Addresses (BNB Chain, id 56)
 
-All addresses below are the **only** authoritative on-chain identifiers for Topaz Dex on BNB Mainnet. Within this skill, the same set is mirrored in `scripts/src/config/addresses.ts` and `README.md`; the validator (`yarn validate` in `scripts/`) enforces parity.
+This is the legacy BNB address reference. The [five-chain catalog](deployments.md) adds the hub extension, all four spoke deployments and ABI variants. Within the legacy BNB set, values are mirrored in `scripts/src/config/addresses.ts` and `README.md`; the validator enforces parity. Recheck current chain/code/wiring before execution.
 
 ## Chain
 
@@ -58,14 +58,14 @@ Governance (`EpochGovernor`, `ProtocolGovernor`) is intentionally **not** docume
 | SwapRouter | `0x9B63CA87919617d042A89663492dB3c8686e0CaE` | v3 `exactInput[Single]`, `exactOutput[Single]`, `multicall` |
 | QuoterV2 | `0x7CCB89bB9BdEF68688F39a2c22d249fD1D9759f1` | Quote v3 swaps (revert-and-decode pattern — non-view) |
 | MixedRouteQuoterV1 | `0x47c3570b90e7234FE695Ad5F1bE69E21fe1a9ee2` | Quote routes that mix v2 (stable/volatile) and v3 hops |
-| NonfungibleTokenPositionDescriptor | `0xBa4C4f5Ca809C21286ff1a872b3c0CFb57AfE904` | NFT URI generator |
+| NonfungibleTokenPositionDescriptor | `0x239BD25E86e4A3B931B1C6Cf7849C27cA9f0498A` | NFT URI generator |
 | NonfungibleTokenPositionDescriptor_V1 | `0x81aCc35240D19948a56b8b68BcC8706F90baBAb5` | Legacy descriptor (archived) |
 | NFTDescriptor (library) | `0x50f9756f631266686b9A7EBDF55998dB3dA5ca0a` | |
 | NFTSVG (library) | `0x21C9257dFCdf04154D34dF5A2204B9402Ef31d9a` | |
 | CustomSwapFeeModule | `0xA0462a52af4f8cbF7766Efbba75355B30b6BCCe2` | Per-pool flat swap fee override (MAX_FEE = 30,000 pips = 3%) |
 | CustomUnstakedFeeModule | `0x3bad7F96cd1b51CE86e12C42541Ac7d559A78582` | Unstaked-position fee override (MAX_FEE = 500,000 pips = 50%; default 100,000 = 10%) |
 | DynamicSwapFeeModule | `0x656cf5d2f1A70177E011e2c27DeafBeE4C7B0541` | TWAP-volatility-scaled fees |
-| PositionBurnHelper | `0x8EA90c6711bcA4203C689bF0dd6f08E43377e3C5` | Bulk-burns the caller's empty/dead CL position NFTs; bound to the NonfungiblePositionManager |
+| PositionBurnHelper | `0x2764db7bca0ccf98a1611f36879ebffd06ffc02b` | Bulk-burns the caller's empty/dead CL position NFTs; bound to the NonfungiblePositionManager |
 
 ## Relays (mveTOPAZ reward automation)
 
