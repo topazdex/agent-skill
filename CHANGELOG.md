@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [3.2.1] — 2026-09-21
+
 - Name every network explicitly: BNB Chain is no longer called "mainnet" anywhere in the skill, since Topaz now runs on five networks. "Live network" replaces the generic "mainnet-only" phrasing. `CHAIN_NAME` in `scripts/src/config/chain.ts` is now `bnb-chain`.
 
 
@@ -564,7 +567,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.2.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.2.1...HEAD
+[3.2.1]: https://github.com/topazdex/agent-skill/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/topazdex/agent-skill/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/topazdex/agent-skill/compare/v3.0.3...v3.1.0
 [3.0.3]: https://github.com/topazdex/agent-skill/compare/v3.0.2...v3.0.3
