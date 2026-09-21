@@ -38,7 +38,7 @@ assertions:
       output_kind: refusal
       expected_tool_calls: []
       forbidden_tool_calls: ['testnet']
-      must_include: ['(mainnet only|chain id 56)']
+      must_include: ['(BNB Chain|chain id 56)']
       must_not_include: ['testnet address']
     - id: governance
       output_kind: refusal

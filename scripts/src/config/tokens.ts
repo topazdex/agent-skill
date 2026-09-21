@@ -1,4 +1,4 @@
-// Common BSC mainnet tokens used on Topaz. Symbol/name/decimals were
+// Common BNB Chain tokens used on Topaz. Symbol/name/decimals were
 // cross-verified against the Topaz v2/v3 Goldsky subgraphs and on-chain
 // IERC20 calls. To refresh after a whitelist change, query the subgraph
 // for each address (see `references/analytics-subgraph.md`).

@@ -4,10 +4,10 @@ This recipe is for browser dApps using wallet libraries such as wagmi, viem, eth
 
 ## Chain config
 
-Topaz is on BNB Chain mainnet:
+Topaz's hub is BNB Chain (chain id 56):
 
 ```ts
-export const bnbMainnet = {
+export const bnbChain = {
   id: 56,
   name: "BNB Smart Chain",
   nativeCurrency: { name: "BNB", symbol: "BNB", decimals: 18 },

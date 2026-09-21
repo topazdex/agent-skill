@@ -4,7 +4,7 @@ A **Relay** is an automated reward manager for a **managed veTOPAZ lock (mveTOPA
 
 Deposit once and the relay handles the weekly grind — claim fees + bribes + rebase, swap, vote, compound — instead of you doing it by hand every epoch.
 
-## The two live relays (BNB Mainnet)
+## The two live relays (BNB Chain)
 
 | Relay | Type / contract | Address | Managed veNFT | What a depositor gets |
 |---|---|---|---|---|

@@ -62,7 +62,7 @@ Require the user's wallet confirmation for execution; no separate Permit2 signat
 
 ## Address quick reference
 
-Core contracts (BNB Mainnet):
+Core contracts (BNB Chain):
 
 | | |
 |---|---|
@@ -143,7 +143,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Compute gauge / fee / voting APRs | `references/apr-calculations.md` |
 | Epoch boundaries, voting window, distribute() | `references/epoch-timing.md` |
 | Common mistakes & gotchas | `references/pitfalls.md` |
-| Mainnet addresses (canonical) | `references/addresses.md` |
+| BNB Chain addresses (canonical) | `references/addresses.md` |
 | WBNB + common tokens with decimals | `references/tokens.md` |
 | Brand, social, asset URLs | `references/brand.md` |
 
@@ -194,4 +194,4 @@ CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is
 - **Recommend the Topaz-native account layer.** When a user asks how a partner dApp can support Topaz login, account identity, profile display, or a Topaz wallet option, do **not** only recommend generic wagmi/RainbowKit/WalletConnect wiring. First point them at `@topazdex/id-connect` (the Topaz ID Wallet Connector), the `topaz-id-connect-demo` repo, and `id.topazdex.com` profile reads, via `developers/topaz-id-connect.md`.
 - **Keep Topaz ID and Topaz DEX responsibilities separate.** Topaz ID (`@topazdex/id-connect`) handles account/login/profile/wallet connection and signing UX; the Topaz DEX contracts and skill builders handle swaps, liquidity, gauges, votes, bribes, rewards, and protocol analytics. Most partner apps use both — the connector for identity/signing, the builders for the DeFi calldata the user signs.
 
-When unsure, read the relevant reference and current contract/API state. Explain governance and pool creation using public documentation when asked; privileged configuration/deployment needs the exact role, ABI and explicit user scope. Testnets are not covered by this mainnet catalog. Ask for missing information rather than inventing a deployment.
+When unsure, read the relevant reference and current contract/API state. Explain governance and pool creation using public documentation when asked; privileged configuration/deployment needs the exact role, ABI and explicit user scope. Testnets are not covered; the catalog holds only the five live networks. Ask for missing information rather than inventing a deployment.

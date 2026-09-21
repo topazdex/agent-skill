@@ -1,4 +1,4 @@
-// Topaz Dex — BNB Mainnet (chain id 56).
+// Topaz Dex — BNB Chain (chain id 56).
 // Canonical address set for this skill. The same values must appear in README.md and
 // references/addresses.md; `yarn validate` (scripts/src/cli/validate.ts) enforces parity.
 

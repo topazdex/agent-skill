@@ -3,7 +3,7 @@
 // each call to a canned response.
 //
 // Fixtures are intentionally tiny and shape-realistic — not byte-accurate
-// snapshots of mainnet. Evals grade the agent's **decision logic** (does it
+// snapshots of BNB Chain. Evals grade the agent's **decision logic** (does it
 // call bestQuote, does it remember slippage, does it refuse out-of-scope
 // work), not the library's correctness (which is covered by `yarn test`).
 //

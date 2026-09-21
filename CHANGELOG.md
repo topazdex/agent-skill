@@ -12,6 +12,8 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+- Name every network explicitly: BNB Chain is no longer called "mainnet" anywhere in the skill, since Topaz now runs on five networks. "Live network" replaces the generic "mainnet-only" phrasing. `CHAIN_NAME` in `scripts/src/config/chain.ts` is now `bnb-chain`.
+
 
 ## [3.2.0] — 2026-09-21
 

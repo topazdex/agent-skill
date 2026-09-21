@@ -1,7 +1,7 @@
 // Topaz Relays — automated reward managers for managed veTOPAZ (mveTOPAZ).
 // A managed veNFT aggregates many depositors' voting power into one position; a Relay
 // harvests that position's rewards each epoch and either compounds them back into the
-// lock or redistributes them to depositors. Two relays are live on BNB Mainnet.
+// lock or redistributes them to depositors. Two relays are live on BNB Chain.
 //
 // Addresses live in `addresses.ts` (parity-checked); this file carries the non-address
 // metadata (managed-veNFT id, payout token, claim semantics) the builders need.

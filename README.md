@@ -2,7 +2,7 @@
 
 Agent skill package for **Topaz Dex** on **BNB Chain, Robinhood Chain, Base, Ethereum and Arc**. Covers v2/Slipstream markets, chain-specific deployments and ABIs, swaps, liquidity, gauges, BNB veTOPAZ, xTOPAZ entry/redemption and bridging, spoke voting, rewards, analytics and website navigation.
 
-Everything here is mainnet-only. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Legacy BNB helpers are explicitly scoped; low-level quote/swap batch and deployment helpers accept a chain ID. Governance information is linked; privileged changes are not ordinary user actions.
+Everything here targets the live networks only; there are no testnet deployments. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Legacy BNB helpers are explicitly scoped; low-level quote/swap batch and deployment helpers accept a chain ID. Governance information is linked; privileged changes are not ordinary user actions.
 
 **Current version:** `3.2.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
@@ -106,7 +106,7 @@ cd <dest>/scripts
 yarn validate    # static checks: frontmatter, links, addresses, checksums, manifest parity, ...
 yarn build       # type-check (tsc --noEmit)
 yarn test        # 173 unit tests (vitest, no RPC)
-yarn smoke       # live read against BSC mainnet — requires BSC_RPC_URL
+yarn smoke       # live read against BNB Chain — requires BSC_RPC_URL
 ```
 
 CI runs `validate` + `build` + `test` on every PR. See `.github/workflows/validate.yml`.
@@ -130,7 +130,7 @@ The Topaz website auto-mirrors anything that lands on `main` via Next.js ISR wit
 - **For partner wallet/account integrations:** start at `developers/topaz-id-connect.md` for `@topazdex/id-connect`, "Connect with Topaz ID", Topaz ID profile display, and demo-app guidance.
 - **For humans doing ops:** address tables below, deeper docs under `references/`, runnable code under `scripts/`.
 
-## Contract addresses (BNB Mainnet, chain id 56)
+## Contract addresses (BNB Chain, chain id 56)
 
 ### Core / v2 (`topaz-contracts`)
 
@@ -317,7 +317,7 @@ Agent-facing operator layer (read + write):
 - [x] `scripts/` CLIs: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe` — each backed by a typed library function in `scripts/src/read/` or `scripts/src/write/`.
 - [x] Single canonical address table (`scripts/src/config/addresses.ts` ↔ `references/addresses.md` ↔ this README).
 - [x] FS-loaded ABIs out of `references/abis/` so docs and runtime stay in sync.
-- [x] `yarn smoke` end-to-end live read against mainnet.
+- [x] `yarn smoke` end-to-end live read against BNB Chain.
 
 Developer/builder layer (added on this branch):
 

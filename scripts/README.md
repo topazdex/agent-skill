@@ -19,7 +19,7 @@ Requires Node ≥ 20. Uses [`tsx`](https://www.npmjs.com/package/tsx) — no com
 ```
 src/
 ├── config/
-│   ├── addresses.ts    # All BNB Mainnet contract addresses
+│   ├── addresses.ts    # All BNB Chain contract addresses
 │   ├── chain.ts        # Chain id 56, RPC defaults
 │   └── tokens.ts       # WBNB / TOPAZ / common BSC tokens
 ├── lib/

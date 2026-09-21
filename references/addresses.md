@@ -1,4 +1,4 @@
-# Topaz — Mainnet Addresses (BNB Chain, id 56)
+# Topaz — BNB Chain Addresses (chain id 56)
 
 This is the legacy BNB address reference. The [five-chain catalog](deployments.md) adds the hub extension, all four spoke deployments and ABI variants. Within the legacy BNB set, values are mirrored in `scripts/src/config/addresses.ts` and `README.md`; the validator enforces parity. Recheck current chain/code/wiring before execution.
 
@@ -6,7 +6,7 @@ This is the legacy BNB address reference. The [five-chain catalog](deployments.m
 
 | | |
 |---|---|
-| Chain | BNB Smart Chain Mainnet |
+| Chain | BNB Chain (BNB Smart Chain) |
 | Chain ID | 56 |
 | Default public RPC | `https://bsc-dataseed.binance.org`, `https://bsc-rpc.publicnode.com`, `https://1rpc.io/bnb` |
 | Block explorer | https://bscscan.com |

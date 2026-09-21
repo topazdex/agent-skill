@@ -1,5 +1,5 @@
 export const CHAIN_ID = 56;
-export const CHAIN_NAME = "bsc-mainnet";
+export const CHAIN_NAME = "bnb-chain";
 export const NATIVE_SYMBOL = "BNB";
 
 export const DEFAULT_RPC = "https://bsc-rpc.publicnode.com";
