@@ -183,5 +183,41 @@
     "ethereum",
     "robinhood-chain",
     "arc"
-  ]
+  ],
+  "analytics_api": {
+    "description": "Public multichain analytics. Preserve chain identity, source timestamps, rolling windows and partial coverage.",
+    "base_url": "https://api.topazdex.com/v1",
+    "openapi": "https://api.topazdex.com/openapi.json",
+    "docs": "https://api.topazdex.com/docs",
+    "catalog": "https://www.topazdex.com/.well-known/api-catalog",
+    "endpoints": {
+      "chains": "https://api.topazdex.com/v1/chains",
+      "protocol": "https://api.topazdex.com/v1/protocol",
+      "protocol_history": "https://api.topazdex.com/v1/protocol/history",
+      "protocol_daily": "https://api.topazdex.com/v1/protocol/daily?alignment=utc",
+      "pools": "https://api.topazdex.com/v1/pools",
+      "pool_detail": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}",
+      "pool_history": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}/history",
+      "tokens": "https://api.topazdex.com/v1/tokens",
+      "token_detail": "https://api.topazdex.com/v1/tokens/{chainId}/{tokenAddress}",
+      "token_price_history": "https://api.topazdex.com/v1/tokens/{chainId}/{tokenAddress}/price-history",
+      "gauges": "https://api.topazdex.com/v1/gauges",
+      "gauge_rewards": "https://api.topazdex.com/v1/gauges/{chainId}/{gaugeAddress}/rewards",
+      "bribes": "https://api.topazdex.com/v1/bribes",
+      "bribe_markets": "https://api.topazdex.com/v1/markets/bribes",
+      "votes": "https://api.topazdex.com/v1/votes",
+      "epochs": "https://api.topazdex.com/v1/epochs",
+      "health": "https://api.topazdex.com/v1/health/chains"
+    },
+    "historical_reports": {
+      "description": "Separately dated Topaz Stats reports without a new API equivalent; unaffected by network filters. Multichain lifetime totals are coming.",
+      "endpoints": {
+        "lifetime_totals": "https://api.topazdex.com/api/stats/protocol",
+        "foundation": "https://api.topazdex.com/api/stats/foundation",
+        "reported_supply": "https://api.topazdex.com/api/stats/topaz",
+        "bnb_escrow": "https://api.topazdex.com/api/stats/ve",
+        "bnb_fee_settings": "https://api.topazdex.com/api/stats/live/dynamic-fees"
+      }
+    }
+  }
 }

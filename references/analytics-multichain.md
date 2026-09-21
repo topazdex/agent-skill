@@ -42,3 +42,9 @@ For post-transaction portfolio refresh, the API supports `POST /v1/accounts/{add
 ## Subgraphs
 
 BNB's older v2/v3/ve references remain useful for BNB-only queries. Spokes use a different unified schema (`chainState`, `pools`, `poolType`, user/protocol entity kind and local positions). Do not reuse BNB GraphQL entities or pin an old spoke release URL from memory. Prefer `/v1` for portable discovery; use a verified current chain-specific graph only when its schema/deployment identity has been checked. Exclude system pools from user market totals and keep closed position owners for reward history.
+
+## Windows and retained historical reports
+
+Current volume and fees use server-computed rolling 24-hour and seven-day windows. Respect explicit observation boundaries; never apply the older Stats UTC-day proration. Use explicit UTC alignment for daily charts and preserve partial coverage. Updates have source-specific timestamps, not a universal refresh schedule.
+
+[Historical Stats reports](analytics-stats-api.md) remain for cumulative volume/fees, Foundation ROI/lifetime incentives, reported TOPAZ supply/locked share, BNB escrow totals and BNB base/maximum fee settings. These do not follow the multichain network filter. Use `/v1` prices and current market metrics; date retained reports separately. Multichain lifetime USD volume needs historical pricing and verified coverage, not a sum of raw token counters.
