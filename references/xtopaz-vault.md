@@ -30,7 +30,7 @@ Rebase claiming is synchronized by the vault. `RebaseBacklog(id)` means the dist
 
 ## Redeem
 
-Read `canUnwrap()`, `unwrapPaused()`, aggregate vote state, `aggregateTokenId()`, current rate and seed constraints. Approve **XTopaz to VeTopazVault**, then call `redeem(shares,receiver)`. The result is a **new permanent veTOPAZ NFT on BNB**, not liquid TOPAZ. The original wrapped NFT does not return. A smart-contract recipient must be able to own/manage the lock; simulate from the intended account.
+Read `canUnwrap()`, `unwrapPaused()`, aggregate vote state, `aggregateTokenId()`, current rate and seed constraints. Redemption closes for the week once the keeper casts the system vote, normally at Wednesday 18:00 UTC, and reopens after Thursday's finalize, first hour and reset. Approve **XTopaz to VeTopazVault**, then call `redeem(shares,receiver)`. The result is a **new permanent veTOPAZ NFT on BNB**, not liquid TOPAZ. The original wrapped NFT does not return. A smart-contract recipient must be able to own/manage the lock; simulate from the intended account.
 
 The vault splits the aggregate, burns shares and updates its aggregate ID. Read `Redeemed` and `AggregateReplaced` for the result. Converting the permanent lock into liquid TOPAZ requires the separate BNB permanent-unlock/timed-lock withdrawal rules; never promise immediate cash redemption.
 

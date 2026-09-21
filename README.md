@@ -2,7 +2,7 @@
 
 Agent skill package for **Topaz Dex** on **BNB Chain, Robinhood Chain, Base, Ethereum and Arc**. Covers v2/Slipstream markets, chain-specific deployments and ABIs, swaps, liquidity, gauges, BNB veTOPAZ, xTOPAZ entry/redemption and bridging, spoke voting, rewards, analytics and website navigation.
 
-Everything here is mainnet-only. Start with [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Legacy BNB helpers are explicitly scoped; low-level quote/swap batch and deployment helpers accept a chain ID. Governance information is linked; privileged changes are not ordinary user actions.
+Everything here is mainnet-only. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Legacy BNB helpers are explicitly scoped; low-level quote/swap batch and deployment helpers accept a chain ID. Governance information is linked; privileged changes are not ordinary user actions.
 
 **Current version:** `3.1.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 

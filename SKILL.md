@@ -29,6 +29,7 @@ Read `README.md` for the architecture diagram and full address tables. Use this 
 
 Read [multichain architecture](references/multichain.md) for xTOPAZ or any spoke task. The [five-chain catalog](references/deployments.md) and [machine-readable deployments](references/deployments.json) bind addresses to deployed ABI variants. Never reuse a BNB address, token decimal assumption, position ID or helper on a spoke. Verify RPC chain identity and current state before constructing a transaction.
 
+- **Explain TOPAZ / veTOPAZ / xTOPAZ, eligibility, timing and exits:** [plain-language FAQ](references/xtopaz-faq.md). Wrapping burns the NFT; redemption yields a permanent NFT; liquid TOPAZ is only reachable through `unlockPermanent` plus a four-year lock or by selling on a market.
 - **BNB entry/redeem:** [vault guide](references/xtopaz-vault.md). Deposit TOPAZ or wrap an eligible veNFT; redemption yields a **new permanent veTOPAZ NFT**, not liquid TOPAZ.
 - **xTOPAZ bridge:** [bridge guide](references/bridging.md). Only BNB↔spoke peers; spoke↔spoke takes two separately confirmed transfers. Track receive and optional compose/fallback independently.
 - **Spoke stake/vote/claim:** [position guide](references/spoke-voting.md). Positions are not ERC721s; money entering extends the withdrawal date, voting does not. No spoke managed-lock or rebase-claim flow. Spoke gauges emit xTOPAZ.
@@ -124,6 +125,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Mint, modify, collect, or burn a v3 position | `references/liquidity-v3.md` |
 | Stake/unstake in a gauge, claim emissions | `references/gauges.md` |
 | Create / extend / withdraw / merge / split a veTOPAZ lock | `references/ve-locks.md` |
+| Explain xTOPAZ, wrap eligibility, redemption windows, bridging rules, spoke stakes | `references/xtopaz-faq.md` |
 | Vote, reset, poke; pool↔gauge lookups | `references/voting.md` |
 | Claim gauge emissions, fees, bribes, rebase | `references/rewards-claiming.md` |
 | Deposit a bribe / incentive on a pool | `references/bribes-deposit.md` |

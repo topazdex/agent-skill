@@ -40,7 +40,7 @@ Canonical supply already includes shares locked in the adapter. Do not add it to
 
 ## Weekly settlement
 
-Epochs start Thursday 00:00 UTC (`floor(unixSeconds/604800)*604800`). The configured strategy normally votes its aggregate for the system pool Wednesday 18:00–22:00 UTC. Redemption closes when that vote is actually cast; deposits/wraps remain possible while voted in a settled epoch.
+Epochs start Thursday 00:00 UTC (`floor(unixSeconds/604800)*604800`). The configured strategy window for voting the aggregate for the system pool is Wednesday 18:00–22:00 UTC, and the keeper casts it at the start of the window, so Wednesday 18:00 UTC is the practical redemption cutoff. Redemption closes when that vote is actually cast; deposits/wraps remain possible while voted in a settled epoch.
 
 After rollover, entry waits for `EpochCoordinator.finalize()`. In one transaction it updates the BNB Minter, distributes to the non-streaming `SystemGauge`, claims the strategy's TOPAZ, syncs rebase, snapshots supply, computes budgets, locks the TOPAZ and mints the exact shares allocated to spokes. No pre-funded or streamed system-gauge estimate is substituted for settlement.
 

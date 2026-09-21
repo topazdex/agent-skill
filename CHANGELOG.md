@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+- Add a plain-language TOPAZ / veTOPAZ / xTOPAZ FAQ: wrap eligibility (including permanent, expired, relay-deposited and voted locks), redemption windows, the weekly clock, the full path back to liquid TOPAZ, bridge rules and spoke stake behavior. Cross-referenced from the veTOPAZ lock and pitfalls guides.
+- Add evals 10–12 covering wrap eligibility, redemption timing and bridge fallback/rate-limit recovery.
+
 ## [3.1.0] - 2026-09-20
 
 - Add a self-contained five-chain deployment and ABI catalog, hub/spoke architecture, xTOPAZ vault, LayerZero bridge/recovery, spoke voting, CL Zap, website and multichain API guides.

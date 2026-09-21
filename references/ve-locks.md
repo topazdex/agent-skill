@@ -105,6 +105,8 @@ function unlockPermanent(uint256 _tokenId) external;   // turns permanent OFF; r
 
 Permanent locks always vote with full `amount`, do not decay, and earn rebase at full weight. They cannot be `withdraw`n until `unlockPermanent` is called and the fresh MAXTIME term is then waited out.
 
+Wrapping a permanent lock into xTOPAZ does **not** require `unlockPermanent` first: the vault normalizes the lock itself during the merge (see [xtopaz-faq.md](xtopaz-faq.md)). A redeemed xTOPAZ position comes back as a new permanent lock, so reaching liquid TOPAZ from it means `unlockPermanent` and a full MAXTIME wait.
+
 Use cases: a DAO/treasury that wants full non-decaying voting power indefinitely, while retaining the ability to `unlockPermanent` and eventually withdraw.
 
 ## Approvals / ERC721

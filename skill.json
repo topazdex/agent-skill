@@ -125,6 +125,7 @@
     "developer_id_connect": "developers/topaz-id-connect.md",
     "operator_scripts": "scripts/README.md",
     "multichain": "references/multichain.md",
+    "xtopaz_faq": "references/xtopaz-faq.md",
     "deployments": "references/deployments.json",
     "website": "references/website.md",
     "multichain_developer": "developers/multichain-integration.md"
