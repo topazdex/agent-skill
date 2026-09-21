@@ -2,7 +2,7 @@
   "schema_version": "1.0",
   "name": "topaz",
   "display_name": "Topaz Dex Agent Skill",
-  "version": "3.1.0",
+  "version": "3.2.0",
   "description": "Topaz across BNB, Robinhood, Base, Ethereum and Arc: contracts and ABIs, swaps, liquidity, xTOPAZ bridging, vault entry/redemption, spoke voting, rewards and analytics.",
   "homepage": "https://topazdex.com",
   "agents_page": "https://topazdex.com/agents",

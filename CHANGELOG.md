@@ -12,8 +12,12 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [3.2.0] — 2026-09-21
+
 - Add a plain-language TOPAZ / veTOPAZ / xTOPAZ FAQ: wrap eligibility (including permanent, expired, relay-deposited and voted locks), redemption windows, the weekly clock, the full path back to liquid TOPAZ, bridge rules and spoke stake behavior. Cross-referenced from the veTOPAZ lock and pitfalls guides.
 - Add evals 10–12 covering wrap eligibility, redemption timing and bridge fallback/rate-limit recovery.
+
 
 ## [3.1.0] - 2026-09-20
 
@@ -558,7 +562,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.1.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.2.0...HEAD
+[3.2.0]: https://github.com/topazdex/agent-skill/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/topazdex/agent-skill/compare/v3.0.3...v3.1.0
 [3.0.3]: https://github.com/topazdex/agent-skill/compare/v3.0.2...v3.0.3
 [2.10.0]: https://github.com/topazdex/agent-skill/compare/v2.9.4...v2.10.0

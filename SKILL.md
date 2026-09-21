@@ -1,7 +1,7 @@
 ---
 name: topaz
 description: "Use, understand and build on Topaz Dex across BNB Chain, Robinhood Chain, Base, Ethereum and Arc: chain-specific contracts and ABIs, swaps, liquidity, rewards, veTOPAZ, xTOPAZ entry/redemption, LayerZero bridging, spoke voting, analytics and website navigation."
-version: 3.1.0
+version: 3.2.0
 license: MIT
 metadata:
   homepage: https://topazdex.com
