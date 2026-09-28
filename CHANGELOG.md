@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [3.3.0] — 2026-09-28
+
 - Make the public multichain API (`https://api.topazdex.com/v1`) the primary analytics source everywhere: `SKILL.md`, every analytics callout in `references/` (voting, locks, bribes, epochs, APR, gauges, tokens, relays, on-chain), the `developers/` dashboard guides, `examples/query-pool-stats.md` and `scripts/README.md` now point at `/v1` routes first. The legacy `/api/stats` reports and their typed client are scoped to the retained BNB history. `references/analytics-multichain.md` carries the full route catalog (55 routes), envelope, pagination and error semantics, and `meta.snapshots[].limitations` guidance.
 - Add `scripts/src/lib/topazApi.ts` (`fetchV1`, `fetchV1Pages`, `chainQualified`, `TopazApiRequestError`) with unit tests, a `stats.ts v1 <path> [--param value] [--all]` passthrough command, and a `/v1/health` smoke check. `TOPAZ_API_URL` overrides the base URL.
 - Add the BNB `topaz-ve` Goldsky subgraph (`…/subgraphs/topaz-ve/prod/gn`) alongside v2 and v3: `veClient`, `SUBGRAPH_URLS.ve`, `SUBGRAPH_VE_URL`, an entity catalog and example queries in `references/analytics-subgraph.md` and `developers/subgraph-recipes.md`, and a `subgraphs` block in `skill.json`. The validator's subgraph drift check now covers v2, v3 and ve across eight files including `skill.json`.
@@ -574,7 +577,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.2.1...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.3.0...HEAD
+[3.3.0]: https://github.com/topazdex/agent-skill/compare/v3.2.1...v3.3.0
 [3.2.1]: https://github.com/topazdex/agent-skill/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/topazdex/agent-skill/compare/v3.1.0...v3.2.0
 [3.1.0]: https://github.com/topazdex/agent-skill/compare/v3.0.3...v3.1.0
