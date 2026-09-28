@@ -46,6 +46,7 @@ import {
   fetchDynamicFees,
   fetchHealth,
 } from "../lib/statsApi.js";
+import { fetchV1, fetchV1Pages, type TopazApiQuery } from "../lib/topazApi.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/stats.ts <command> [options]
@@ -62,9 +63,18 @@ Commands:
   bribes --pool <address>       This-epoch bribes posted on a pool
   apr --pool <address>          Pool APR breakdown
   quote --in <addr> --out <addr> --amount <human>   Best-route quote
-  smoke                         End-to-end sanity check (verifies RPC + subgraphs + ABIs)
+  smoke                         End-to-end sanity check (verifies RPC + subgraphs + API + ABIs)
 
-Stats API commands (https://api.topazdex.com/api/stats):
+Public multichain API (https://api.topazdex.com/v1 — preferred for analytics on all five chains):
+  v1 <path> [--param value ...] [--all]   Raw GET of any /v1 route; prints the JSON envelope.
+                                Repeat a flag or pass a comma list for multi-value filters.
+                                --all follows pageInfo.nextCursor (up to 20 pages).
+                                e.g. v1 /chains · v1 /pools --chainIds 8453 --scope all --sort emissionsApr --limit 10
+                                     (pools default to scope=curated, which is published for BNB only today)
+                                     v1 /accounts/0xYOU/portfolio --chainIds all
+                                     v1 /prices --tokens 56:0xdf002282c1474c9592780618adda7eaa99998abd
+
+Legacy BNB Stats reports (https://api.topazdex.com/api/stats — retained history only, not current data):
   protocol                      Protocol overview (TVL, volume, fees, TOPAZ price, veTOPAZ)
   protocol-history [--days N]   Protocol TVL/volume/fees/price time-series (snapshot resolution)
   protocol-daily [--days N]     Daily volume/fee rollups (one row per UTC day)
@@ -482,6 +492,20 @@ async function cmdHealth() {
   console.log(`  Generated at:    ${meta.generatedAt}`);
 }
 
+async function cmdV1(argv: ReturnType<typeof minimist>) {
+  const route = argv._[1];
+  if (!route) throw new Error("usage: v1 <path> [--param value ...] [--all]   e.g. v1 /pools --chainIds 8453 --limit 5");
+  const { _: positional, all, ...flags } = argv;
+  void positional;
+  const query: TopazApiQuery = {};
+  for (const [key, value] of Object.entries(flags)) {
+    if (value === undefined || value === false) continue;
+    query[key] = Array.isArray(value) ? value.map(String) : (value as string | number | boolean);
+  }
+  const result = all ? await fetchV1Pages(String(route), query) : await fetchV1(String(route), query);
+  console.log(JSON.stringify(result, null, 2));
+}
+
 function fmtNum(v: string): string {
   const n = parseFloat(v);
   if (Number.isNaN(n)) return v;
@@ -649,11 +673,21 @@ async function cmdSmoke() {
   }
 
   try {
+    const { data } = await fetchV1<{ readiness: { status: string; reasons: string[] }; readyChainIds: number[] }>("/health");
+    if (!data.readyChainIds.includes(56)) {
+      throw new Error(`BNB not ready: ${data.readiness.status} ${data.readiness.reasons.join(",")}`);
+    }
+    ok("Topaz API /v1/health", `${data.readiness.status}, ready chains ${data.readyChainIds.join(",")}`);
+  } catch (e) {
+    fail("Topaz API /v1/health", e);
+  }
+
+  try {
     const { data } = await fetchHealth();
     if (!data.healthy) throw new Error(`unhealthy: stale=${data.stale}, lastStatus=${data.lastAttemptStatus}`);
-    ok("Stats API health", `healthy, last snapshot ${data.minutesSinceLastSuccess}min ago`);
+    ok("Legacy Stats reports health", `healthy, last snapshot ${data.minutesSinceLastSuccess}min ago`);
   } catch (e) {
-    fail("Stats API health", e);
+    fail("Legacy Stats reports health", e);
   }
 
   console.log(out.join("\n"));
@@ -693,6 +727,7 @@ async function main() {
     case "bribes": return await cmdBribes(argv);
     case "apr": return await cmdApr(argv);
     case "quote": return await cmdQuote(argv);
+    case "v1": return await cmdV1(argv);
     case "protocol": return await cmdProtocol();
     case "protocol-history": return await cmdProtocolHistory(argv);
     case "protocol-daily": return await cmdProtocolDaily(argv);

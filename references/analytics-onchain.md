@@ -1,8 +1,8 @@
 # Analytics — On-chain reads
 
-When subgraph data is stale, missing (votes/bribes/locks aren't indexed, and v3 user CL positions aren't in the current `prod` deployment yet — though gauges and v2 `LiquidityPosition` balances are), or you need block-accurate state, read directly from the chain.
+Read directly from the chain when you need block-accurate state for a transaction you are about to build, a value the indexers do not expose, or when `/v1` reports a chain as stale or a field as unavailable.
 
-> **For aggregated protocol metrics, pre-computed APRs, and foundation data**, prefer the Stats API (`analytics-stats-api.md`) — it returns the same numbers in a single REST call. Use on-chain reads below when you need user-specific state (balances, positions, claimable), block-accurate data for time-sensitive ops, or transaction construction.
+> **For everything else, use the public API first** (`analytics-multichain.md`): pools, prices, gauges, votes, epochs, bribe markets, account portfolios and history for all five chains, with USD values and coverage metadata in one REST call. The BNB subgraphs (`analytics-subgraph.md`) — v2, v3 and the ve graph that indexes locks, votes, bribes and relays — cover ad-hoc GraphQL and event history. Use the on-chain reads below for the final pre-transaction check (balances, allowances, ownership, gates, `slot0` / `getReserves`), for exact claimables via `earned`, and for anything time-sensitive within the current block.
 
 ## Multicall
 

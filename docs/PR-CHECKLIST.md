@@ -13,14 +13,14 @@ Run from the repo root unless otherwise noted.
 - [ ] **`yarn build` clean** — `tsc --noEmit` exits 0 inside `scripts/`. No `any`, no `@ts-ignore`, no suppressed errors.
 - [ ] **`yarn validate` clean** — 0 errors, 0 warnings across all 10 categories (frontmatter, internal links, author-local paths, external-repo pointers, secrets/vendored, address parity, EIP-55 checksums, subgraph URLs, manifest [`skill.json`] + version parity, brand URLs).
 - [ ] **`yarn test` passes** — every vitest suite green, no `.skip`, no `.todo` introduced without justification.
-- [ ] **`yarn smoke` passes against a live BSC RPC** — all 9 checks PASS. If any FAIL, fix the underlying drift (stale address, broken RPC, dead gauge) before merging.
+- [ ] **`yarn smoke` passes against a live BSC RPC** — every check PASS, including `/v1/health`. If any FAIL, fix the underlying drift (stale address, broken RPC, dead gauge) before merging.
 - [ ] **Golden tests pass** — `quotes.test.ts`, `apr.test.ts`, `epoch.test.ts`, `path.test.ts`. Bumping a golden requires a one-line justification in the PR description.
 
 ## Required when the PR touches canonical data
 
 - [ ] **Address tables agree across `scripts/src/config/addresses.ts`, `README.md`, and `references/addresses.md`** — case-insensitive, byte-for-byte. Enforced by `yarn validate` (address-parity + EIP-55 sections).
 - [ ] **New addresses use the correct EIP-55 checksum** — `ethers.getAddress(addr) === addr`. Enforced by `yarn validate`.
-- [ ] **Subgraph URLs match across `README.md`, `SKILL.md`, `scripts/.env.example`, `scripts/src/lib/subgraph.ts`, `developers/subgraph-recipes.md`, `developers/DEVELOPERS.md`, `references/analytics-subgraph.md`** — enforced by `yarn validate`.
+- [ ] **Subgraph URLs (v2, v3, ve) match across `README.md`, `SKILL.md`, `skill.json`, `scripts/.env.example`, `scripts/src/lib/subgraph.ts`, `developers/subgraph-recipes.md`, `developers/DEVELOPERS.md`, `references/analytics-subgraph.md`** — enforced by `yarn validate`.
 - [ ] **`BRAND` channel URLs (web/docs/X/TG/GitHub/assetsRepo) appear in `README.md`, `SKILL.md`, and `references/brand.md`; asset URLs appear in `references/brand.md`** — enforced by `yarn validate`.
 
 ## Required when the PR touches docs or examples

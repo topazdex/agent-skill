@@ -2,7 +2,7 @@
 
 These are tokens already routed on Topaz at launch (whitelisted in `Voter.isWhitelistedToken`, allowed as bribe assets without further governance). Decimals matter — always read `IERC20.decimals()` when in doubt. Every symbol/name/decimals value below was cross-verified against the Topaz v2/v3 Goldsky subgraphs and direct `IERC20` calls; the canonical machine-readable copy lives in `scripts/src/config/tokens.ts`.
 
-> **Live USD prices** for any tracked token come from the Stats API: `/tokens` (all tracked tokens, sorted by price) and `/tokens/{address}` (single token + 7-day price history). This is the easiest, fastest, most accurate price source — prefer it over deriving prices from the subgraph or DexScreener. See `references/analytics-stats-api.md`.
+> **Live USD prices and metadata** for any token on any Topaz chain come from the public API: `GET /v1/prices?tokens=56:0x…,8453:0x…` (canonical `priceUsd` with `provenance`, `confidence` and `status`), `GET /v1/tokens?chainIds=56` (curated metadata, decimals, tags, `whitelistedForIncentives`, `feeOnTransfer`) and `GET /v1/tokens/56/{address}` plus `…/price-history`. Prefer these over deriving prices from the subgraph or DexScreener. See `references/analytics-multichain.md`.
 
 ## Native + protocol
 
@@ -36,7 +36,7 @@ These are tokens already routed on Topaz at launch (whitelisted in `Voter.isWhit
 
 ## Other whitelisted (small-cap / community)
 
-These are pool-tradable today but lower liquidity. Verify against the live subgraph before relying on them for routing.
+These are pool-tradable today but lower liquidity. Verify against `GET /v1/tokens?chainIds=56&q=<symbol>` or the live subgraph before relying on them for routing.
 
 | Symbol | Address | Decimals | Notes |
 |---|---|---|---|
@@ -53,7 +53,7 @@ These are pool-tradable today but lower liquidity. Verify against the live subgr
 | bibi | `0x9212cF1f9f4A9c69Bb010146Ba5b0725169D4444` | 18 | Binance bibi. |
 | NianNian | `0x9C27c4072738CF4b7B0B7071af0ad5666BdDC096` | 18 | NianNian. |
 
-The whitelist can change over time. Always confirm via on-chain `Voter.isWhitelistedToken(token)` before relying on it for bribes, and re-pull token metadata from the subgraph (`references/analytics-subgraph.md`) if you see an unfamiliar address.
+The whitelist can change over time. Always confirm via on-chain `Voter.isWhitelistedToken(token)` before relying on it for bribes (the API mirrors it as `whitelistedForIncentives` on `/v1/tokens`, and the `topaz-ve` subgraph as `Token.voterWhitelisted`), and re-pull token metadata from `/v1/tokens/56/{address}` or the subgraph (`references/analytics-subgraph.md`) if you see an unfamiliar address.
 
 ## Why the whitelist matters
 

@@ -1,6 +1,6 @@
 # APR Calculations
 
-> **Want a number, not the math?** The Stats API already serves every APR pre-computed and is the easiest, fastest, most accurate source: `/gauges` (emission/fee/bribe/total APR per gauge), `/pools` (denormalized `gaugeApr` + `feeApr`, sortable via `sort=gaugeApr`), and `/gauges/{addr}` (7-day APR history). Use the formulas below only when you need a custom window, a position-specific APR, or block-accurate state. See `references/analytics-stats-api.md`.
+> **Want a number, not the math?** The public API serves APRs pre-computed for every chain: `GET /v1/pools?chainIds=56&sort=emissionsApr` returns `feeApr`, `emissionsApr` and the `aprScenario` it was computed from; `GET /v1/gauges?chainIds=56` returns `emissionsApr`, `stakedTvlUsd`, `rewardRateRaw` and vote weight per gauge; `GET /v1/markets/bribes` gives `dollarPerVote` for voting returns. Use the formulas below only when you need a custom window, a position-specific APR, or block-accurate state. See `references/analytics-multichain.md`.
 
 There are four APR types in the Topaz UI. The formulas here match the production frontend.
 
@@ -8,7 +8,7 @@ There are four APR types in the Topaz UI. The formulas here match the production
 
 - All amounts are in **wei** (1e18 unless noted). Divide by `10^decimals` to get human-readable.
 - `SECONDS_PER_YEAR = 365 * 24 * 60 * 60 = 31,536,000`. (We deliberately don't use 365.25 — match the frontend.)
-- `topazPriceUsd` = USD value of 1 TOPAZ. Source: DexScreener (`scripts/src/lib/pricing.ts:getTopazUsdPrice`), or fall back to the v3 subgraph: `TOPAZ.derivedETH * Bundle.ethPriceUSD`.
+- `topazPriceUsd` = USD value of 1 TOPAZ. Preferred source: `GET /v1/prices?tokens=56:0xdf002282c1474c9592780618adda7eaa99998abd` (`priceUsd`, with `provenance` and `confidence`). The bundled helper `scripts/src/lib/pricing.ts:getTopazUsdPrice` still uses DexScreener or the v3 subgraph (`TOPAZ.derivedETH * Bundle.ethPriceUSD`).
 
 ## 1) Gauge emission APR
 
@@ -49,7 +49,7 @@ For pool tables / gauge listings, `poolApr()` simulates a representative **$100*
 | Stable–stable | ±0.1% |
 | tickSpacing = 1 | ±0.05% |
 
-The algorithm (matches the production frontend `computeV3GaugeApr` and the Stats API's `clGaugeApr.ts`):
+The algorithm (matches the production frontend `computeV3GaugeApr` and the public API's `legacy-cl-preset-v1` scenario calculation):
 
 1. Convert spread percentage to tick bounds aligned to `tickSpacing`.
 2. Compute token amounts for a reference liquidity (1e18) in that range.
@@ -61,7 +61,7 @@ The reference liquidity in step 2 cancels out of the final position — it exist
 
 **Why the deposit size shows up at all.** Step 5 measures the position's share *after* it joins the gauge, which is what stops a thin gauge from handing a hypothetical position more than 100% of emissions. That self-dilution is the only place the dollar figure enters: when staked liquidity dwarfs the reference position the size cancels out entirely, and when it doesn't, a larger reference reports a lower APR. The number is a **$100 estimate**, not a pool-wide rate — quote it that way.
 
-**Keep all three surfaces on the same figure.** The frontend (`CL_APR_REFERENCE_DEPOSIT_USD`), the Stats API (`PRESET_DEPOSIT_USD`), and `scripts/src/read/apr.ts` (`PRESET_DEPOSIT_USD`, exported) all use $100. Pool tables fall back between client-computed and API-served values per pool, so a mismatch makes the listing APR jump when the source switches. `computeV3PresetApr()` takes an optional trailing `depositUsd` for what-if sizing; leave it unset to reproduce what the UI and `/pools?sort=gaugeApr` display.
+**Keep all three surfaces on the same figure.** The frontend (`CL_APR_REFERENCE_DEPOSIT_USD`), the public API (`aprScenario` reference deposit), and `scripts/src/read/apr.ts` (`PRESET_DEPOSIT_USD`, exported) all use $100. Pool tables fall back between client-computed and API-served values per pool, so a mismatch makes the listing APR jump when the source switches. `computeV3PresetApr()` takes an optional trailing `depositUsd` for what-if sizing; leave it unset to reproduce what the UI and `/v1/pools?sort=emissionsApr` display (the API reports the scenario it used under `aprScenario`).
 
 ### Position-level APR
 

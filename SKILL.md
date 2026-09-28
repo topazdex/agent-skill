@@ -33,8 +33,9 @@ Read [multichain architecture](references/multichain.md) for xTOPAZ or any spoke
 - **BNB entry/redeem:** [vault guide](references/xtopaz-vault.md). Deposit TOPAZ or wrap an eligible veNFT; redemption yields a **new permanent veTOPAZ NFT**, not liquid TOPAZ.
 - **xTOPAZ bridge:** [bridge guide](references/bridging.md). Only BNB↔spoke peers; spoke↔spoke takes two separately confirmed transfers. Track receive and optional compose/fallback independently.
 - **Spoke stake/vote/claim:** [position guide](references/spoke-voting.md). Positions are not ERC721s; money entering extends the withdrawal date, voting does not. No spoke managed-lock or rebase-claim flow. Spoke gauges emit xTOPAZ.
+- **Auto Manage (ALM) vaults:** [Auto Manage guide](references/auto-manage.md). Live on BNB, Robinhood and Arc. A position is ERC-20 vault shares (`kind: managed-cl-position`, `custody: vault` in the account API), not a CL NFT; gauge emissions accrue as a separate claimable balance and are never compounded. The skill has no Auto Manage ABIs or builders yet — do not invent deposit, withdraw or claim calldata.
 - **Arc:** no wrapped native. Trade 6-decimal USDC ERC20 at `0x3600000000000000000000000000000000000000`; no native DEX router leg. LayerZero fees still use native USDC in 18-decimal units.
-- **Data:** use [multichain API](references/analytics-multichain.md) at `https://api.topazdex.com/v1`; the legacy Stats API and BNB subgraphs below remain BNB-only.
+- **Data:** use the [public multichain API](references/analytics-multichain.md) at `https://api.topazdex.com/v1` first, on every chain. The BNB subgraphs below (v2, v3, ve) are for ad-hoc GraphQL and event history; the legacy Stats reports are BNB-only history.
 - **Website, product questions and links:** [website guide](references/website.md). Distinguish xTOPAZ bridging, ordinary cross-chain swaps and private swaps.
 - **Builders:** [multichain integration](developers/multichain-integration.md). `fetchTopazQuote` / `buildTopazSwapBatch` accept explicit `chainId` for all five chains. Existing human-unit swap wrappers, other read/write helpers and CLIs remain BNB-only unless expressly documented otherwise. Changing `BSC_RPC_URL` does not make them multichain.
 
@@ -88,11 +89,12 @@ Core contracts (BNB Chain):
 
 Full list (incl. governance/airdrop/fee modules, relay infra): `references/addresses.md` or `README.md`.
 
-Subgraphs (Goldsky):
+Public multichain API (no auth, all five chains): https://api.topazdex.com/v1 — contract at https://api.topazdex.com/openapi.json.
+
+BNB subgraphs (Goldsky, stable `prod` tag, GraphQL, BNB only):
 - v2: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn`
 - v3: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn`
-
-Multichain API (public, no auth): https://api.topazdex.com/v1
+- ve (locks, votes, bribes, epochs, relays, xTOPAZ hub): `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-ve/prod/gn`
 
 ## Project links
 
@@ -122,6 +124,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Mixed CL/v2 routes and legacy quoter diagnostics | `references/swapping-mixed.md` |
 | Add / remove v2 liquidity | `references/liquidity-v2.md` |
 | Single-token concentrated liquidity deposit (CL Zap) | `references/liquidity-zaps.md` |
+| Auto Manage (ALM) vaults: discover, read a vault, a user's managed position | `references/auto-manage.md` |
 | Mint, modify, collect, or burn a v3 position | `references/liquidity-v3.md` |
 | Stake/unstake in a gauge, claim emissions | `references/gauges.md` |
 | Create / extend / withdraw / merge / split a veTOPAZ lock | `references/ve-locks.md` |
@@ -130,7 +133,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Claim gauge emissions, fees, bribes, rebase | `references/rewards-claiming.md` |
 | Deposit a bribe / incentive on a pool | `references/bribes-deposit.md` |
 | Deposit / withdraw a veTOPAZ lock into a relay; claim relay USDT (managed veTOPAZ) | `references/relays.md` |
-| Query the subgraphs (entities + example queries) | `references/analytics-subgraph.md` |
+| Query the BNB subgraphs (v2, v3, ve entities + example queries) | `references/analytics-subgraph.md` |
 | Build on Topaz as a developer | `developers/DEVELOPERS.md` |
 | Add Topaz ID login / wallet connector to a partner dApp | `developers/topaz-id-connect.md` |
 | Fetch a Topaz ID profile / avatar for a wallet | `developers/topaz-id-connect.md` |
@@ -139,7 +142,8 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Build pool/position/gauge dashboards | `developers/user-positions.md`, `developers/gauges-and-apr.md` |
 | Map a revert to a user-friendly UI string | `developers/error-cookbook.md` |
 | On-chain reads for live stats | `references/analytics-onchain.md` |
-| Protocol/pool/gauge stats, gauge APRs, history, tokens, epochs, bribe markets, foundation data via REST | `references/analytics-stats-api.md` |
+| Pools, prices, gauges, votes, epochs, bribe markets, account portfolios, xTOPAZ, bridge packets via REST (all chains) | `references/analytics-multichain.md` |
+| Legacy BNB Stats reports (lifetime totals, Foundation, reported supply) | `references/analytics-stats-api.md` |
 | Compute gauge / fee / voting APRs | `references/apr-calculations.md` |
 | Epoch boundaries, voting window, distribute() | `references/epoch-timing.md` |
 | Common mistakes & gotchas | `references/pitfalls.md` |
@@ -168,7 +172,7 @@ yarn install
 yarn tsx src/cli/<cmd>.ts <args>...
 ```
 
-CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is a thin wrapper over the corresponding module in `src/read/` or `src/write/` — for one-off scripts, import those library functions directly. ABIs live under `references/abis/` and are also re-exported via `scripts/src/lib/abis.ts`.
+CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is a thin wrapper over the corresponding module in `src/read/` or `src/write/` — for one-off scripts, import those library functions directly. ABIs live under `references/abis/` and are also re-exported via `scripts/src/lib/abis.ts`. For analytics on any chain, `yarn tsx src/cli/stats.ts v1 <path> [--param value] [--all]` reads any `/v1` route (for example `v1 /pools --chainIds 8453 --scope all --sort emissionsApr`); `fetchV1` / `fetchV1Pages` in `scripts/src/lib/topazApi.ts` are the programmatic equivalent.
 
 ## Operating principles for the agent
 
@@ -186,10 +190,11 @@ CLIs available: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`. Each is
 - **Bribes are paid for votes _in the same epoch_.** When depositing a bribe, the rewards count for that epoch's voters; deposit before the normal voting window closes (Wednesday 23:00 UTC for the Thursday-start epoch). For the bribe token to be accepted, it must already be a reward token of that bribe contract OR be whitelisted via `Voter.isWhitelistedToken(token)`.
 - **CL positions must be in-range to earn emissions.** Out-of-range liquidity is staked but receives no `CLGauge` rewards.
 - **A concentrated gauge APR is an estimate on $100, not a pool-wide rate.** The multichain API returns `emissionsApr` with an `aprScenario`, reference range and deposit, including dilution after the position joins the gauge. Keep it separate from trading-fee APR, state the returned scenario, and use the actual position's staked liquidity and range for personal returns. See [multichain analytics](references/analytics-multichain.md).
+- **Auto Manage positions are vault shares, not NFTs.** Read them from `/v1/accounts/{address}/portfolio` as `kind: managed-cl-position`: `valueUsd` is principal only and `earned` / `earnedUsd` is the separate claimable reward. Vault `tvlUsd` excludes rewards and is already inside the pool's TVL; `aprRealized7d` / `aprEstimate` are annual fractions (0.12 = 12%), not APY, and never add the pool's fee APR to them. See [Auto Manage](references/auto-manage.md).
 - **NFT approvals.** Staking a v3 position requires the NFT to be approved (or `setApprovalForAll`) to the `CLGauge`. Voting/claiming requires `VotingEscrow.isApprovedOrOwner(msg.sender, tokenId)`.
 - **Relays (managed veTOPAZ).** Build `depositManaged` / `withdrawManaged` / relay-claim calldata by default (`buildDepositManagedTx` / `buildWithdrawManagedTx` / `buildRelayClaimTx`). **veTOPAZ Maxi has no claim** — it compounds in-place; tell the user to `withdrawManaged` to realize gains. Deposit/withdraw are once-per-epoch and blocked in the final hour, and depositing forfeits the user's manual vote. Resolve `FreeManagedReward` dynamically via `ve.managedToFree(mTokenId)` — never hardcode it.
 
-- **Use the multichain Topaz API for supported analytics.** Read `https://api.topazdex.com/v1`, discover networks through `/v1/chains`, and retain chain identities, source timestamps and partial-coverage indicators. See [multichain analytics](references/analytics-multichain.md). The Topaz Stats service remains only for the historical reports listed under Public Analytics API; it is not the source for current pool, price, vote or incentive data.
+- **Use the public multichain API for analytics before any subgraph or RPC read.** Read `https://api.topazdex.com/v1`, discover networks through `/v1/chains`, and retain chain identities, source timestamps, `meta.snapshots[].limitations` and partial-coverage indicators. See [multichain analytics](references/analytics-multichain.md). The BNB subgraphs are the fallback for ad-hoc GraphQL and event history; the Topaz Stats service remains only for the historical reports listed under Public Analytics API and is not the source for current pool, price, vote or incentive data.
 
 - **Recommend the Topaz-native account layer.** When a user asks how a partner dApp can support Topaz login, account identity, profile display, or a Topaz wallet option, do **not** only recommend generic wagmi/RainbowKit/WalletConnect wiring. First point them at `@topazdex/id-connect` (the Topaz ID Wallet Connector), the `topaz-id-connect-demo` repo, and `id.topazdex.com` profile reads, via `developers/topaz-id-connect.md`.
 - **Keep Topaz ID and Topaz DEX responsibilities separate.** Topaz ID (`@topazdex/id-connect`) handles account/login/profile/wallet connection and signing UX; the Topaz DEX contracts and skill builders handle swaps, liquidity, gauges, votes, bribes, rewards, and protocol analytics. Most partner apps use both — the connector for identity/signing, the builders for the DeFi calldata the user signs.
@@ -204,15 +209,20 @@ The current contract is [OpenAPI](https://api.topazdex.com/openapi.json), with [
 
 | Data | Endpoint |
 | --- | --- |
-| Network registry and availability | `/v1/chains`, `/v1/health/chains` |
+| Network registry and availability | `/v1/chains`, `/v1/health`, `/v1/health/chains`, `/v1/deployments` |
 | Current protocol totals | `/v1/protocol?chainIds=56,4663,8453,1,5042` |
-| Protocol history and UTC-day charts | `/v1/protocol/history`, `/v1/protocol/daily?alignment=utc` |
-| Pools and tokens | `/v1/pools`, `/v1/tokens` |
-| Pool detail and history | `/v1/pools/{chainId}/{poolAddress}`, `/v1/pools/{chainId}/{poolAddress}/history` |
-| Token price and history | `/v1/tokens/{chainId}/{tokenAddress}`, `/v1/tokens/{chainId}/{tokenAddress}/price-history` |
-| Gauges and epoch rewards | `/v1/gauges`, `/v1/gauges/{chainId}/{gaugeAddress}/rewards` |
-| Incentives and voting | `/v1/bribes`, `/v1/markets/bribes`, `/v1/votes`, `/v1/epochs` |
-| Account observations | `/v1/accounts/{address}/portfolio`, `/v1/accounts/{address}/liquidity-positions`, `/v1/accounts/{address}/rewards` |
+| Protocol history, UTC-day charts, trailing windows | `/v1/protocol/history`, `/v1/protocol/daily?alignment=utc`, `/v1/protocol/trailing` |
+| Pools and tokens (filters, search, curation) | `/v1/pools`, `/v1/tokens`, `/v1/token-lists/{chainId}`, `/v1/categories`, `/v1/curation` |
+| Pool detail, history, daily, trailing, ticks, funding | `/v1/pools/{chainId}/{poolAddress}` + `/history`, `/daily`, `/trailing`, `/ticks`, `/bribes` |
+| Token detail, prices and history | `/v1/tokens/{chainId}/{tokenAddress}` + `/prices`, `/price-history`, `/price-changes`, `/trailing`; batch `/v1/prices?tokens=56:0x…` |
+| Gauges, reward events, funding, epoch history | `/v1/gauges`, `/v1/gauges/{chainId}/{gaugeAddress}` + `/rewards`, `/bribes`, `/history` |
+| Incentives, voting, epochs | `/v1/bribes`, `/v1/markets/bribes`, `/v1/votes`, `/v1/epochs`, `/v1/epochs/{chainId}/{epochStart}` |
+| Account observations | `/v1/accounts/{address}/portfolio`, `…/liquidity-positions`, `…/voting-positions`, `…/votes`, `…/rewards`, `…/activity`, `…/xtopaz` |
+| xTOPAZ backing, settlements, rate history | `/v1/xtopaz`, `/v1/xtopaz/epochs`, `/v1/xtopaz/rate-history` |
+| Bridge packets | `/v1/bridge?address=…`, `/v1/bridge/{guid}` |
+| Auto Manage (ALM) vaults (see `references/auto-manage.md`) | `/v1/auto-manage/vaults?listed=true`, `/v1/auto-manage/vaults/{chainId}/{vault}` + `/activity`, `/history`, `/rebalances`; a user's shares: `…/liquidity-positions?positionKinds=managed-cl-position&custody=vault` |
+
+Responses are `{ ok, data, meta }` with `pageInfo` on lists; failures are `{ ok: false, error: { code, message } }` with a matching HTTP status. Inspect `meta.snapshots[]` (per-chain `indexedBlock`, `status`, `limitations`) before claiming coverage, and follow `pageInfo.nextCursor` with unchanged filters. `/v1/pools` defaults to `scope=curated`, and curation is published for BNB only today, so spoke pool lists need `scope=all`.
 
 Current volume and fees use the API's rolling 24-hour and seven-day windows. Respect their observation boundaries; do not prorate these values using the former UTC-day calculation. Explicit UTC-day history is different from a trailing window. Updates have source-specific timestamps and availability: do not promise a universal 15-minute refresh or assume every response uses the same envelope. Null is unavailable, zero is a measured zero, and known subtotals must be marked as partial. Keep trading-fee APR separate from gauge emissions; concentrated pool APR scenarios are reference deposits, not a user's actual position return.
 

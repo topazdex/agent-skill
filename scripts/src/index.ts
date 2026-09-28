@@ -16,6 +16,7 @@ export * from "./lib/pricing.js";
 export * from "./lib/relayBuilders.js";
 export * from "./lib/statsApi.js";
 export * from "./lib/subgraph.js";
+export * from "./lib/topazApi.js";
 export * from "./lib/tickMath.js";
 export * from "./lib/txBuilders.js";
 export * from "./lib/topazRouting.js";

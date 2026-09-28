@@ -8,7 +8,7 @@
 //   - No hardcoded author-local paths (/Users/<x>/..., /home/<x>/...).
 //   - No committed secrets or vendored deps.
 //   - Address-set parity: scripts/src/config/addresses.ts ⊆ README.md ⊆ references/addresses.md.
-//   - Subgraph URLs consistent across docs, config, and .env.example.
+//   - Subgraph URLs (v2, v3, ve) consistent across docs, config, manifest and .env.example.
 //   - skill.json manifest is present, valid JSON, has install/update/verify commands,
 //     and its `version` matches SKILL.md frontmatter (release-time parity).
 //   - Brand channel URLs appear on every front-door surface (README, SKILL, references/brand.md).
@@ -419,10 +419,18 @@ const checkChecksums = (): void => {
 // --- A6. Subgraph URL consistency ---
 const SUBGRAPH_V2_RE = /https:\/\/api\.goldsky\.com\/api\/public\/[^\s)`'"]+subgraphs\/topaz-v2\/[^\s)`'"]+/g;
 const SUBGRAPH_V3_RE = /https:\/\/api\.goldsky\.com\/api\/public\/[^\s)`'"]+subgraphs\/topaz-v3\/[^\s)`'"]+/g;
+const SUBGRAPH_VE_RE = /https:\/\/api\.goldsky\.com\/api\/public\/[^\s)`'"]+subgraphs\/topaz-ve\/[^\s)`'"]+/g;
+
+const SUBGRAPH_PATTERNS: ReadonlyArray<{ label: string; re: RegExp }> = [
+  { label: "v2", re: SUBGRAPH_V2_RE },
+  { label: "v3", re: SUBGRAPH_V3_RE },
+  { label: "ve", re: SUBGRAPH_VE_RE },
+];
 
 const REQUIRED_SUBGRAPH_FILES = [
   "README.md",
   "SKILL.md",
+  "skill.json",
   "scripts/.env.example",
   "scripts/src/lib/subgraph.ts",
   "developers/subgraph-recipes.md",
@@ -431,8 +439,7 @@ const REQUIRED_SUBGRAPH_FILES = [
 ];
 
 const checkSubgraphUrls = (): void => {
-  const v2Found = new Map<string, Set<string>>();
-  const v3Found = new Map<string, Set<string>>();
+  const found = new Map<string, Set<string>>(SUBGRAPH_PATTERNS.map((p) => [p.label, new Set<string>()]));
   for (const rel of REQUIRED_SUBGRAPH_FILES) {
     const abs = path.join(REPO_ROOT, rel);
     if (!fs.existsSync(abs)) {
@@ -440,22 +447,17 @@ const checkSubgraphUrls = (): void => {
       continue;
     }
     const text = readText(abs);
-    const v2 = new Set<string>(text.match(SUBGRAPH_V2_RE) ?? []);
-    const v3 = new Set<string>(text.match(SUBGRAPH_V3_RE) ?? []);
-    if (v2.size === 0) warn(rel, "no v2 subgraph URL found");
-    if (v3.size === 0) warn(rel, "no v3 subgraph URL found");
-    v2Found.set(rel, v2);
-    v3Found.set(rel, v3);
+    for (const { label, re } of SUBGRAPH_PATTERNS) {
+      const urls = text.match(re) ?? [];
+      if (urls.length === 0) warn(rel, `no ${label} subgraph URL found`);
+      for (const u of urls) found.get(label)!.add(u);
+    }
   }
-  const uniqV2 = new Set<string>();
-  const uniqV3 = new Set<string>();
-  for (const set of v2Found.values()) for (const u of set) uniqV2.add(u);
-  for (const set of v3Found.values()) for (const u of set) uniqV3.add(u);
-  if (uniqV2.size > 1) {
-    error("subgraph", `v2 subgraph URL drift: ${Array.from(uniqV2).join(" | ")}`);
-  }
-  if (uniqV3.size > 1) {
-    error("subgraph", `v3 subgraph URL drift: ${Array.from(uniqV3).join(" | ")}`);
+  for (const { label } of SUBGRAPH_PATTERNS) {
+    const uniq = found.get(label)!;
+    if (uniq.size > 1) {
+      error("subgraph", `${label} subgraph URL drift: ${Array.from(uniq).join(" | ")}`);
+    }
   }
 };
 

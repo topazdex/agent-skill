@@ -2,6 +2,8 @@
 
 v3 positions are **NFTs** (ERC721) minted by `NonfungiblePositionManager` at `0xf8c30c3C362941C23025f2eA30B066A73C982f63`. Each position is a tuple `(pool, owner, tickLower, tickUpper, liquidity)`.
 
+If the user would rather not pick and maintain a range, Topaz **Auto Manage** vaults hold a keeper-managed CL position and issue ERC-20 shares instead of an NFT — see [auto-manage.md](auto-manage.md). Everything below is the self-managed NFT path.
+
 ## Tick math
 
 Concentrated liquidity uses ticks to represent prices.

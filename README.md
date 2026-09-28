@@ -105,7 +105,7 @@ bash tools/check_update.sh   # exit 0 = up to date, 10 = update available
 cd <dest>/scripts
 yarn validate    # static checks: frontmatter, links, addresses, checksums, manifest parity, ...
 yarn build       # type-check (tsc --noEmit)
-yarn test        # 173 unit tests (vitest, no RPC)
+yarn test        # 213 unit tests (vitest, no RPC)
 yarn smoke       # live read against BNB Chain — requires BSC_RPC_URL
 ```
 
@@ -193,14 +193,19 @@ Automated reward managers for managed veTOPAZ (mveTOPAZ). See `references/relays
 
 In this skill, addresses are canonical in `scripts/src/config/addresses.ts` and mirrored to `references/addresses.md` and the table above. The validator (`yarn validate` in `scripts/`) enforces parity across the three.
 
-## Subgraph endpoints (Goldsky)
+## Analytics sources
+
+The public multichain API at `https://api.topazdex.com/v1` (contract: `https://api.topazdex.com/openapi.json`) is the primary source for pools, prices, gauges, votes, epochs, incentives, account portfolios, xTOPAZ and bridge data on all five chains — see `references/analytics-multichain.md`. `yarn tsx src/cli/stats.ts v1 <path>` and `fetchV1` in `scripts/src/lib/topazApi.ts` call it.
+
+### BNB subgraph endpoints (Goldsky, stable `prod` tag)
 
 ```
 v2: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn
 v3: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn
+ve: https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-ve/prod/gn
 ```
 
-Entity catalogs and example queries: `references/analytics-subgraph.md`.
+BNB only; the ve graph indexes locks, votes, bribes, epochs, gauge stakes, relays and xTOPAZ hub state. Spoke chains are served through `/v1`. Entity catalogs and example queries: `references/analytics-subgraph.md`.
 
 ## Architecture overview
 
@@ -267,7 +272,8 @@ topaz-skill/
 │   ├── rewards-claiming.md
 │   ├── bribes-deposit.md
 │   ├── relays.md            # managed veTOPAZ (mveTOPAZ) reward automation
-│   ├── analytics-{subgraph,onchain}.md
+│   ├── auto-manage.md       # Auto Manage (ALM) vaults: discovery, vault reads, managed-cl-position
+│   ├── analytics-{multichain,stats-api,subgraph,onchain}.md
 │   ├── apr-calculations.md
 │   ├── pitfalls.md
 │   └── abis/                # JSON ABIs for ethers/web3
@@ -278,7 +284,7 @@ topaz-skill/
     ├── package.json
     └── src/
         ├── config/          # addresses, chain, tokens, relays
-        ├── lib/             # client, erc20, subgraph, tickMath, path, pricing, epoch, relayBuilders
+        ├── lib/             # client, erc20, topazApi, subgraph, tickMath, path, pricing, epoch, relayBuilders
         ├── read/            # quotes, pools, gauges, locks, votes, claimable, apr, relays, ...
         ├── write/           # swap, liquidity, gauge, lock, vote, claim, bribe, relay
         └── cli/             # `yarn tsx src/cli/<cmd>.ts ...` entry points
@@ -311,7 +317,7 @@ This section tracks the maturity of the skill. Priority 1 (validator, tests, smo
 Agent-facing operator layer (read + write):
 
 - [x] `SKILL.md` frontmatter, trigger phrases, navigation map.
-- [x] `references/` topic docs for swaps (v2/v3/mixed), liquidity (v2/v3), gauges, ve-locks, voting, rewards, bribes, epoch timing, APR, addresses, tokens, pitfalls, analytics (subgraph + on-chain).
+- [x] `references/` topic docs for swaps (v2/v3/mixed), liquidity (v2/v3), gauges, ve-locks, voting, rewards, bribes, epoch timing, APR, addresses, tokens, pitfalls, analytics (public API + subgraph + on-chain).
 - [x] `references/abis/*.json` for every contract the skill touches.
 - [x] `examples/` walkthroughs for the canonical workflows (swap-v2 stable/volatile, swap-v3 single, mixed route, v2 add-liquidity, v3 mint, CL stake, lock+vote, claim-all-rewards, deposit-bribe, query-pool-stats).
 - [x] `scripts/` CLIs: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe` — each backed by a typed library function in `scripts/src/read/` or `scripts/src/write/`.
@@ -344,7 +350,7 @@ Skill hygiene, validator, and brand surface (added on this branch):
 - [x] `.claude/INTERNAL-SOURCE-POINTERS.md` (gitignored) captures the developer-machine paths under `~/topaz/topaz-{contracts,slipstream,interface,v2-subgraph,v3-subgraph}/`. Those pointers were removed from all tracked public docs and `scripts/src/config/addresses.ts`; the validator now rejects any future leak of those paths.
 - [x] `scripts/.yarn/install-state.gz` untracked + `**/.yarn/{cache,unplugged,build-state.yml,install-state.gz}` gitignored.
 - [x] Doc-only addresses (`BalanceLogicLibrary`, `DelegationLogicLibrary`, `NFTDescriptor`, `NFTSVG`, legacy `NonfungibleTokenPositionDescriptor_V1`) added to `scripts/src/config/addresses.ts` and `README.md` to satisfy strict byte-for-byte parity with `references/addresses.md`.
-- [x] Vitest harness + 173 unit tests across `path`, `epoch`, `tickMath`, `tokens`, `txBuilders`, `actionBuilders`, `apr`, `quotes`, `gauges`, and `multicall` (incl. mocked `buildBestSwapTx` calldata-shape test, bribe approval/deposit calldata tests, the 1.D goldens, multicall3 enumerate/decode coverage, `isStale` boundary/deadline cases, v3 native-BNB-out multicall/unwrap assertions, realized-fees APR goldens, and aggregate3 retry-policy coverage with injectable exec). `yarn test` / `yarn test:watch`.
+- [x] Vitest harness + 213 unit tests across `path`, `epoch`, `tickMath`, `tokens`, `txBuilders`, `actionBuilders`, `relayBuilders`, `topazRouting`, `topazSwap`, `multichain`, `topazApi`, `apr`, `quotes`, `gauges`, and `multicall` (incl. mocked `buildBestSwapTx` calldata-shape test, bribe approval/deposit calldata tests, the 1.D goldens, multicall3 enumerate/decode coverage, `isStale` boundary/deadline cases, v3 native-BNB-out multicall/unwrap assertions, realized-fees APR goldens, and aggregate3 retry-policy coverage with injectable exec). `yarn test` / `yarn test:watch`.
 - [x] Real bug fix surfaced by the tests: `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}` — JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `src/lib/tickMath.ts`. Smoke test still passes.
 - [x] Brand surface: `scripts/src/config/brand.ts` typed `BRAND` constant (web, docs, X, Telegram, GitHub, assetsRepo, plus `assets.{logoPng,logoSvg,tokenLogoPng,topaz100Png,previewJpg}` pointing at `raw.githubusercontent.com/topazdex/assets/main/*`). Catalog page `references/brand.md` with embedding examples. Links section in `README.md`, project-links section in `SKILL.md`. Validator enforces channel-URL parity across README/SKILL/brand.md and asset-URL presence in brand.md.
 - [x] Live smoke test (`yarn smoke`) extended from 5 to 9 checks (bytecode on every `ADDR`, TOPAZ symbol+decimals, v2/v3 TVL > 0, live `bestQuote` + route-type assertion, full `buildBestSwapTx` shape, live `Voter.gauges` + `isAlive`). Exits non-zero on any FAIL.
@@ -352,6 +358,13 @@ Skill hygiene, validator, and brand surface (added on this branch):
 - [x] Agent eval prompts (1.E) — `evals/` directory with 8 markdown checklists covering quote / build-swap / can-i-vote / claimable-bribes / quote-widget / deposit-bribe / explain-revert / safe-refusals.
 - [x] PR checklist (1.F) — `docs/PR-CHECKLIST.md` mirroring validator + tests + smoke + golden + eval steps. Includes "bumping a golden" guidance.
 - [x] `SKILL.md` Operating principles patched with an explicit broadcast-safety rule: "Build and quote by default; do not broadcast unless the user explicitly asks; label every output as one of {quote / built calldata / approval-needed / broadcast tx-hash}."
+
+Analytics source of truth (2026-09-28):
+
+- [x] The public multichain API (`/v1`) is the primary analytics source across `SKILL.md`, every `references/` callout, the `developers/` dashboard guides, `examples/query-pool-stats.md` and `scripts/README.md`; the legacy `/api/stats` reports and their typed client are scoped to retained BNB history. `references/analytics-multichain.md` carries the full route catalog and response semantics.
+- [x] `scripts/src/lib/topazApi.ts` (`fetchV1`, `fetchV1Pages`, `chainQualified`, `TopazApiRequestError`) plus the `stats.ts v1 <path> [--param value] [--all]` passthrough; `yarn smoke` checks `/v1/health` reports BNB ready.
+- [x] The `topaz-ve/prod` Goldsky graph is the third BNB subgraph (`veClient`, `SUBGRAPH_VE_URL`, entity catalog and queries in `references/analytics-subgraph.md`, `subgraphs` block in `skill.json`). The validator's drift check covers v2, v3 and ve across eight files. Stale "votes/bribes/locks aren't indexed" and "v3 `Position` not deployed to `prod`" claims were removed after verifying the live deployments.
+- [x] Auto Manage (ALM) read-side coverage: `references/auto-manage.md` explains what a vault is, where it is live (BNB, Robinhood, Arc), the `/v1/auto-manage/*` routes and their number-not-string / fraction-not-percent conventions, how a user's shares surface as `kind: managed-cl-position` in the account API, and the BNB `alm*` subgraph entities. Linked from `SKILL.md`, `developers/user-positions.md`, `references/liquidity-v3.md` and `references/multichain.md`.
 
 ### TODO — priority 1: foundational skill quality
 
@@ -364,7 +377,7 @@ Validator, unit tests, live smoke, goldens, agent evals, PR checklist. Land in o
 - [x] No hardcoded author-local paths (`/Users/...`, `/home/<name>/...`) outside of explicitly-noted "source pointers".
 - [x] No committed secrets (`.env`, private keys, API tokens) or vendored deps (`node_modules`, `.pnp.*`).
 - [x] Address table in `README.md` matches `scripts/src/config/addresses.ts` matches `references/addresses.md` byte-for-byte (case-insensitive).
-- [x] Subgraph URLs in `README.md`, `SKILL.md`, `scripts/.env.example`, `scripts/src/lib/subgraph.ts`, `developers/subgraph-recipes.md`, `developers/DEVELOPERS.md`, and `references/analytics-subgraph.md` all match.
+- [x] Subgraph URLs (v2, v3 and ve) in `README.md`, `SKILL.md`, `skill.json`, `scripts/.env.example`, `scripts/src/lib/subgraph.ts`, `developers/subgraph-recipes.md`, `developers/DEVELOPERS.md`, and `references/analytics-subgraph.md` all match.
 
 **B. TypeScript unit tests** (vitest, no RPC, run via `yarn test`):
 
@@ -438,6 +451,7 @@ The harness can be re-targeted: the YAML schema is runtime-agnostic, and any age
 
 ### TODO — priority 2: feature gaps surfaced by the robustness review
 
+- [ ] **Auto Manage write flows.** Vendor the frozen ABI v1 (`TopazManagedCLVault`, `TopazManagedCLZap`, `TopazManagedCLLens`, factory) and the factory / lens / zap addresses for BNB, Robinhood and Arc into `references/deployments.json` and `references/abis/deployed/`, then add deposit / withdraw / claim builders with gate checks (`paused`, `globalPause`, `live.depositsEnabled`, `live.isCalm`, gauge alive) and a multichain test. Read-side coverage landed in `references/auto-manage.md`; until this ships the skill must not invent Auto Manage calldata.
 - [x] **Native-BNB-out for v3 swaps.** Shipped: when `useBnb` is true (default) and the v3 swap's terminal token is WBNB, `buildV3SwapTx` and `buildV3PathSwapTx` emit `SwapRouter.multicall([exactInputSingle|exactInput(recipient=Router, amountOutMinimum=0), unwrapWETH9(amountOutMin, recipient=user)])`. Slippage is enforced at the unwrap boundary. Pass `useBnb: false` to keep WBNB output. `developers/frontend-integration.md` updated.
 - [x] **Multicall3 aggregation for `bestQuote`.** Shipped: every candidate is packed into `Multicall3.aggregate3(allowFailure=true, ...)` round trips (chunked via `aggregate3Chunked` so 3-hop v3 sweeps fit under the eth_call gas cap). One pool-existence probe runs first so the quoter sweep only sees routes through real pools. `concurrency` option is a deprecated no-op. Helpers `enumerateV2Plans` / `enumerateV3Plans` / `detectPoolInventory` / `decodeCandidates` are unit-tested with synthetic results.
 - [x] **Bundler-safe ABI loading.** Shipped: `scripts/src/lib/abis.ts` now uses static `import … with { type: "json" }` for every ABI. The module is statically resolvable by vite/esbuild/webpack/rollup and works in browser + edge runtimes. No FS access at runtime. Returns `JsonFragment[]` (typed against ethers' `Interface`/`Contract` signatures) so call-sites don't need any casts. The previous `loadAbi(name)` helper is gone — replaced by named imports of each JSON wrapper.
@@ -449,7 +463,7 @@ The harness can be re-targeted: the YAML schema is runtime-agnostic, and any age
 
 - [ ] `sdk/` folder is a single README pointing at `scripts/`. Either flesh it into a real publishable package (`@topazdex/sdk`, `tsup` build, types-only deps) or fold its README into `developers/DEVELOPERS.md` and delete the directory.
 - [x] `developers/frontend-integration.md` BNB-vs-WBNB section updated now that v3 native-BNB-out is shipped.
-- [ ] Verify `developers/subgraph-recipes.md`'s "Goldsky rejects mixing column filters with `or`" claim against the live deployment; the comment reads like it was written from a remembered failure rather than tested.
+- [x] Verify `developers/subgraph-recipes.md`'s "Goldsky rejects mixing column filters with `or`" claim against the live deployment. Verified 2026-09-28 against `topaz-v3/prod`: the endpoint returns `Cannot mix column filters with 'or' operator at the same level`, so the recipe's workaround is required.
 - [x] `developers/error-cookbook.md` — every revert across v2 Router, v3 SwapRouter / CLPool, NonfungiblePositionManager, Voter, VotingEscrow, gauges, ERC20, plus generic patterns (empty revert data, nonce / gas) — each entry has source pointer, UI string, and a next step. Wired from `SKILL.md` nav, `developers/DEVELOPERS.md`, and the priority-1 `evals/07-explain-revert.md` diagnostic.
 
 In skill 3.0.0: the default swap builder returns a full batch. See [the migration contract](references/swapping-api.md) and [release notes](CHANGELOG.md).

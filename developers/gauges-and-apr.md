@@ -46,7 +46,7 @@ Use `scripts/src/read/claimable.ts:claimableSummary(tokenId, address)` for examp
 
 ## APR recipe
 
-`scripts/src/read/apr.ts` exports pool-level and position-level APR helpers. For v3 pools, `poolApr` uses a position-specific formula (simulating a preset-range **$100** deposit) matching the production frontend and the Stats API — not a simple pool-wide average. Label it as an estimate on $100, not as a pool-wide rate.
+`scripts/src/read/apr.ts` exports pool-level and position-level APR helpers. For v3 pools, `poolApr` uses a position-specific formula (simulating a preset-range **$100** deposit) matching the production frontend and the public API's `aprScenario` — not a simple pool-wide average. Label it as an estimate on $100, not as a pool-wide rate.
 
 ```ts
 import { poolApr, positionApr, votingApr, rebaseApr } from "../scripts/src/read/apr.js";
@@ -67,37 +67,37 @@ Suggested display:
 | Voting APR | `votingApr(pool)` | veTOPAZ holders allocating votes |
 | Rebase APR | `rebaseApr()` | all veTOPAZ holders |
 
-### Pre-computed APRs via Stats API (recommended for dashboards)
+### Pre-computed APRs via the public API (recommended for dashboards)
 
-For dashboards and gauge listings, **prefer the Stats API** — it returns every APR pre-computed, plus history and bribe markets, with no manual calculation or subgraph + on-chain dance:
+For dashboards and gauge listings on any chain, **prefer the public multichain API** — it returns APRs pre-computed with the scenario they came from, plus funding history and bribe markets, with no manual calculation or subgraph + on-chain dance:
 
 ```ts
-import { fetchGauges, fetchGauge, fetchPools, fetchGaugeRewards, fetchBribeMarkets } from "../scripts/src/index.js";
+import { fetchV1, fetchV1Pages } from "../scripts/src/index.js";
 
-// All gauges: emissionApr, feeApr, bribeApr, totalApr, stakedTvlUsd, vote weights
-const { data: gauges } = await fetchGauges();
+// Every gauge on BNB: emissionsApr, stakedTvlUsd, voteWeightRaw, rewardRateRaw, periodFinish, alive
+const gauges = await fetchV1Pages("/gauges", { chainIds: 56 });
 
-// Pool list with denormalized gauge APR — sort/filter on it directly
-const { data: pools } = await fetchPools({ sort: "gaugeApr", incentivized: true, minTvl: 10000 });
+// Pool list ranked by the emissions scenario — feeApr, emissionsApr and aprScenario per row
+const { data: pools } = await fetchV1("/pools", { chainIds: 56, sort: "emissionsApr", incentivized: true, minTvlUsd: 10000, limit: 25 });
 
-// Single gauge APR-breakdown history (≤672 snapshots, ~7 days)
-const { data: gauge } = await fetchGauge("0xGAUGE");          // { current, history }
+// Single gauge: stake, votes, rate and observed pool metrics; /history for epoch observations
+const { data: gauge } = await fetchV1("/gauges/56/0xGAUGE");
 
-// Per-epoch reward-token breakdown (bribe + fee, USD-priced)
-const { data: rewards } = await fetchGaugeRewards("0xGAUGE");
+// Notification, claim and fee-claim events; /bribes for funding by epoch
+const { data: rewards } = await fetchV1("/gauges/56/0xGAUGE/rewards");
 
-// Current bribe markets with derived $/vote — best signal for vote routing
-const { data: markets } = await fetchBribeMarkets({ minUsd: 1 });
+// Current bribe markets with derived dollarPerVote — best signal for vote routing
+const { data: markets } = await fetchV1("/markets/bribes", { chainIds: 56, sort: "dollarPerVote", minUsd: 1 });
 ```
 
-Snapshots every 15 min; the OpenAPI spec (`https://api.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md`. Drop to the on-chain `apr.ts` helpers below only for block-accurate or custom-window/position-specific APRs.
+Every response carries `meta.snapshots[]` with per-chain freshness and a `limitations` list; a null APR means unresolved, not zero. The OpenAPI contract (`https://api.topazdex.com/openapi.json`) is the canonical schema. See `references/analytics-multichain.md`. Drop to the on-chain `apr.ts` helpers below only for block-accurate or custom-window/position-specific APRs.
 
 ### Caveats every APR display must respect
 
 - **v3 `emissionApr` is position-specific, not pool-wide.** `poolApr` simulates a $100 position at a ±3% (volatile) or ±0.1% (stable) preset spread — the same formula the production frontend shows in gauge listings. For an individual staked position, use `positionApr(tokenId)` instead. Out-of-range CL positions earn nothing.
-- **Match the reference deposit if you compute listing APRs yourself.** The number is the reference position's share *after* it joins the gauge, so on a thin gauge the deposit size changes the result. Frontend, Stats API, and `apr.ts` all standardize on $100 (`PRESET_DEPOSIT_USD`); pool tables mix API-served and client-computed values per pool, so a different figure makes the displayed APR jump when the source switches.
+- **Match the reference deposit if you compute listing APRs yourself.** The number is the reference position's share *after* it joins the gauge, so on a thin gauge the deposit size changes the result. Frontend, public API, and `apr.ts` all standardize on $100 (`PRESET_DEPOSIT_USD`); pool tables mix API-served and client-computed values per pool, so a different figure makes the displayed APR jump when the source switches.
 - **`votingApr` is a one-epoch annualization** based on this epoch's deposited rewards and the pool's current vote weight. Bribes are typically posted late in the epoch — a Monday snapshot will look much worse than a Wednesday snapshot. Either cache the previous-completed-epoch number or label the freshness explicitly.
-- **Subgraph lag**: APR numbers backed by `volumeUSD`/`feesUSD` lag the chain by a few blocks. Combine with on-chain `slot0` / `getReserves` for "now" pricing.
+- **Indexer lag**: API and subgraph APR inputs (`volumeUSD`/`feesUSD`, staked TVL) trail the chain by a snapshot or a few blocks; the API reports the exact `indexedBlock` in `meta.snapshots[]`. Combine with on-chain `slot0` / `getReserves` for "now" pricing.
 - **Dead gauges**: `Voter.isAlive(gauge) === false` means emissions stopped. `poolApr` already returns `emissionApr: 0` in that case but you should label the gauge so users don't expect rewards.
 
 ## Voting UX

@@ -114,4 +114,4 @@ Compare against **manual** veTOPAZ management (vote + claim fees/bribes/rebase y
 - **Depositing forfeits your manual vote** for the duration — the relay votes the aggregated weight.
 - **Once per epoch, not in the final hour.** Surface `epochStart` / window timing if a deposit/withdraw is rejected (`epoch-timing.md`).
 - **`FreeManagedReward` is dynamic** — never hardcode it; resolve via `ve.managedToFree(mTokenId)`.
-- **No relay subgraph.** Relay live state is read on-chain; underlying gauge/pool APRs come from the Stats API (`analytics-stats-api.md`).
+- **Relay history is indexed on the `topaz-ve` subgraph** (`relays`, `relayEpoches`, `relayActions`, `relayEpochTokenFlows`, `managedDeposits`): per-epoch compounded/distributed amounts with USD, swaps, and depositor weights. Live relay state that gates a transaction (`canEnter`, balances, `managedToFree`) is still read on-chain; underlying gauge/pool APRs come from the public API (`analytics-multichain.md`).

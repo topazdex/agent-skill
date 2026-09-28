@@ -128,7 +128,8 @@
     "xtopaz_faq": "references/xtopaz-faq.md",
     "deployments": "references/deployments.json",
     "website": "references/website.md",
-    "multichain_developer": "developers/multichain-integration.md"
+    "multichain_developer": "developers/multichain-integration.md",
+    "auto_manage": "references/auto-manage.md"
   },
   "topaz_id": {
     "description": "Topaz ID is the Topaz ecosystem account/identity layer — a self-custodial BNB Chain global wallet. The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
@@ -185,29 +186,62 @@
     "arc"
   ],
   "analytics_api": {
-    "description": "Public multichain analytics. Preserve chain identity, source timestamps, rolling windows and partial coverage.",
+    "description": "Public multichain analytics: the primary data source for pools, prices, gauges, votes, epochs, incentives, account portfolios, xTOPAZ and bridge packets on every chain. Preserve chain identity, source timestamps, rolling windows, meta.snapshots[].limitations and partial coverage.",
     "base_url": "https://api.topazdex.com/v1",
     "openapi": "https://api.topazdex.com/openapi.json",
     "docs": "https://api.topazdex.com/docs",
     "catalog": "https://www.topazdex.com/.well-known/api-catalog",
     "endpoints": {
       "chains": "https://api.topazdex.com/v1/chains",
+      "health": "https://api.topazdex.com/v1/health/chains",
+      "deployments": "https://api.topazdex.com/v1/deployments",
       "protocol": "https://api.topazdex.com/v1/protocol",
       "protocol_history": "https://api.topazdex.com/v1/protocol/history",
       "protocol_daily": "https://api.topazdex.com/v1/protocol/daily?alignment=utc",
+      "protocol_trailing": "https://api.topazdex.com/v1/protocol/trailing",
       "pools": "https://api.topazdex.com/v1/pools",
       "pool_detail": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}",
       "pool_history": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}/history",
+      "pool_daily": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}/daily",
+      "pool_trailing": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}/trailing",
+      "pool_ticks": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}/ticks",
+      "pool_bribes": "https://api.topazdex.com/v1/pools/{chainId}/{poolAddress}/bribes",
       "tokens": "https://api.topazdex.com/v1/tokens",
       "token_detail": "https://api.topazdex.com/v1/tokens/{chainId}/{tokenAddress}",
       "token_price_history": "https://api.topazdex.com/v1/tokens/{chainId}/{tokenAddress}/price-history",
+      "token_price_changes": "https://api.topazdex.com/v1/tokens/{chainId}/{tokenAddress}/price-changes",
+      "prices": "https://api.topazdex.com/v1/prices?tokens={chainId}:{tokenAddress}",
+      "token_lists": "https://api.topazdex.com/v1/token-lists/{chainId}",
+      "categories": "https://api.topazdex.com/v1/categories",
+      "curation": "https://api.topazdex.com/v1/curation",
       "gauges": "https://api.topazdex.com/v1/gauges",
+      "gauge_detail": "https://api.topazdex.com/v1/gauges/{chainId}/{gaugeAddress}",
       "gauge_rewards": "https://api.topazdex.com/v1/gauges/{chainId}/{gaugeAddress}/rewards",
+      "gauge_bribes": "https://api.topazdex.com/v1/gauges/{chainId}/{gaugeAddress}/bribes",
+      "gauge_history": "https://api.topazdex.com/v1/gauges/{chainId}/{gaugeAddress}/history",
       "bribes": "https://api.topazdex.com/v1/bribes",
       "bribe_markets": "https://api.topazdex.com/v1/markets/bribes",
       "votes": "https://api.topazdex.com/v1/votes",
       "epochs": "https://api.topazdex.com/v1/epochs",
-      "health": "https://api.topazdex.com/v1/health/chains"
+      "epoch_detail": "https://api.topazdex.com/v1/epochs/{chainId}/{epochStart}",
+      "account_portfolio": "https://api.topazdex.com/v1/accounts/{address}/portfolio",
+      "account_liquidity_positions": "https://api.topazdex.com/v1/accounts/{address}/liquidity-positions",
+      "account_voting_positions": "https://api.topazdex.com/v1/accounts/{address}/voting-positions",
+      "account_votes": "https://api.topazdex.com/v1/accounts/{address}/votes",
+      "account_rewards": "https://api.topazdex.com/v1/accounts/{address}/rewards",
+      "account_activity": "https://api.topazdex.com/v1/accounts/{address}/activity",
+      "account_xtopaz": "https://api.topazdex.com/v1/accounts/{address}/xtopaz",
+      "xtopaz": "https://api.topazdex.com/v1/xtopaz",
+      "xtopaz_epochs": "https://api.topazdex.com/v1/xtopaz/epochs",
+      "xtopaz_rate_history": "https://api.topazdex.com/v1/xtopaz/rate-history",
+      "bridge": "https://api.topazdex.com/v1/bridge?address={address}",
+      "bridge_packet": "https://api.topazdex.com/v1/bridge/{guid}",
+      "auto_manage_vaults": "https://api.topazdex.com/v1/auto-manage/vaults",
+      "auto_manage_vault_detail": "https://api.topazdex.com/v1/auto-manage/vaults/{chainId}/{vault}",
+      "auto_manage_vault_history": "https://api.topazdex.com/v1/auto-manage/vaults/{chainId}/{vault}/history",
+      "auto_manage_vault_rebalances": "https://api.topazdex.com/v1/auto-manage/vaults/{chainId}/{vault}/rebalances",
+      "auto_manage_vault_activity": "https://api.topazdex.com/v1/auto-manage/vaults/{chainId}/{vault}/activity",
+      "quote_providers": "https://api.topazdex.com/v1/quote-providers"
     },
     "historical_reports": {
       "description": "Separately dated Topaz Stats reports without a new API equivalent; unaffected by network filters. Multichain lifetime totals are coming.",
@@ -219,5 +253,12 @@
         "bnb_fee_settings": "https://api.topazdex.com/api/stats/live/dynamic-fees"
       }
     }
+  },
+  "subgraphs": {
+    "description": "BNB Chain only. Stable Goldsky prod tags; GraphQL POST, no auth. Use /v1 first; these graphs cover ad-hoc GraphQL and event history. Spoke chains are served through /v1 (their graphs are release-pinned and change identity).",
+    "v2": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn",
+    "v3": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn",
+    "ve": "https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-ve/prod/gn",
+    "guide": "references/analytics-subgraph.md"
   }
 }

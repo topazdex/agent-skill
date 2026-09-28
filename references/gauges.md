@@ -7,7 +7,7 @@ Both gauge types support the same conceptual API: deposit, withdraw, getReward, 
 - **v2 `Gauge`** stakes the pool's ERC20 LP token, takes a `uint256` amount.
 - **v3 `CLGauge`** stakes the position NFT, takes a `uint256` tokenId. Emissions accrue only while the position is **in range**.
 
-> **Reading gauge analytics (APR, vote weights, staked TVL, rewards)?** Use the Stats API — `/gauges` lists every gauge with `emissionApr`/`feeApr`/`bribeApr`/`totalApr` and vote weights, `/gauges/{addr}` adds 7-day history, and `/gauges/{addr}/rewards` breaks down per-epoch reward tokens. The on-chain calls below are for staking/claiming and block-accurate state. See `references/analytics-stats-api.md`.
+> **Reading gauge analytics (APR, vote weights, staked TVL, rewards)?** Use the public API — `GET /v1/gauges?chainIds=56` lists every gauge with `emissionsApr`, `stakedTvlUsd`, `voteWeightRaw`, `rewardRateRaw`, `periodFinish`, `alive` and its `feesVotingReward` / `bribeVotingReward` addresses; `GET /v1/gauges/56/{gauge}` adds the pool's observed metrics, `…/history` the per-epoch observations, `…/rewards` the notification and claim events, `…/bribes` the funding by epoch. On BNB the `topaz-ve` subgraph indexes `gauges`, `gaugeEpoches`, `gaugeStakes` and `stakedCLPositions` for ad-hoc GraphQL. The on-chain calls below are for staking/claiming and block-accurate state. See `references/analytics-multichain.md`.
 
 ## Voter API — exact function names
 

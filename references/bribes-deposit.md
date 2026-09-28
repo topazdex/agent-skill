@@ -83,12 +83,14 @@ await (await bribe.notifyRewardAmount(TOKEN, AMOUNT)).wait();
 
 ## Reading a pool's current and historical bribes
 
-For indexed bribe data, prefer the Stats API — it's the easiest, fastest, most accurate source:
-- History with USD values and filtering: `curl "https://api.topazdex.com/api/stats/bribes?pool=0xPOOL"` (also `/pools/{addr}/bribes`, `/gauges/{addr}/bribes`).
-- Foundation-only bribes: `/api/stats/foundation/bribes`; per-epoch foundation spend: `/api/stats/bribes/totals`.
-- **Current bribe markets** with derived `$/vote` (where a bribe buys the most votes): `/api/stats/markets/bribes`.
+For indexed bribe data, prefer the public API — one call, USD-priced, with explicit valuation coverage:
+- Funding on a pool's gauge, per epoch: `curl "https://api.topazdex.com/v1/pools/56/0xPOOL/bribes?kind=bribe"` (also `/v1/gauges/56/0xGAUGE/bribes`; `kind=all` includes trading fees routed to voters).
+- Cross-chain funding log with filters: `/v1/bribes?chainIds=56&epochStart=<unix>&minUsd=100`.
+- **Current bribe markets** with derived `dollarPerVote` (where a bribe buys the most votes): `/v1/markets/bribes?chainIds=56&sort=dollarPerVote`.
+- Raw `RewardNotification` events (token, amount, `amountUSD`, `from`, epoch, tx) are on the `topaz-ve` subgraph for ad-hoc GraphQL.
+- Foundation-only history stays on the legacy reports: `/api/stats/foundation/bribes` and `/api/stats/bribes/totals`.
 
-See `references/analytics-stats-api.md`.
+See `references/analytics-multichain.md` and `references/analytics-subgraph.md`.
 
 For on-chain reads of the current epoch's raw amounts:
 

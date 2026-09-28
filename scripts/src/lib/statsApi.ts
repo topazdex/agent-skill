@@ -1,5 +1,7 @@
-// Typed client for the Topaz Stats API (https://api.topazdex.com/api/stats).
-// Read-only; no auth required for public endpoints.
+// Typed client for the legacy BNB-only Topaz Stats reports (https://api.topazdex.com/api/stats).
+// Read-only; no auth. Current multichain data lives under /v1 — use `fetchV1` from
+// `./topazApi.ts` for that. Keep this client for the retained historical reports only
+// (`/protocol` lifetime totals, `/foundation*`, `/topaz`, `/ve`, `/live/dynamic-fees`).
 
 const BASE_URL =
   process.env.TOPAZ_STATS_API_URL ?? "https://api.topazdex.com/api/stats";

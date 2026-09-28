@@ -2,7 +2,7 @@
 
 `VotingEscrow` at `0xe951aC65EFE86682311ab0d8995E7A58750c5eB3` mints **ERC721 NFTs** that represent a locked TOPAZ position. The voting power of a lock decays linearly to zero over its remaining life; max lock is **4 years**.
 
-> **Protocol-wide veTOPAZ stats** (total locked TOPAZ, aggregate voting power) and **foundation veNFT lock details** (per-NFT `lockedAmount`, `votingPower`, `lockEnd`, `isPermanent`) are served by the Stats API at `/ve` — the foundation locks are fetched live from RPC server-side. Use the on-chain reads below for an arbitrary user's own locks. See `references/analytics-stats-api.md`.
+> **Indexed lock data.** A wallet's veNFTs with amount, unlock, permanence, voting power and active-vote status come from `GET /v1/accounts/{address}/voting-positions?chainIds=56` (also inside `/portfolio`). The `topaz-ve` subgraph indexes every lock (`veNFTs`, `lockEvents`, `rebaseClaims`, `managedDeposits`) and protocol totals (`protocolStates`: `totalLocked`, `permanentLocked`, `activeVeNFTCount`). The legacy `/api/stats/ve` report keeps BNB escrow totals and Foundation lock details. Use the on-chain reads below for the pre-transaction check on a specific lock. See `references/analytics-multichain.md` and `references/analytics-subgraph.md`.
 
 ## Key constants
 

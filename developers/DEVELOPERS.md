@@ -34,7 +34,7 @@ smart-wallet address, popup-gesture requirements).
 - **Topaz ID / wallet login integration**: use `@topazdex/id-connect` when a partner app wants to offer "Connect with Topaz ID", show Topaz ID profile identity, or let users sign through the Topaz ID consent flow. See [`topaz-id-connect.md`](topaz-id-connect.md).
 - **Frontend or wallet integration**: use transaction builders from `scripts/src/lib/txBuilders.ts`. The default swap builder returns the complete `TopazSwapBatch.transactions` list plus quote metadata. Submit all calls atomically; explicit legacy builders retain the old single-transaction shape.
 - **Backend bots / ops agents**: use CLI wrappers under `scripts/src/cli/` or write modules under `scripts/src/write/`, which broadcast with an env-provided `PRIVATE_KEY`.
-- **Analytics / dashboards**: use the Goldsky subgraphs for indexed pool/volume/TVL data, and on-chain reads for gauges, votes, claimables, and real-time pool state.
+- **Analytics / dashboards**: use the public multichain API (`https://api.topazdex.com/v1`) for pools, prices, gauges, votes, epochs, incentives, account portfolios and history on every chain; the BNB Goldsky subgraphs (v2, v3, ve) for ad-hoc GraphQL and event history; on-chain reads for the final pre-transaction state.
 - **Protocol reference**: use `references/` for addresses, ABIs, timing rules, pitfalls, and contract-specific mechanics.
 
 ## Quickstart
@@ -137,22 +137,24 @@ See `developers/swap-calldata.md`.
 
 ### Pool and position dashboards
 
-For protocol/pool/gauge stats, **pre-computed APRs**, token prices, epoch/bribe data, and **historical time-series**, prefer the public Stats API — one REST call, no math, and its OpenAPI spec is the canonical contract you can codegen against:
+For pools, tokens, prices, gauges, votes, epochs, incentives, **pre-computed APRs**, account portfolios and **history** on all five chains, prefer the public multichain API — one REST call, explicit coverage metadata, and an OpenAPI contract you can codegen against:
 
-- Base: `https://api.topazdex.com/api/stats` — e.g. `/protocol/history`, `/pools?sort=gaugeApr`, `/pools/{addr}/daily`, `/gauges`, `/tokens`, `/markets/bribes`.
-- Spec (source of truth): `https://api.topazdex.com/api/stats/openapi.json` — `npx openapi-typescript … -o topaz-api.ts`.
-- See `references/analytics-stats-api.md` for the full catalog and decision table.
+- Base: `https://api.topazdex.com/v1` — e.g. `/v1/pools?chainIds=56&sort=emissionsApr`, `/v1/pools/{chainId}/{pool}/history`, `/v1/gauges?chainIds=all`, `/v1/prices?tokens=56:0x…`, `/v1/markets/bribes`, `/v1/accounts/{address}/portfolio`.
+- Spec (source of truth): `https://api.topazdex.com/openapi.json` — `npx openapi-typescript https://api.topazdex.com/openapi.json -o topaz-api.ts`.
+- Helpers: `fetchV1` / `fetchV1Pages` in `scripts/src/lib/topazApi.ts`; `yarn tsx src/cli/stats.ts v1 <path>` for a quick look.
+- See `references/analytics-multichain.md` for the route catalog, envelope, pagination and coverage rules. The legacy `/api/stats` reports (`references/analytics-stats-api.md`) are BNB-only history.
 
-Use the subgraphs for ad-hoc GraphQL filtering, per-transaction events, or history beyond the API's window:
+Use the BNB subgraphs for ad-hoc GraphQL filtering, per-transaction events, or entity history beyond the API's window:
 
 - v2 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v2/prod/gn`
 - v3 endpoint: `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-v3/prod/gn`
+- ve endpoint (locks, votes, bribes, epochs, relays, xTOPAZ hub): `https://api.goldsky.com/api/public/project_cmgzljqwl006c5np2gnao4li4/subgraphs/topaz-ve/prod/gn`
 
-Use on-chain reads for current ownership and live state:
+Use on-chain reads for the final pre-transaction state:
 
 - v2 LP balances: ERC20 `balanceOf(user)` on pair addresses.
-- v3 positions: `NonfungiblePositionManager.balanceOf`, `tokenOfOwnerByIndex`, `positions(tokenId)`.
-- gauges/votes/claimables: `Voter`, `Gauge`, `CLGauge`, `VotingEscrow`, reward contracts.
+- v3 positions: `NonfungiblePositionManager.positions(tokenId)`, `CLPool.slot0()`, `CLGauge.earned`.
+- gauges/votes/claimables: `Voter`, `Gauge`, `CLGauge`, `VotingEscrow`, reward contracts `earned`.
 
 See `developers/user-positions.md` and `developers/subgraph-recipes.md`.
 

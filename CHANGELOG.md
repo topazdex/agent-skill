@@ -12,6 +12,13 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+- Make the public multichain API (`https://api.topazdex.com/v1`) the primary analytics source everywhere: `SKILL.md`, every analytics callout in `references/` (voting, locks, bribes, epochs, APR, gauges, tokens, relays, on-chain), the `developers/` dashboard guides, `examples/query-pool-stats.md` and `scripts/README.md` now point at `/v1` routes first. The legacy `/api/stats` reports and their typed client are scoped to the retained BNB history. `references/analytics-multichain.md` carries the full route catalog (55 routes), envelope, pagination and error semantics, and `meta.snapshots[].limitations` guidance.
+- Add `scripts/src/lib/topazApi.ts` (`fetchV1`, `fetchV1Pages`, `chainQualified`, `TopazApiRequestError`) with unit tests, a `stats.ts v1 <path> [--param value] [--all]` passthrough command, and a `/v1/health` smoke check. `TOPAZ_API_URL` overrides the base URL.
+- Add the BNB `topaz-ve` Goldsky subgraph (`…/subgraphs/topaz-ve/prod/gn`) alongside v2 and v3: `veClient`, `SUBGRAPH_URLS.ve`, `SUBGRAPH_VE_URL`, an entity catalog and example queries in `references/analytics-subgraph.md` and `developers/subgraph-recipes.md`, and a `subgraphs` block in `skill.json`. The validator's subgraph drift check now covers v2, v3 and ve across eight files including `skill.json`.
+- Remove stale indexing claims after verifying the live `prod` deployments: the v3 graph serves `Position` (owner, range, liquidity, `staked`, `gauge`) and `User.positions`; votes, bribes, fee notifications, locks, rebases, epochs, gauge stakes and relays are indexed on `topaz-ve`. `developers/user-positions.md` and `references/analytics-onchain.md` route discovery through `/v1/accounts/{address}/portfolio` and the graphs, with on-chain reads reserved for pre-transaction checks.
+- Add Auto Manage (ALM) read-side coverage: new `references/auto-manage.md` (what a vault is, where it is live, `/v1/auto-manage/*` discovery and metrics with their number / annual-fraction conventions, a user's `kind: managed-cl-position` shares in the account API, BNB `alm*` subgraph entities, and the explicit statement that deposit / withdraw / claim builders are not in the skill yet), linked from `SKILL.md`, `developers/user-positions.md`, `references/liquidity-v3.md`, `references/multichain.md`, the API and subgraph references and `skill.json`.
+- Verify the Goldsky `or`-filter limitation in `developers/subgraph-recipes.md` against the live v3 deployment (column filters beside `or` at the same level are rejected), closing that README TODO item.
+
 
 ## [3.2.1] — 2026-09-21
 

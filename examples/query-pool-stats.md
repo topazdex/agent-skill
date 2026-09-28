@@ -2,47 +2,53 @@
 
 **Goal:** Get a complete picture of a pool — TVL, 24h volume, fees, current price, emission/fee/gauge APR, and (if applicable) voting incentive density.
 
-> **Recommended path: the Stats API.** It already returns every number below — TVL, volume, fees, **pre-computed fee APR and gauge APR**, 7-day history, and the pool's gauge — in a single REST call. See [Recommended: Stats API](#recommended-stats-api-default-path) at the top of the workflow. The subgraph + on-chain recipe that follows is for when you need **block-accurate state or a custom APR window**; reach for it only then.
+> **Recommended path: the public multichain API.** It already returns every number below — TVL, rolling volume and fees, **pre-computed fee APR and emissions APR with its scenario**, history, and the pool's gauge — in a single REST call, for any of the five chains. See [Recommended: public API](#recommended-public-api-default-path) at the top of the workflow. The subgraph + on-chain recipe that follows is BNB-only and for when you need **block-accurate state or a custom APR window**; reach for it only then.
 
 The example uses the WBNB/USDT v3 pool at `tickSpacing=200`, but the script handles either v2 or v3 transparently.
 
-## Recommended: Stats API (default path)
+## Recommended: public API (default path)
 
-The fastest, most accurate way — no manual APR math:
-
-```bash
-# Single pool: { current, history (≤672 snapshots), gauge, gaugeHistory }
-curl https://api.topazdex.com/api/stats/pools/0xPOOL | jq .data
-
-# Long-horizon daily candles (beyond the 7-day snapshot window)
-curl "https://api.topazdex.com/api/stats/pools/0xPOOL/daily?days=90" | jq .data
-
-# Top pools by gauge APR, incentivized only, min $10k TVL
-curl "https://api.topazdex.com/api/stats/pools?sort=gaugeApr&incentivized=true&minTvl=10000&limit=10" | jq .data
-
-# All gauges with emission/fee/bribe/total APR
-curl https://api.topazdex.com/api/stats/gauges | jq .data
-```
-
-Via the CLI:
+The fastest, most accurate way — no manual APR math, any chain (`56` below; use `8453`, `4663`, `1` or `5042` for a spoke):
 
 ```bash
-yarn tsx src/cli/stats.ts api-pools --sort gaugeApr --incentivized --min-tvl 10000 --limit 10
-yarn tsx src/cli/stats.ts pool-daily 0xPOOL --days 90
-yarn tsx src/cli/stats.ts api-gauges
+# Single pool: tokens, TVL, rolling 24h/7d volume and fees, feeApr, emissionsApr + aprScenario, gauge
+curl "https://api.topazdex.com/v1/pools/56/0xPOOL?aprProfile=standard" | jq .data
+
+# History: daily candles back to the first observation, or explicit UTC days / trailing windows
+curl "https://api.topazdex.com/v1/pools/56/0xPOOL/history?interval=1d&from=earliest" | jq .data
+curl "https://api.topazdex.com/v1/pools/56/0xPOOL/daily?days=90&alignment=utc" | jq .data
+curl "https://api.topazdex.com/v1/pools/56/0xPOOL/trailing?windows=24h,7d" | jq .data
+
+# Top pools by emissions APR, incentivized only, min $10k TVL
+curl "https://api.topazdex.com/v1/pools?chainIds=56&sort=emissionsApr&incentivized=true&minTvlUsd=10000&limit=10" | jq .data
+
+# Every gauge with emissionsApr, staked TVL, vote weight and reward contracts
+curl "https://api.topazdex.com/v1/gauges?chainIds=56&limit=100" | jq .data
+
+# Bribe and fee funding on the pool's gauge, and where a vote earns most
+curl "https://api.topazdex.com/v1/pools/56/0xPOOL/bribes?kind=all" | jq .data
+curl "https://api.topazdex.com/v1/markets/bribes?chainIds=56&sort=dollarPerVote" | jq .data
 ```
 
-Or the typed client:
+Via the CLI (prints the full `{ ok, data, meta, pageInfo }` envelope):
+
+```bash
+yarn tsx src/cli/stats.ts v1 /pools/56/0xPOOL --aprProfile standard
+yarn tsx src/cli/stats.ts v1 /pools --chainIds 56 --sort emissionsApr --incentivized true --minTvlUsd 10000 --limit 10
+yarn tsx src/cli/stats.ts v1 /gauges --chainIds 56 --all
+```
+
+Or programmatically:
 
 ```ts
-import { fetchPool, fetchPools, fetchGauges, fetchPoolDaily } from "../scripts/src/index.js";
+import { fetchV1, fetchV1Pages } from "../scripts/src/index.js";
 
-const { data: detail } = await fetchPool("0xPOOL");        // current + history + gauge + gaugeHistory
-const { data: topPools } = await fetchPools({ sort: "gaugeApr", incentivized: true, minTvl: 10000 });
-const { data: daily } = await fetchPoolDaily("0xPOOL", { days: 90 });
+const { data: detail } = await fetchV1("/pools/56/0xPOOL", { aprProfile: "standard" });
+const { data: topPools } = await fetchV1("/pools", { chainIds: 56, sort: "emissionsApr", incentivized: true, minTvlUsd: 10000 });
+const gauges = await fetchV1Pages("/gauges", { chainIds: 56 });
 ```
 
-The Stats API snapshots every 15 minutes; its OpenAPI spec (`https://api.topazdex.com/api/stats/openapi.json`) is the canonical schema. See `references/analytics-stats-api.md` for the full decision table.
+Read `meta.snapshots[]` for the indexed block and any `limitations`; `volume24hUsd` / `fees24hUsd` are rolling windows, not UTC days; a null APR is unresolved, not zero. The OpenAPI contract (`https://api.topazdex.com/openapi.json`) is the canonical schema. See `references/analytics-multichain.md` for the route catalog and decision table.
 
 ---
 

@@ -26,11 +26,12 @@ src/
 │   ├── client.ts       # provider() + signer() factories from env
 │   ├── erc20.ts        # balanceOf, allowance, approveIfNeeded, decimals cache
 │   ├── abis.ts         # Loads JSON ABIs from ../../references/abis
-│   ├── subgraph.ts     # GraphQLClient instances for v2 + v3
+│   ├── subgraph.ts     # GraphQLClient instances for the BNB v2, v3 and ve graphs
 │   ├── tickMath.ts     # sqrtPriceX96 <-> price <-> tick (Uniswap V3 SDK math)
 │   ├── path.ts         # v3 path encode/decode + mixed-route sentinels
 │   ├── pricing.ts      # Token USD price (subgraph or DexScreener)
-│   ├── statsApi.ts     # Typed client for the public Stats API (every endpoint)
+│   ├── topazApi.ts     # fetchV1 / fetchV1Pages for the public multichain API (/v1)
+│   ├── statsApi.ts     # Typed client for the legacy BNB Stats reports (/api/stats)
 │   └── epoch.ts        # WEEK / epochStart / vote window helpers
 ├── read/               # No-signer reads (RPC + subgraph)
 │   ├── pools.ts        # v2/v3 unified pool info
@@ -78,7 +79,16 @@ yarn tsx src/cli/stats.ts bribes --pool 0xPOOL
 yarn tsx src/cli/stats.ts apr --pool 0xPOOL [--position 1234]
 yarn tsx src/cli/stats.ts smoke                 # quick end-to-end sanity check
 
-# Stats API (https://api.topazdex.com/api/stats) — pre-computed, no RPC needed
+# Public multichain API (https://api.topazdex.com/v1) — any chain, pre-computed, no RPC needed
+yarn tsx src/cli/stats.ts v1 /chains
+yarn tsx src/cli/stats.ts v1 /pools --chainIds 8453 --scope all --sort emissionsApr --limit 10   # spokes need scope=all until curated
+yarn tsx src/cli/stats.ts v1 /pools/56/0xPOOL --aprProfile standard
+yarn tsx src/cli/stats.ts v1 /gauges --chainIds 56 --all            # follows pageInfo.nextCursor
+yarn tsx src/cli/stats.ts v1 /markets/bribes --chainIds 56 --sort dollarPerVote
+yarn tsx src/cli/stats.ts v1 /prices --tokens 56:0xdf002282c1474c9592780618adda7eaa99998abd
+yarn tsx src/cli/stats.ts v1 /accounts/0xYOUR_WALLET/portfolio --chainIds all
+
+# Legacy BNB Stats reports (https://api.topazdex.com/api/stats) — retained history only
 yarn tsx src/cli/stats.ts protocol              # protocol overview
 yarn tsx src/cli/stats.ts protocol-history --days 30
 yarn tsx src/cli/stats.ts protocol-daily --days 30
@@ -173,7 +183,7 @@ await tx.wait();
 yarn smoke
 ```
 
-This runs a read-only sequence: reads several known addresses on-chain, queries the v2 and v3 subgraphs for the top pool, computes an APR for one live gauge, and prints PASS/FAIL for each. Useful as a deploy-time test or to verify your RPC endpoint is healthy.
+This runs a read-only sequence: reads several known addresses on-chain, queries the v2 and v3 subgraphs for the top pool, computes an APR for one live gauge, checks `/v1/health` reports BNB ready, and prints PASS/FAIL for each. Useful as a deploy-time test or to verify your RPC endpoint is healthy.
 
 ## Safety
 

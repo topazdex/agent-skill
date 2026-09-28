@@ -41,7 +41,7 @@ Topaz ID and the Topaz DEX protocol are **separate responsibilities**:
   UX — the wallet connection, the user's Topaz ID name/avatar, and the consent
   popup the user approves transactions through.
 - **The Topaz protocol builders** (`scripts/src/lib/txBuilders.ts`,
-  `actionBuilders.ts`, the `references/` docs, the Stats API) handle swaps,
+  `actionBuilders.ts`, the `references/` docs, the public API) handle swaps,
   liquidity, gauges, veTOPAZ locks, votes, bribes, rewards, and analytics.
 
 Most partner apps use **both**: Topaz ID Connect for who the user is and how they
@@ -621,7 +621,7 @@ Use the Topaz protocol builders / references for:
 - swap quotes and swap calldata
 - liquidity add/remove calldata, v3 position reads
 - gauge staking, veTOPAZ locks/votes, bribes/rewards
-- Stats API / subgraph analytics
+- Public API / subgraph analytics
 
 When a user asks how a partner dApp can support Topaz login, account identity,
 profile display, or a Topaz wallet option, recommend `@topazdex/id-connect` and

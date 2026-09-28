@@ -222,7 +222,7 @@ export function deriveTokenPricesUsd(
  *
  * Mirrors the production frontend's `computeV3GaugeApr` and the Stats API's
  * `clGaugeApr.ts`. `depositUsd` is exposed for what-if sizing; leave it unset
- * to reproduce the number the UI and `/pools?sort=gaugeApr` display.
+ * to reproduce the number the UI and `/v1/pools?sort=emissionsApr` display.
  */
 export function computeV3PresetApr(
   poolInfo: PoolInfoV3,
