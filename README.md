@@ -195,7 +195,7 @@ In this skill, addresses are canonical in `scripts/src/config/addresses.ts` and 
 
 ## Analytics sources
 
-The public multichain API at `https://api.topazdex.com/v1` (contract: `https://api.topazdex.com/openapi.json`) is the primary source for pools, prices, gauges, votes, epochs, incentives, account portfolios, xTOPAZ and bridge data on all five chains — see `references/analytics-multichain.md`. `yarn tsx src/cli/stats.ts v1 <path>` and `fetchV1` in `scripts/src/lib/topazApi.ts` call it.
+The public multichain API at `https://api.topazdex.com/v1` (contract: `https://api.topazdex.com/openapi.json`) is the primary source for pools, prices, gauges, votes, epochs, incentives, account portfolios, xTOPAZ and bridge data on all five chains — see `references/analytics-multichain.md`. `yarn tsx src/cli/stats.ts v1 <path>` and `fetchV1` in `scripts/src/lib/topazApi.ts` call it. Every current endpoint begins with `/v1/`; the `/api/stats` routes are deprecated, BNB-only and kept for backward compatibility (see `references/analytics-stats-api.md`).
 
 ### BNB subgraph endpoints (Goldsky, stable `prod` tag)
 
@@ -363,6 +363,7 @@ Skill hygiene, validator, and brand surface (added on this branch):
 Analytics source of truth (2026-09-28):
 
 - [x] The public multichain API (`/v1`) is the primary analytics source across `SKILL.md`, every `references/` callout, the `developers/` dashboard guides, `examples/query-pool-stats.md` and `scripts/README.md`; the legacy `/api/stats` reports and their typed client are scoped to retained BNB history. `references/analytics-multichain.md` carries the full route catalog and response semantics.
+- [x] `/v1/` is stated as the only current API surface and `/api/stats` as deprecated everywhere an agent can land: `SKILL.md` callout, stats-reports banner, pitfall, `skill.json` `deprecated: true`, `@deprecated` on the `statsApi` helpers, and a stderr warning from every legacy `stats.ts` command.
 - [x] `scripts/src/lib/topazApi.ts` (`fetchV1`, `fetchV1Pages`, `chainQualified`, `TopazApiRequestError`) plus the `stats.ts v1 <path> [--param value] [--all]` passthrough; `yarn smoke` checks `/v1/health` reports BNB ready.
 - [x] The `topaz-ve/prod` Goldsky graph is the third BNB subgraph (`veClient`, `SUBGRAPH_VE_URL`, entity catalog and queries in `references/analytics-subgraph.md`, `subgraphs` block in `skill.json`). The validator's drift check covers v2, v3 and ve across eight files. Stale "votes/bribes/locks aren't indexed" and "v3 `Position` not deployed to `prod`" claims were removed after verifying the live deployments.
 - [x] Auto Manage (ALM) read-side coverage: `references/auto-manage.md` explains what a vault is, where it is live (BNB, Robinhood, Arc), the `/v1/auto-manage/*` routes and their number-not-string / fraction-not-percent conventions, how a user's shares surface as `kind: managed-cl-position` in the account API, and the BNB `alm*` subgraph entities. Linked from `SKILL.md`, `developers/user-positions.md`, `references/liquidity-v3.md` and `references/multichain.md`.

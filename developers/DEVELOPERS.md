@@ -155,7 +155,7 @@ For pools, tokens, prices, gauges, votes, epochs, incentives, **pre-computed APR
 - Base: `https://api.topazdex.com/v1` — e.g. `/v1/pools?chainIds=56&sort=emissionsApr`, `/v1/pools/{chainId}/{pool}/history`, `/v1/gauges?chainIds=all`, `/v1/prices?tokens=56:0x…`, `/v1/markets/bribes`, `/v1/accounts/{address}/portfolio`.
 - Spec (source of truth): `https://api.topazdex.com/openapi.json` — `npx openapi-typescript https://api.topazdex.com/openapi.json -o topaz-api.ts`.
 - Helpers: `fetchV1` / `fetchV1Pages` in `scripts/src/lib/topazApi.ts`; `yarn tsx src/cli/stats.ts v1 <path>` for a quick look.
-- See `references/analytics-multichain.md` for the route catalog, envelope, pagination and coverage rules. The legacy `/api/stats` reports (`references/analytics-stats-api.md`) are BNB-only history.
+- See `references/analytics-multichain.md` for the route catalog, envelope, pagination and coverage rules. Every current endpoint begins with `/v1/`; the deprecated `/api/stats` reports (`references/analytics-stats-api.md`) are BNB-only history kept for backward compatibility.
 
 Use the BNB subgraphs for ad-hoc GraphQL filtering, per-transaction events, or entity history beyond the API's window:
 

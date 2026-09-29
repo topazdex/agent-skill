@@ -70,7 +70,7 @@ On-chain reads (add --chain <id|name> for Robinhood, Base, Ethereum or Arc; defa
 
   ${CHAIN_FLAG_HELP}
 
-Public multichain API (https://api.topazdex.com/v1 — preferred for analytics on all five chains):
+Public multichain API — CURRENT. Every current endpoint begins with /v1/ (https://api.topazdex.com/v1, all five chains):
   v1 <path> [--param value ...] [--all]   Raw GET of any /v1 route; prints the JSON envelope.
                                 Repeat a flag or pass a comma list for multi-value filters.
                                 --all follows pageInfo.nextCursor (up to 20 pages).
@@ -79,27 +79,27 @@ Public multichain API (https://api.topazdex.com/v1 — preferred for analytics o
                                      v1 /accounts/0xYOU/portfolio --chainIds all
                                      v1 /prices --tokens 56:0xdf002282c1474c9592780618adda7eaa99998abd
 
-Legacy BNB Stats reports (https://api.topazdex.com/api/stats — retained history only, not current data):
-  protocol                      Protocol overview (TVL, volume, fees, TOPAZ price, veTOPAZ)
-  protocol-history [--days N]   Protocol TVL/volume/fees/price time-series (snapshot resolution)
-  protocol-daily [--days N]     Daily volume/fee rollups (one row per UTC day)
-  api-pools [--sort tvl|volume24h|fees24h|apr|gaugeApr] [--limit N] [--pair BNB-USDT] [--token 0x..] [--min-tvl N] [--incentivized]   Pool list with pre-computed fee + gauge APRs
-  pool-daily <pool> [--days N]  Long-horizon daily candles for one pool (beyond the 7d snapshot window)
-  api-gauges                    All gauges with emission/fee/bribe/total APR
-  api-gauge <gaugeAddress>      Single gauge detail (current APR breakdown + vote weights)
-  gauge-rewards <gaugeAddress> [--limit N]   Per-epoch reward-token breakdown (bribe + fee, USD-priced)
-  bribe-markets [--epoch N] [--min-usd N] [--limit N]   Current bribe markets with $/vote
-  bribe-totals                  Foundation bribe spend per epoch
-  tokens [--limit N]            Tracked tokens with USD price
-  token <address>               Single token price + 7d history summary
-  epochs [--limit N]            Recent epoch summaries (bribes, vote share, top gauges)
-  epoch <unixSeconds>           Single epoch detail (votes, bribes, KPIs, totals)
-  foundation                    Foundation summary (wallet, votes, bribes, KPIs)
-  foundation-votes [--epoch N]  Foundation vote allocations
-  foundation-bribes [--pool 0x..]  Foundation bribe deposits
-  foundation-kpis [--epoch N] [--pool 0x..]  KPI effectiveness snapshots
-  dynamic-fees                  v3 pools with custom/dynamic fee modules
-  health                        API health and data freshness
+DEPRECATED — legacy /api/stats (BNB-only, incomplete, kept for backward compatibility; do not use for current data):
+  protocol                      → v1 /protocol --chainIds all  (legacy only for cumulative lifetime volume/fees)
+  protocol-history [--days N]   → v1 /protocol/history
+  protocol-daily [--days N]     → v1 /protocol/daily --alignment utc
+  api-pools [...]               → v1 /pools --chainIds all --scope all
+  pool-daily <pool> [--days N]  → v1 /pools/<chainId>/<pool>/daily
+  api-gauges                    → v1 /gauges --chainIds all
+  api-gauge <gaugeAddress>      → v1 /gauges/<chainId>/<gauge>
+  gauge-rewards <gaugeAddress>  → v1 /gauges/<chainId>/<gauge>/rewards
+  bribe-markets [...]           → v1 /markets/bribes --chainIds all
+  tokens [--limit N]            → v1 /tokens --chainIds all
+  token <address>               → v1 /tokens/<chainId>/<token>
+  epochs [--limit N]            → v1 /epochs --chainIds all
+  epoch <unixSeconds>           → v1 /epochs/<chainId>/<epochStart>
+  health                        → v1 /health
+  dynamic-fees                  BNB base/max fee settings (observed fees: v1 /pools --dynamicFee true)
+  bribe-totals                  Foundation bribe spend per epoch (no /v1 equivalent)
+  foundation                    Foundation summary (no /v1 equivalent)
+  foundation-votes [--epoch N]  Foundation vote allocations (no /v1 equivalent)
+  foundation-bribes [--pool 0x..]  Foundation bribe deposits (no /v1 equivalent)
+  foundation-kpis [--epoch N] [--pool 0x..]  KPI effectiveness snapshots (no /v1 equivalent)
 `.trim();
 
 async function cmdPool(argv: any, chainId: number) {
@@ -707,6 +707,40 @@ function serialize(value: unknown): unknown {
   return value;
 }
 
+const LEGACY_REPLACEMENTS: Record<string, string | null> = {
+  protocol: "v1 /protocol --chainIds all",
+  "protocol-history": "v1 /protocol/history --chainIds all",
+  "protocol-daily": "v1 /protocol/daily --chainIds all --alignment utc",
+  "api-pools": "v1 /pools --chainIds all --scope all",
+  "pool-daily": "v1 /pools/<chainId>/<pool>/daily",
+  "api-gauges": "v1 /gauges --chainIds all",
+  "api-gauge": "v1 /gauges/<chainId>/<gauge>",
+  "gauge-rewards": "v1 /gauges/<chainId>/<gauge>/rewards",
+  "bribe-markets": "v1 /markets/bribes --chainIds all",
+  tokens: "v1 /tokens --chainIds all",
+  token: "v1 /tokens/<chainId>/<token>",
+  epochs: "v1 /epochs --chainIds all",
+  epoch: "v1 /epochs/<chainId>/<epochStart>",
+  health: "v1 /health",
+  "dynamic-fees": null,
+  "bribe-totals": null,
+  foundation: null,
+  "foundation-votes": null,
+  "foundation-bribes": null,
+  "foundation-kpis": null,
+};
+
+function warnLegacy(cmd: string) {
+  const replacement = LEGACY_REPLACEMENTS[cmd];
+  const hint = replacement
+    ? `Use the current API instead: yarn tsx src/cli/stats.ts ${replacement}`
+    : "No /v1 equivalent yet; use this report only for retained BNB history.";
+  console.error(
+    `DEPRECATED: "${cmd}" reads the legacy /api/stats service (BNB-only, incomplete, kept for backward compatibility).\n` +
+      `Current Topaz API endpoints all begin with /v1/. ${hint}\n`,
+  );
+}
+
 async function main() {
   const argv = minimist(process.argv.slice(2), {
     string: ["_", "chain", "in", "out", "pool", "gauge", "address", "amount", "token"],
@@ -740,6 +774,7 @@ async function main() {
         ? "v1 routes filter by chain with --chainIds <id> (or a chain id in the path), not --chain"
         : `--chain applies to on-chain reads; "${cmd}" is a BNB-only legacy report. Use v1 <path> --chainIds <id>.`,
     );
+  if (Object.hasOwn(LEGACY_REPLACEMENTS, cmd)) warnLegacy(cmd);
   switch (cmd) {
     case "v1": return await cmdV1(argv);
     case "protocol": return await cmdProtocol();

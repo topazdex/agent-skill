@@ -1,6 +1,7 @@
-// Typed client for the legacy BNB-only Topaz Stats reports (https://api.topazdex.com/api/stats).
-// Read-only; no auth. Current multichain data lives under /v1 — use `fetchV1` from
-// `./topazApi.ts` for that. Keep this client for the retained historical reports only
+// DEPRECATED typed client for the legacy BNB-only Topaz Stats service
+// (https://api.topazdex.com/api/stats), kept for backward compatibility only. Every
+// current Topaz API endpoint begins with /v1/ — use `fetchV1` from `./topazApi.ts`.
+// Keep using this client only for retained reports with no /v1 equivalent
 // (`/protocol` lifetime totals, `/foundation*`, `/topaz`, `/ve`, `/live/dynamic-fees`).
 
 const BASE_URL =
@@ -530,34 +531,41 @@ async function fetchApi<T>(
 // Endpoint wrappers
 // ---------------------------------------------------------------------------
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/protocol")` from `./topazApi.ts`; keep this only for cumulative lifetime totals. */
 export async function fetchProtocol(): Promise<StatsApiOk<ProtocolData>> {
   return fetchApi<ProtocolData>("/protocol");
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/pools")` from `./topazApi.ts`. */
 export async function fetchPools(
   params?: FetchPoolsParams,
 ): Promise<StatsApiOk<PoolSnapshot[]>> {
   return fetchApi<PoolSnapshot[]>("/pools", params as Record<string, string | number | boolean | undefined>);
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/pools/{chainId}/{pool}")` from `./topazApi.ts`. */
 export async function fetchPool(
   poolAddress: string,
 ): Promise<StatsApiOk<PoolDetailData>> {
   return fetchApi<PoolDetailData>(`/pools/${poolAddress.toLowerCase()}`);
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/gauges")` from `./topazApi.ts`. */
 export async function fetchGauges(): Promise<StatsApiOk<GaugeSnapshot[]>> {
   return fetchApi<GaugeSnapshot[]>("/gauges");
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchVe(): Promise<StatsApiOk<VeData>> {
   return fetchApi<VeData>("/ve");
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchFoundation(): Promise<StatsApiOk<FoundationData>> {
   return fetchApi<FoundationData>("/foundation");
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchFoundationVotes(
   params?: FetchVotesParams,
 ): Promise<StatsApiOk<VoteSnapshot[]>> {
@@ -567,6 +575,7 @@ export async function fetchFoundationVotes(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchFoundationBribes(
   params?: Omit<FetchBribesParams, "foundationOnly">,
 ): Promise<StatsApiOk<BribeEvent[]>> {
@@ -576,6 +585,7 @@ export async function fetchFoundationBribes(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchFoundationKpis(
   params?: FetchKpisParams,
 ): Promise<StatsApiOk<KpiSnapshot[]>> {
@@ -585,6 +595,7 @@ export async function fetchFoundationKpis(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/votes")` from `./topazApi.ts`. */
 export async function fetchVotes(
   params?: FetchVotesParams,
 ): Promise<StatsApiOk<VoteSnapshot[]>> {
@@ -594,6 +605,7 @@ export async function fetchVotes(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/bribes")` from `./topazApi.ts`. */
 export async function fetchBribes(
   params?: FetchBribesParams,
 ): Promise<StatsApiOk<BribeEvent[]>> {
@@ -603,20 +615,24 @@ export async function fetchBribes(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchDynamicFees(): Promise<StatsApiOk<PoolSnapshot[]>> {
   return fetchApi<PoolSnapshot[]>("/dynamic-fees");
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchLiveDynamicFees(): Promise<
   StatsApiOk<LiveDynamicFeesData>
 > {
   return fetchApi<LiveDynamicFeesData>("/live/dynamic-fees");
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/health")` from `./topazApi.ts`. */
 export async function fetchHealth(): Promise<StatsApiOk<HealthData>> {
   return fetchApi<HealthData>("/health");
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchConfig(): Promise<StatsApiOk<ConfigData>> {
   return fetchApi<ConfigData>("/config");
 }
@@ -625,6 +641,7 @@ export async function fetchConfig(): Promise<StatsApiOk<ConfigData>> {
 // Historical & time-series
 // ---------------------------------------------------------------------------
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/protocol/history")` from `./topazApi.ts`. */
 export async function fetchProtocolHistory(
   params?: FetchDaysParams,
 ): Promise<StatsApiOk<ProtocolHistoryPoint[]>> {
@@ -634,6 +651,7 @@ export async function fetchProtocolHistory(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/protocol/daily")` from `./topazApi.ts`. */
 export async function fetchProtocolDaily(
   params?: FetchDaysParams,
 ): Promise<StatsApiOk<ProtocolDailyPoint[]>> {
@@ -643,6 +661,7 @@ export async function fetchProtocolDaily(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/pools/{chainId}/{pool}/daily")` from `./topazApi.ts`. */
 export async function fetchPoolDaily(
   poolAddress: string,
   params?: FetchDaysParams,
@@ -653,6 +672,7 @@ export async function fetchPoolDaily(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/pools/{chainId}/{pool}/bribes")` from `./topazApi.ts`. */
 export async function fetchPoolBribes(
   poolAddress: string,
   params?: FetchPoolBribesParams,
@@ -667,12 +687,14 @@ export async function fetchPoolBribes(
 // Per-gauge detail
 // ---------------------------------------------------------------------------
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/gauges/{chainId}/{gauge}")` from `./topazApi.ts`. */
 export async function fetchGauge(
   gaugeAddress: string,
 ): Promise<StatsApiOk<GaugeDetailData>> {
   return fetchApi<GaugeDetailData>(`/gauges/${gaugeAddress.toLowerCase()}`);
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/gauges/{chainId}/{gauge}/bribes")` from `./topazApi.ts`. */
 export async function fetchGaugeBribes(
   gaugeAddress: string,
   params?: FetchPoolBribesParams,
@@ -683,6 +705,7 @@ export async function fetchGaugeBribes(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchGaugeKpis(
   gaugeAddress: string,
   params?: FetchKpisParams,
@@ -693,6 +716,7 @@ export async function fetchGaugeKpis(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/gauges/{chainId}/{gauge}/rewards")` from `./topazApi.ts`. */
 export async function fetchGaugeRewards(
   gaugeAddress: string,
   params?: FetchGaugeRewardsParams,
@@ -707,6 +731,7 @@ export async function fetchGaugeRewards(
 // Tokens
 // ---------------------------------------------------------------------------
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/tokens")` from `./topazApi.ts`. */
 export async function fetchTokens(
   params?: FetchTokensParams,
 ): Promise<StatsApiOk<TokenSnapshot[]>> {
@@ -716,6 +741,7 @@ export async function fetchTokens(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/tokens/{chainId}/{token}")` from `./topazApi.ts`. */
 export async function fetchToken(
   address: string,
 ): Promise<StatsApiOk<TokenDetailData>> {
@@ -726,6 +752,7 @@ export async function fetchToken(
 // Epochs & bribe markets
 // ---------------------------------------------------------------------------
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/epochs")` from `./topazApi.ts`. */
 export async function fetchEpochs(
   params?: FetchEpochsParams,
 ): Promise<StatsApiOk<EpochSummary[]>> {
@@ -735,16 +762,19 @@ export async function fetchEpochs(
   );
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/epochs/{chainId}/{epochStart}")` from `./topazApi.ts`. */
 export async function fetchEpoch(
   epochStart: number,
 ): Promise<StatsApiOk<EpochDetailData>> {
   return fetchApi<EpochDetailData>(`/epochs/${epochStart}`);
 }
 
+/** @deprecated Legacy BNB-only /api/stats report, retained for history; no /v1 equivalent yet. */
 export async function fetchBribeTotals(): Promise<StatsApiOk<BribeTotal[]>> {
   return fetchApi<BribeTotal[]>("/bribes/totals");
 }
 
+/** @deprecated Legacy BNB-only /api/stats route. Use `fetchV1("/v1/markets/bribes")` from `./topazApi.ts`. */
 export async function fetchBribeMarkets(
   params?: FetchBribeMarketsParams,
 ): Promise<StatsApiOk<BribeMarketRow[]>> {

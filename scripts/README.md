@@ -38,7 +38,7 @@ src/
 │   ├── path.ts         # v3 path encode/decode + mixed-route sentinels
 │   ├── pricing.ts      # Token USD price (subgraph or DexScreener)
 │   ├── topazApi.ts     # fetchV1 / fetchV1Pages for the public multichain API (/v1)
-│   ├── statsApi.ts     # Typed client for the legacy BNB Stats reports (/api/stats)
+│   ├── statsApi.ts     # DEPRECATED client for the legacy BNB-only /api/stats reports
 │   └── epoch.ts        # WEEK / epochStart / vote window helpers
 ├── read/               # No-signer reads (RPC + subgraph)
 │   ├── pools.ts        # v2/v3 unified pool info
@@ -90,7 +90,7 @@ yarn tsx src/cli/stats.ts bribes --pool 0xPOOL
 yarn tsx src/cli/stats.ts apr --pool 0xPOOL
 yarn tsx src/cli/stats.ts smoke                 # quick end-to-end sanity check
 
-# Public multichain API (https://api.topazdex.com/v1) — any chain, pre-computed, no RPC needed
+# Public multichain API — CURRENT. Every current endpoint begins with /v1/ (any chain, no RPC needed)
 yarn tsx src/cli/stats.ts v1 /chains
 yarn tsx src/cli/stats.ts v1 /pools --chainIds 8453 --scope all --sort emissionsApr --limit 10   # spokes need scope=all until curated
 yarn tsx src/cli/stats.ts v1 /pools/56/0xPOOL --aprProfile standard
@@ -99,7 +99,8 @@ yarn tsx src/cli/stats.ts v1 /markets/bribes --chainIds 56 --sort dollarPerVote
 yarn tsx src/cli/stats.ts v1 /prices --tokens 56:0xdf002282c1474c9592780618adda7eaa99998abd
 yarn tsx src/cli/stats.ts v1 /accounts/0xYOUR_WALLET/portfolio --chainIds all
 
-# Legacy BNB Stats reports (https://api.topazdex.com/api/stats) — retained history only
+# DEPRECATED legacy /api/stats reports — BNB-only, incomplete, backward compatibility only.
+# Each prints a stderr warning naming its /v1 replacement; prefer the v1 commands above.
 yarn tsx src/cli/stats.ts protocol              # protocol overview
 yarn tsx src/cli/stats.ts protocol-history --days 30
 yarn tsx src/cli/stats.ts protocol-daily --days 30

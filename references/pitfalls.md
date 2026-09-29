@@ -2,6 +2,10 @@
 
 Common mistakes to avoid when interacting with Topaz.
 
+## Data / API
+
+- **Calling the deprecated API.** Every current Topaz API endpoint begins with `/v1/` (`https://api.topazdex.com/v1/...`). `/api/stats/*` is legacy: BNB-only, incomplete, and kept only for backward compatibility, so it silently misses spoke chains and newer fields. If data looks incomplete, check the path first. Use `yarn tsx src/cli/stats.ts v1 <path>` or `fetchV1`, not the `statsApi` helpers or the non-`v1` `stats.ts` report commands. See `references/analytics-multichain.md`.
+
 ## Swapping
 
 - **Pool doesn't exist.** `PoolFactory.getPool(a, b, stable)` and `CLFactory.getPool(a, b, tickSpacing)` return `address(0)` when no pool is deployed for that exact tuple. Constructing a `Route` or path through a non-existent pool will revert with an opaque reason. Always check first.

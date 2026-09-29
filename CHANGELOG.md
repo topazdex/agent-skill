@@ -12,6 +12,8 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+- Make it explicit that every current Topaz API endpoint begins with `/v1/` and that `/api/stats` is deprecated (BNB-only, incomplete, kept for backward compatibility): a callout at the top of `SKILL.md`, a deprecation banner on `references/analytics-stats-api.md`, a new "Data / API" pitfall, `deprecated: true` on the `skill.json` historical reports, and matching wording in `README.md`, `developers/DEVELOPERS.md`, `references/analytics-multichain.md`, `references/bribes-deposit.md` and `scripts/`.
+- `stats.ts` groups the legacy report commands under a DEPRECATED heading with each one's `v1` replacement, and prints a stderr warning naming that replacement whenever one runs. The `statsApi` helpers carry `@deprecated` JSDoc pointing at the matching `fetchV1` route.
 
 ## [3.4.0] — 2026-09-29
 

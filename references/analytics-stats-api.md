@@ -1,8 +1,10 @@
-# Historical Topaz Stats reports
+# Deprecated Topaz Stats reports (`/api/stats`)
+
+> **Deprecated.** Every current Topaz API endpoint begins with `/v1/` — see [the multichain API](analytics-multichain.md). The `/api/stats` service below is legacy: BNB-only, incomplete, and kept only for backward compatibility. If a result looks partial or is missing a chain, you are probably on this service instead of `/v1`.
 
 Use [the multichain API](analytics-multichain.md) for current protocol totals, pool/token discovery, pricing, charts, gauges, votes, incentives and account observations across Topaz networks.
 
-The public Topaz Stats service at `https://api.topazdex.com/api/stats` is retained only for reports without a `/v1` equivalent:
+The public Topaz Stats service at `https://api.topazdex.com/api/stats` is retained only for these reports, which have no `/v1` equivalent yet:
 
 | Report | Route | Scope |
 | --- | --- | --- |

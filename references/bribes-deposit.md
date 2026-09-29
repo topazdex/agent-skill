@@ -88,7 +88,7 @@ For indexed bribe data, prefer the public API — one call, USD-priced, with exp
 - Cross-chain funding log with filters: `/v1/bribes?chainIds=56&epochStart=<unix>&minUsd=100`.
 - **Current bribe markets** with derived `dollarPerVote` (where a bribe buys the most votes): `/v1/markets/bribes?chainIds=56&sort=dollarPerVote`.
 - Raw `RewardNotification` events (token, amount, `amountUSD`, `from`, epoch, tx) are on the `topaz-ve` subgraph for ad-hoc GraphQL.
-- Foundation-only history stays on the legacy reports: `/api/stats/foundation/bribes` and `/api/stats/bribes/totals`.
+- Foundation-only history has no `/v1` equivalent and stays on the deprecated legacy reports: `/api/stats/foundation/bribes` and `/api/stats/bribes/totals`.
 
 See `references/analytics-multichain.md` and `references/analytics-subgraph.md`.
 
