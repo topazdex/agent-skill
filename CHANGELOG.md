@@ -17,7 +17,7 @@ Version semantics for this skill:
 
 - Fix a nonce race on fast chains: ethers shares identical RPC requests for 250 ms, so a nonce read right after an approval confirmed could be stale and the follow-up transaction failed with "nonce has already been used" (seen on Robinhood). Signing providers now disable that cache.
 - Relay deposit/withdraw builders check the once-per-epoch and final-hour windows against the chain's latest block time, as the Voter does, instead of the local clock.
-- Provider request timeout is 120 s (it was briefly 15 s on this branch), so large route-search and relay multicalls finish on slow public RPCs.
+- Provider request timeout is 120 s, so large route-search and relay multicalls finish on slow public RPCs.
 - Fix LP slippage minima that reverted any deposit not at the pool's exact ratio: `addLiquidityV2` now derives minima from `Router.quoteAddLiquidity`, and `mintPosition` / `increaseLiquidity` preview the NPM call and apply slippage to the amounts the pool will take (`lp add-v2`, `lp mint-v3` with both amounts, `lp increase-v3`). Found by running the CLIs against a BNB fork.
 - CLIs decode custom-error reverts against every bundled ABI (`lib/revertReason.ts`), printing e.g. `AlreadyVoted()` or `InsufficientAmountA()` instead of "unknown custom error"; `TOPAZ_DEBUG=1` prints the full error.
 - Correct helper documentation that named functions or arguments that do not exist: `getGaugeState`, `getEarned`, `claimGaugeRewardsV3`, `addAndStake`, `unstakeAndRemove`, `quoteAddLiquidityV2`, `getPositionWithFees`, `getLockFull`, and the argument shapes of `addLiquidityV2`, `removeLiquidityV2`, `mintPosition`, `increaseLiquidity`, `decreaseLiquidity`, `claimRebase` and `claimAll`. Signature tables now show the optional `chainId`.
@@ -32,7 +32,7 @@ Version semantics for this skill:
 - Spoke writes pre-check what would otherwise revert after an approval (normal vote window for `stakeAndVote`, owner/operator for `addToPosition`, vault pause and minimum stake); `getVote` no longer truncates a slate on an RPC error; `verify:deployments` honours `BSC_RPC_URL` like the CLIs; `BSC_RPC_URL` is optional in `.env.example`.
 - Fix CLI invocations in `scripts/README.md`, `examples/` and reference tables that used flags or subcommands that never existed (`--stake`, `--unstake --claim`, `close-v3`, `--range-pct`, `--sort-by`, `--csv`, `claim.ts gauge` without `--gauge`, `fees|bribes` without `--pool`).
 - Spoke providers send JSON-RPC calls singly (some public spoke RPCs rate-limit batches), and a routing-API 404 now reports "No Topaz route found" instead of "API unavailable".
-- Add eval 13 (Topaz ID on Base, a Topaz ID swap batch on Arc, spoke staking/voting via the scripts) and unit tests for chain-scoped addresses, token resolution, `--chain` parsing, per-chain RPCs, spoke vote/claim dispatch, spoke guards, `getVote` error handling and spoke swap builders (236 tests). The skill description now mentions Topaz ID so agents load it for Topaz ID questions.
+- Add eval 13 (Topaz ID on Base, a Topaz ID swap batch on Arc, spoke staking/voting via the scripts) and unit tests for chain-scoped addresses, token resolution, `--chain` parsing, per-chain RPCs, spoke vote/claim dispatch, spoke guards, `getVote` error handling and spoke swap builders (241 tests). The skill description now mentions Topaz ID so agents load it for Topaz ID questions.
 
 
 ## [3.3.0] — 2026-09-28
