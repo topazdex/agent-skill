@@ -47,11 +47,9 @@ jobs:
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Run smoke only when an RPC secret is configured. PRs from forks won't
-    # see the secret, so this job becomes a no-op there.
+    # Skipped for PRs from forks (untrusted code, no secrets).
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    # Job-level so the steps' `if:` can read it; a step's own `env:` is not
-    # visible to that step's `if:`.
+    # Uses the BSC_RPC_URL secret when configured, otherwise the public default RPC.
     env:
       BSC_RPC_URL: ${{ secrets.BSC_RPC_URL }}
     steps:
@@ -69,10 +67,5 @@ jobs:
         run: yarn install --immutable
 
       - name: Live smoke test
-        if: ${{ env.BSC_RPC_URL != '' }}
         working-directory: scripts
         run: yarn smoke
-
-      - name: Skip smoke (no BSC_RPC_URL secret)
-        if: ${{ env.BSC_RPC_URL == '' }}
-        run: echo "BSC_RPC_URL secret not set — skipping live smoke."

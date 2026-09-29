@@ -129,6 +129,14 @@ describe("per-chain RPC selection", () => {
     expect(rpcUrl(1)).toBe(DEPLOYMENTS.find((c) => c.chainId === 1)!.rpcUrl);
   });
 
+  it("treats an empty override (an unset CI secret) as unset", () => {
+    vi.stubEnv("BSC_RPC_URL", "");
+    vi.stubEnv("TOPAZ_RPC_56", "");
+    vi.stubEnv("TOPAZ_RPC_8453", "");
+    expect(rpcUrl(56)).toBe("https://bsc-rpc.publicnode.com");
+    expect(rpcUrl(8453)).toBe(DEPLOYMENTS.find((c) => c.chainId === 8453)!.rpcUrl);
+  });
+
   it("caches one provider per chain, declared with that chain's id", () => {
     expect(provider(8453)).toBe(provider(8453));
     expect(provider(8453)).not.toBe(provider(56));

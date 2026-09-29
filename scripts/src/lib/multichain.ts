@@ -5,8 +5,9 @@ import { CHAIN_ID, DEFAULT_RPC } from "../config/chain.js";
 
 /** BNB keeps its historical `BSC_RPC_URL`; every chain also honours `TOPAZ_RPC_<chainId>`. */
 export function rpcUrl(chainId: number = CHAIN_ID): string {
-  const override = process.env[`TOPAZ_RPC_${chainId}`];
-  if (chainId === CHAIN_ID) return process.env.BSC_RPC_URL ?? override ?? DEFAULT_RPC;
+  // `||`, not `??`: CI passes unset secrets through as empty strings.
+  const override = process.env[`TOPAZ_RPC_${chainId}`] || undefined;
+  if (chainId === CHAIN_ID) return process.env.BSC_RPC_URL || override || DEFAULT_RPC;
   return override ?? deployment(chainId).rpcUrl;
 }
 
