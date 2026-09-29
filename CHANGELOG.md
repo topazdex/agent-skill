@@ -12,6 +12,12 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+- Catalog the Arc CL Zap (`0xA3e7…9b8B`, verified on-chain). `liquidity-zaps.md` records that the zap is deployed on all five chains but enabled on the website only for BNB, pending spoke canaries. Arc zaps take the USDC ERC20 only: its `WRAPPED_NATIVE()` is a placeholder that always reverts with `UnsupportedProtocolError()`.
+- Auto Manage writes. The `TopazManagedCL*` ABIs are vendored from topaz-alm `main`, and each chain's `AutoManageFactory` / `AutoManageZap` / `AutoManageLens` is in the catalog for BNB, Robinhood and Arc. `verify:deployments` checks their wiring, and that every lens vault is registered with the factory. `read/autoManage.ts` finds vaults through `lens.getVaults(factory)`. `lib/autoManageBuilders.ts` and the new `autoManage.ts` CLI build deposit, redeem, claim, zap-in and zap-out calls, checking the deposit gates and taking deadlines from chain time. All six flows were run end to end on a BNB fork with live 0x quotes.
+- `lib/zeroX.ts`: validated 0x AllowanceHolder legs from the public Topaz proxy (`www.topazdex.com/api/0x`, 0.6% Topaz integrator fee included), with closed-form split sizing. 0x charges fees in the sell or the buy token depending on the pair, and both cases are accepted and capped. `liquidity-zaps.md` documents the proxy, the fees, the Arc and rate-limit constraints, the split formula and the validation checklist. `skill.json` lists the proxy under `zap_quotes`.
+- `liquidity-v3.md` gains a Position lifecycle section, fork-verified on BNB: one-transaction rebalance through `NPM.multicall`, native exit via `collect(recipient = 0)` + `unwrapWETH9` + `sweepToken`, the unstake → change → restake rule for staked positions (CLGauge has no staked-liquidity functions), and the AI Wallet range presets. The error cookbook adds `NG`.
+- `verify:deployments` also checks each CL Zap's `ALLOWANCE_HOLDER`. Catalog reviewed 2026-09-29; all five chains pass.
+
 
 ## [3.4.1] — 2026-09-29
 

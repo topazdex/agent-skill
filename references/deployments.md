@@ -1,6 +1,6 @@
 # Five-chain deployment catalog
 
-Reviewed 2026-09-20 UTC. [deployments.json](deployments.json) is the machine-readable catalog: every contract is keyed by EVM chain ID and role, with deployed ABI variant, deployment transaction/block and ABI digest where recorded. Entries without a bundled ABI are address references, not callable through the ABI helper. ABI paths are relative to this reference directory. The deployed ABIs are plain arrays; older ABI files may wrap the array in `abi`.
+Reviewed 2026-09-29 UTC. [deployments.json](deployments.json) is the machine-readable catalog: every contract is keyed by EVM chain ID and role, with deployed ABI variant, deployment transaction/block and ABI digest where recorded. Entries without a bundled ABI are address references, not callable through the ABI helper. ABI paths are relative to this reference directory. The deployed ABIs are plain arrays; older ABI files may wrap the array in `abi`.
 
 Use [multichain.md](multichain.md) for architecture, [bridging.md](bridging.md) for sends, and [multichain-integration.md](../developers/multichain-integration.md) for executable examples. The older [BNB address book](addresses.md) retains relay and token detail. Matching addresses on different chains do not imply matching roles.
 

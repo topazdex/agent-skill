@@ -129,7 +129,14 @@
     "deployments": "references/deployments.json",
     "website": "references/website.md",
     "multichain_developer": "developers/multichain-integration.md",
-    "auto_manage": "references/auto-manage.md"
+    "auto_manage": "references/auto-manage.md",
+    "zaps": "references/liquidity-zaps.md"
+  },
+  "zap_quotes": {
+    "description": "Public 0x AllowanceHolder proxy for CLZap and Auto Manage zap swap legs. Includes the 0.6% Topaz integrator fee; 0x adds its own fee. Fees are netted from buyAmount. Rate-limited; no Arc liquidity. Validate every firm quote (see references/liquidity-zaps.md).",
+    "proxy": "https://www.topazdex.com/api/0x",
+    "paths": ["swap/allowance-holder/price", "swap/allowance-holder/quote"],
+    "integrator_fee_bps": 60
   },
   "topaz_id": {
     "description": "Topaz ID is the Topaz ecosystem account/identity layer — a self-custodial smart-contract global wallet with the same address on BNB Chain, Robinhood Chain, Base, Ethereum and Arc (gas sponsored on BNB Chain only). The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",

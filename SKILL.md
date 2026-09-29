@@ -43,7 +43,7 @@ Read [multichain architecture](references/multichain.md) for xTOPAZ or any spoke
 
 For permissionless pool creation and conditional gauge creation, use [pools and gauges](developers/pools-and-gauges.md). Missing tokens, chain or initial price require clarification, not an invented deployment.
 
-Catalog reviewed 2026-09-20 UTC. See [verification scope and limitations](references/verification.md). Check current feature readiness, quotes, code, peers and gates; a snapshot cannot guarantee future availability. The bundled catalog, ABIs and workflows are self-contained.
+Catalog reviewed 2026-09-29 UTC. See [verification scope and limitations](references/verification.md). Check current feature readiness, quotes, code, peers and gates; a snapshot cannot guarantee future availability. The bundled catalog, ABIs and workflows are self-contained.
 
 ## BNB core mental model
 
@@ -127,7 +127,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Add / remove v2 liquidity | `references/liquidity-v2.md` |
 | Single-token concentrated liquidity deposit (CL Zap) | `references/liquidity-zaps.md` |
 | Auto Manage (ALM) vaults: discover, read, deposit, withdraw, claim, zap in/out | `references/auto-manage.md` |
-| Mint, modify, collect, or burn a v3 position | `references/liquidity-v3.md` |
+| Mint, modify, collect, or burn a v3 position; one-transaction rebalance, native exit, changes to staked positions, range presets | `references/liquidity-v3.md` |
 | Stake/unstake in a gauge, claim emissions | `references/gauges.md` |
 | Create / extend / withdraw / merge / split a veTOPAZ lock | `references/ve-locks.md` |
 | Explain xTOPAZ, wrap eligibility, redemption windows, bridging rules, spoke stakes | `references/xtopaz-faq.md` |
