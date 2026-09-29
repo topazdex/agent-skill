@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [3.4.0] — 2026-09-29
+
 - Fix a nonce race on fast chains: ethers shares identical RPC requests for 250 ms, so a nonce read right after an approval confirmed could be stale and the follow-up transaction failed with "nonce has already been used" (seen on Robinhood). Signing providers now disable that cache.
 - Relay deposit/withdraw builders check the once-per-epoch and final-hour windows against the chain's latest block time, as the Voter does, instead of the local clock.
 - Provider request timeout is 120 s (it was briefly 15 s on this branch), so large route-search and relay multicalls finish on slow public RPCs.
@@ -596,7 +599,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.3.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.4.0...HEAD
+[3.4.0]: https://github.com/topazdex/agent-skill/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/topazdex/agent-skill/compare/v3.2.1...v3.3.0
 [3.2.1]: https://github.com/topazdex/agent-skill/compare/v3.2.0...v3.2.1
 [3.2.0]: https://github.com/topazdex/agent-skill/compare/v3.1.0...v3.2.0
