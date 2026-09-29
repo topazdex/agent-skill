@@ -4,7 +4,7 @@ Agent skill package for **Topaz Dex** on **BNB Chain, Robinhood Chain, Base, Eth
 
 Everything here targets the live networks only; there are no testnet deployments. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Every read/write helper, builder and operator CLI takes an explicit chain (`chainId` / `--chain`); veTOPAZ locks, relays and rebases are BNB-only by protocol. Governance information is linked; privileged changes are not ordinary user actions.
 
-**Current version:** `3.4.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
+**Current version:** `3.4.1` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
 The Topaz website auto-mirrors this version: `https://topazdex.com/agents`, `https://topazdex.com/skill.md`, and `https://topazdex.com/skill.json` all pull from `main` on a 1-hour ISR cycle. Pushing a new version here propagates without any website-side changes — see [`docs/RELEASING.md`](./docs/RELEASING.md) for details.
 

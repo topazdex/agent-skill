@@ -12,8 +12,12 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [3.4.1] — 2026-09-29
+
 - Make it explicit that every current Topaz API endpoint begins with `/v1/` and that `/api/stats` is deprecated (BNB-only, incomplete, kept for backward compatibility): a callout at the top of `SKILL.md`, a deprecation banner on `references/analytics-stats-api.md`, a new "Data / API" pitfall, `deprecated: true` on the `skill.json` historical reports, and matching wording in `README.md`, `developers/DEVELOPERS.md`, `references/analytics-multichain.md`, `references/bribes-deposit.md` and `scripts/`.
 - `stats.ts` groups the legacy report commands under a DEPRECATED heading with each one's `v1` replacement, and prints a stderr warning naming that replacement whenever one runs. The `statsApi` helpers carry `@deprecated` JSDoc pointing at the matching `fetchV1` route.
+
 
 ## [3.4.0] — 2026-09-29
 
@@ -601,7 +605,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.4.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.4.1...HEAD
+[3.4.1]: https://github.com/topazdex/agent-skill/compare/v3.4.0...v3.4.1
 [3.4.0]: https://github.com/topazdex/agent-skill/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/topazdex/agent-skill/compare/v3.2.1...v3.3.0
 [3.2.1]: https://github.com/topazdex/agent-skill/compare/v3.2.0...v3.2.1
