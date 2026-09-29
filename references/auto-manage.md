@@ -2,9 +2,15 @@
 
 Topaz **Auto Manage** is keeper-managed concentrated liquidity. A user picks a Slipstream (CL) pool, chooses Auto Manage instead of setting a price range, deposits both tokens in the vault's current ratio and receives a **transferable ERC-20 share** (18 decimals). The vault's strategy holds a MAIN Slipstream NFT around the live price plus a one-sided ALT NFT for leftover inventory, both staked in the pool's `CLGauge`. A Topaz-operated keeper re-ranges within on-chain bounds (optional swap capped and price-limited). Gauge emissions — **TOPAZ on BNB, xTOPAZ on spokes** — are forwarded to the vault and accrue to depositors as a **separate claimable balance**; they are never sold or compounded, so this is not an autocompounder. Withdrawals are always available in kind (token0 + token1 for your share of every position and idle balance) and never pause. Deposits are blocked while the vault or factory is paused, when the gauge is dead, or when the price sits outside the TWAP calm band.
 
-Live on **BNB (56), Robinhood (4663) and Arc (5042)** as of 2026-09-28 (15 listed vaults: 11 / 2 / 2). No Auto Manage deployment exists on Base or Ethereum in this snapshot. Discover the inventory through the API on every request; counts and vault addresses are not configuration.
+Live on **BNB (56), Robinhood (4663) and Arc (5042)** as of 2026-09-29 (15 vaults: 11 / 2 / 2). No Auto Manage deployment exists on Base or Ethereum in this snapshot. Discover the inventory on every request; counts and vault addresses are not configuration.
 
-**Scope of this skill.** Everything below is read-side: discovery, vault metrics, a user's managed position. The skill does **not** yet carry Auto Manage ABIs, addresses or transaction builders. Do not invent deposit, withdraw or claim calldata; resolve the vault, strategy and factory from the API, verify them on-chain, and use the project's published ABI before building anything (see [Transactions](#transactions)).
+## Contracts and ABIs
+
+The [deployment catalog](deployments.md) lists each chain's `AutoManageFactory`, `AutoManageZap` and `AutoManageLens`, with ABIs in `abis/deployed/`. Vaults and strategies are per-pool clones of one implementation each, so they are not in the catalog; use [`TopazManagedCLVault`](abis/deployed/TopazManagedCLVault-95f2825b.json) and [`TopazManagedCLStrategy`](abis/deployed/TopazManagedCLStrategy-21f8fbf1.json) for any vault address.
+
+Find vaults on-chain with `lens.getVaults(factory)`, which returns every vault the factory registered with its live state (tokens, decimals, totals, `isCalm`, `depositsEnabled`, `paused`, `globalPause`, `gaugeAlive`, range). Before acting on a vault address from anywhere else, confirm `factory.isVault(vault)` on that chain. Deployment manifests in the ALM repo list only some vaults; the factory is the source of truth. Use `/v1/auto-manage` (below) for APR, TVL and history, which the lens does not compute.
+
+From `scripts/`: `listAutoManageVaults(chainId)`, `getAutoManageVault(chainId, vault)`, `getAutoManagePositions(chainId, owner)` and `depositBlocker(state)` in `src/read/autoManage.ts`.
 
 ## Discover vaults
 
@@ -28,6 +34,8 @@ curl 'https://api.topazdex.com/v1/auto-manage/vaults/56/0x1fa7b23ff3ebb0fee2450a
 curl 'https://api.topazdex.com/v1/auto-manage/vaults/56/0x1fa7b23ff3ebb0fee2450a9db1cce5bcf6d8e8c2/history?interval=1d&limit=30'
 yarn tsx src/cli/stats.ts v1 /auto-manage/vaults --listed true --limit 200
 ```
+
+Counts from the API and the lens can differ briefly after a new vault is created: the lens is live, the API is indexed.
 
 ## Reading a vault
 
@@ -82,7 +90,7 @@ On BNB the `topaz-ve` subgraph indexes the same ledger for GraphQL: `almVaults`,
 
 ## Transactions
 
-Deposits, withdrawals and reward claims are calls on the vault contract (with an optional single-token zap contract), payable by the share owner after ERC-20 approvals to the vault. **This skill has no Auto Manage ABI, address catalog or builder yet**, so treat any such request the way `SKILL.md` treats other uncatalogued writes: explain the flow, read the gates (`live.depositsEnabled`, `live.isCalm`, `paused`, `globalPause`, gauge alive), confirm the vault / strategy / factory addresses from the API and on-chain (`strategy`, `factory` on the vault), obtain the exact deployed ABI from the project's published artifacts, simulate from the payer, and only then produce calldata with the user's explicit authorization. Withdrawals return token0 + token1 in kind — never promise a single-token exit without the zap. Never send native value to a vault on Arc; Arc uses ERC20 USDC only.
+Deposits, withdrawals and reward claims are calls on the vault contract (with an optional single-token zap contract), payable by the share owner after ERC-20 approvals to the vault. **This skill has no Auto Manage transaction builder yet** (ABIs and addresses are in the catalog), so treat any such request the way `SKILL.md` treats other uncatalogued writes: explain the flow, read the gates (`live.depositsEnabled`, `live.isCalm`, `paused`, `globalPause`, gauge alive), confirm the vault / strategy / factory addresses from the API and on-chain (`strategy`, `factory` on the vault), obtain the exact deployed ABI from the project's published artifacts, simulate from the payer, and only then produce calldata with the user's explicit authorization. Withdrawals return token0 + token1 in kind — never promise a single-token exit without the zap. Never send native value to a vault on Arc; Arc uses ERC20 USDC only.
 
 ## Pitfalls
 

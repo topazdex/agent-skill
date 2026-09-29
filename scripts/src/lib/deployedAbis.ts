@@ -56,6 +56,11 @@ import abi50 from "../../../references/abis/deployed/XTopazVotingVault-67434da3.
 import abi51 from "../../../references/abis/deployed/CLInterfaceMulticall-e21ccbab.json" with { type: "json" };
 import abi52 from "../../../references/abis/deployed/PositionBurnHelper-a77f546d.json" with { type: "json" };
 import abi53 from "../../../references/abis/deployed/SugarHelper-7d78a37a.json" with { type: "json" };
+import abi54 from "../../../references/abis/deployed/TopazManagedCLFactory-bb79e797.json" with { type: "json" };
+import abi55 from "../../../references/abis/deployed/TopazManagedCLZap-82800bad.json" with { type: "json" };
+import abi56 from "../../../references/abis/deployed/TopazManagedCLLens-52d003d1.json" with { type: "json" };
+import abi57 from "../../../references/abis/deployed/TopazManagedCLVault-95f2825b.json" with { type: "json" };
+import abi58 from "../../../references/abis/deployed/TopazManagedCLStrategy-21f8fbf1.json" with { type: "json" };
 
 export const DEPLOYED_ABIS: Record<string, InterfaceAbi> = {
   "abis/deployed/RelayManager.json": relayManagerAbi,
@@ -114,4 +119,9 @@ export const DEPLOYED_ABIS: Record<string, InterfaceAbi> = {
   "abis/deployed/CLInterfaceMulticall-e21ccbab.json": abi51,
   "abis/deployed/PositionBurnHelper-a77f546d.json": abi52,
   "abis/deployed/SugarHelper-7d78a37a.json": abi53,
+  "abis/deployed/TopazManagedCLFactory-bb79e797.json": abi54,
+  "abis/deployed/TopazManagedCLZap-82800bad.json": abi55,
+  "abis/deployed/TopazManagedCLLens-52d003d1.json": abi56,
+  "abis/deployed/TopazManagedCLVault-95f2825b.json": abi57,
+  "abis/deployed/TopazManagedCLStrategy-21f8fbf1.json": abi58,
 };
