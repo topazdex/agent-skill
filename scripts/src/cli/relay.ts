@@ -6,6 +6,8 @@ import {
   depositManaged,
   withdrawManaged,
 } from "../write/relay.js";
+import { requireHubChain } from "../config/deployments.js";
+import { parseChainOption } from "../lib/chainOption.js";
 
 const USAGE = `
 Usage:
@@ -14,6 +16,7 @@ Usage:
   yarn tsx src/cli/relay.ts withdraw --id <veTokenId>
   yarn tsx src/cli/relay.ts claim    --id <veTokenId>
 
+Relays manage BNB Chain (56) veTOPAZ only; spokes have no managed-lock flow.
 deposit/withdraw/claim broadcast and require PRIVATE_KEY in scripts/.env.
 For wallet-ready calldata without broadcasting, use the builders in
 src/lib/relayBuilders.ts (buildDepositManagedTx / buildWithdrawManagedTx / buildRelayClaimTx).
@@ -36,13 +39,14 @@ async function listRelays(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  const argv = minimist(process.argv.slice(2), { string: ["_", "id", "relay"] });
+  const argv = minimist(process.argv.slice(2), { string: ["_", "chain", "id", "relay"] });
   const cmd = argv._[0];
 
   if (!cmd || cmd === "help" || argv.h || argv.help) {
     console.log(USAGE);
     return;
   }
+  requireHubChain(parseChainOption(argv.chain), "Relays (managed veTOPAZ)");
 
   switch (cmd) {
     case "list":

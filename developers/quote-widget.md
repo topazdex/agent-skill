@@ -15,7 +15,7 @@ const quote = await fetchTopazQuote({
 
 `bestQuoteBundle(tokenIn, tokenOut, rawAmount)` returns `{topaz, best, v2: null, v3: null}`. Its Topaz route can split liquidity and mix protocols; null v2/v3 fields do not mean the protocol has no such pools. Inspect `topaz.exec.quote.routes` for the actual hops. `bestQuote` returns the same overall API result. Do not invent separate alternatives or a price-impact value the API did not supply.
 
-Refresh when token, amount, slippage, account or chain changes, and keep an unavailable response distinct from a zero price. Discard late responses after changing inputs. Quotes are exact input on chain 56, slippage 1–500 bps. Native BNB is the string `BNB`; WBNB is an ERC20 address.
+Refresh when token, amount, slippage, account or chain changes, and keep an unavailable response distinct from a zero price. Discard late responses after changing inputs. Quotes are exact input on the selected chain (56, 4663, 8453, 1 or 5042; pass `chainId`), slippage 1–500 bps. The native asset is its symbol string (`BNB`, or `ETH` on Robinhood/Base/Ethereum); the wrapped token is an ERC20 address. Arc has no native leg — quote its USDC ERC20.
 
 When the user confirms, [build and review a fresh complete Permit2 batch](swap-calldata.md). Do not treat route amounts as guaranteed proceeds for another fixed-input transaction; size a downstream call from guaranteed minimum proceeds or use a runtime balance-aware account connector.
 

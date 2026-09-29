@@ -122,6 +122,6 @@ Higher `bribeReturnPerVote` = more attractive to voters. Used in voting strategi
 | Check whitelist + reward set | `scripts/src/read/gauges.ts` — `getBribeInfo(pool)` returns bribeContract, rewardTokens, perEpochAmounts |
 | Build approval + bribe calldata | `scripts/src/lib/actionBuilders.ts` — `buildBribeDepositTx({ pool, token, amount })` |
 | Deposit bribe | `scripts/src/write/bribe.ts` — `depositBribe({ pool, token, amount })` |
-| CLI | `yarn tsx src/cli/bribe.ts deposit --pool 0xPOOL --token 0xUSDT --amount 5000` |
+| CLI | `yarn tsx src/cli/bribe.ts deposit --pool 0xPOOL --token 0xUSDT --amount 5000` — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |
 
 See `examples/deposit-bribe.md` for a full walkthrough.

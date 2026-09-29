@@ -1,7 +1,9 @@
 import { Contract, ZeroAddress, getAddress } from "ethers";
 import { ABIS } from "../lib/abis.js";
 import { provider } from "../lib/client.js";
-import { ADDR, TICK_SPACINGS } from "../config/addresses.js";
+import { coreContract } from "../lib/contracts.js";
+import { TICK_SPACINGS } from "../config/addresses.js";
+import { CHAIN_ID } from "../config/chain.js";
 import { getDecimals, getSymbol } from "../lib/erc20.js";
 
 export type PoolType = "v2" | "v3";
@@ -42,25 +44,25 @@ export interface PoolInfoV3 {
 
 export type PoolInfo = PoolInfoV2 | PoolInfoV3;
 
-const poolFactory = () => new Contract(ADDR.PoolFactory, ABIS.PoolFactory, provider());
-const clFactory = () => new Contract(ADDR.CLFactory, ABIS.CLFactory, provider());
-const poolC = (addr: string) => new Contract(addr, ABIS.Pool, provider());
-const clPoolC = (addr: string) => new Contract(addr, ABIS.CLPool, provider());
+const poolFactory = (chainId: number) => coreContract("PoolFactory", chainId);
+const clFactory = (chainId: number) => coreContract("CLFactory", chainId);
+const poolC = (addr: string, chainId: number) => new Contract(addr, ABIS.Pool, provider(chainId));
+const clPoolC = (addr: string, chainId: number) => new Contract(addr, ABIS.CLPool, provider(chainId));
 
-export async function detectPoolType(address: string): Promise<PoolType> {
+export async function detectPoolType(address: string, chainId: number = CHAIN_ID): Promise<PoolType> {
   const a = getAddress(address);
   const [isV2, isV3] = await Promise.all([
-    poolFactory().isPool(a).catch(() => false),
-    clFactory().isPool(a).catch(() => false),
+    poolFactory(chainId).isPool(a).catch(() => false),
+    clFactory(chainId).isPool(a).catch(() => false),
   ]);
   if (isV2) return "v2";
   if (isV3) return "v3";
   throw new Error(`address ${a} is not a Topaz v2 or v3 pool`);
 }
 
-export async function getPoolV2(address: string): Promise<PoolInfoV2> {
+export async function getPoolV2(address: string, chainId: number = CHAIN_ID): Promise<PoolInfoV2> {
   const a = getAddress(address);
-  const c = poolC(a);
+  const c = poolC(a, chainId);
   const [tokens, reserves, stable, totalSupply] = await Promise.all([
     c.tokens() as Promise<[string, string]>,
     c.getReserves() as Promise<[bigint, bigint, bigint]>,
@@ -69,12 +71,12 @@ export async function getPoolV2(address: string): Promise<PoolInfoV2> {
   ]);
   const [t0, t1] = tokens;
   const [r0, r1] = reserves;
-  const fee: bigint = await poolFactory().getFee(a, stable);
+  const fee: bigint = await poolFactory(chainId).getFee(a, stable);
   const [d0, d1, s0, s1] = await Promise.all([
-    getDecimals(t0),
-    getDecimals(t1),
-    getSymbol(t0),
-    getSymbol(t1),
+    getDecimals(t0, chainId),
+    getDecimals(t1, chainId),
+    getSymbol(t0, chainId),
+    getSymbol(t1, chainId),
   ]);
   return {
     type: "v2",
@@ -93,9 +95,9 @@ export async function getPoolV2(address: string): Promise<PoolInfoV2> {
   };
 }
 
-export async function getPoolV3(address: string): Promise<PoolInfoV3> {
+export async function getPoolV3(address: string, chainId: number = CHAIN_ID): Promise<PoolInfoV3> {
   const a = getAddress(address);
-  const c = clPoolC(a);
+  const c = clPoolC(a, chainId);
   const [token0, token1, slot0, liquidity, stakedLiquidity, tickSpacing, fee, unstakedFee] =
     await Promise.all([
       c.token0() as Promise<string>,
@@ -110,10 +112,10 @@ export async function getPoolV3(address: string): Promise<PoolInfoV3> {
       c.unstakedFee() as Promise<bigint>,
     ]);
   const [d0, d1, s0, s1] = await Promise.all([
-    getDecimals(token0),
-    getDecimals(token1),
-    getSymbol(token0),
-    getSymbol(token1),
+    getDecimals(token0, chainId),
+    getDecimals(token1, chainId),
+    getSymbol(token0, chainId),
+    getSymbol(token1, chainId),
   ]);
   return {
     type: "v3",
@@ -134,43 +136,47 @@ export async function getPoolV3(address: string): Promise<PoolInfoV3> {
   };
 }
 
-export async function getPool(address: string): Promise<PoolInfo> {
-  const type = await detectPoolType(address);
-  return type === "v2" ? getPoolV2(address) : getPoolV3(address);
+export async function getPool(address: string, chainId: number = CHAIN_ID): Promise<PoolInfo> {
+  const type = await detectPoolType(address, chainId);
+  return type === "v2" ? getPoolV2(address, chainId) : getPoolV3(address, chainId);
 }
 
 export async function findV2Pool(
   tokenA: string,
   tokenB: string,
-  stable: boolean
+  stable: boolean,
+  chainId: number = CHAIN_ID,
 ): Promise<string> {
-  return await poolFactory().getPool(tokenA, tokenB, stable);
+  return await poolFactory(chainId).getPool(tokenA, tokenB, stable);
 }
 
 export async function findV3Pool(
   tokenA: string,
   tokenB: string,
-  tickSpacing: number
+  tickSpacing: number,
+  chainId: number = CHAIN_ID,
 ): Promise<string> {
-  return await clFactory().getPool(tokenA, tokenB, tickSpacing);
+  return await clFactory(chainId).getPool(tokenA, tokenB, tickSpacing);
 }
 
 export async function listV3PoolsForPair(
   tokenA: string,
-  tokenB: string
+  tokenB: string,
+  chainId: number = CHAIN_ID,
 ): Promise<{ tickSpacing: number; pool: string }[]> {
   const results = await Promise.all(
     TICK_SPACINGS.map(async (ts) => ({
       tickSpacing: ts,
-      pool: await clFactory().getPool(tokenA, tokenB, ts),
+      pool: await clFactory(chainId).getPool(tokenA, tokenB, ts),
     }))
   );
   return results.filter((r) => r.pool !== ZeroAddress);
 }
 
-export async function listAllV2Pools(): Promise<string[]> {
-  const len: bigint = await poolFactory().allPoolsLength();
+export async function listAllV2Pools(chainId: number = CHAIN_ID): Promise<string[]> {
+  const factory = poolFactory(chainId);
+  const len: bigint = await factory.allPoolsLength();
   return await Promise.all(
-    Array.from({ length: Number(len) }, (_, i) => poolFactory().allPools(i) as Promise<string>)
+    Array.from({ length: Number(len) }, (_, i) => factory.allPools(i) as Promise<string>)
   );
 }

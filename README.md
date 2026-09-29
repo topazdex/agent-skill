@@ -2,7 +2,7 @@
 
 Agent skill package for **Topaz Dex** on **BNB Chain, Robinhood Chain, Base, Ethereum and Arc**. Covers v2/Slipstream markets, chain-specific deployments and ABIs, swaps, liquidity, gauges, BNB veTOPAZ, xTOPAZ entry/redemption and bridging, spoke voting, rewards, analytics and website navigation.
 
-Everything here targets the live networks only; there are no testnet deployments. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Legacy BNB helpers are explicitly scoped; low-level quote/swap batch and deployment helpers accept a chain ID. Governance information is linked; privileged changes are not ordinary user actions.
+Everything here targets the live networks only; there are no testnet deployments. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Every read/write helper, builder and operator CLI takes an explicit chain (`chainId` / `--chain`); veTOPAZ locks, relays and rebases are BNB-only by protocol. Governance information is linked; privileged changes are not ordinary user actions.
 
 **Current version:** `3.3.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
@@ -30,7 +30,7 @@ The fastest path is to clone the repo into wherever your agent looks for skills,
 ```bash
 git clone https://github.com/topazdex/agent-skill.git <dest>
 cd <dest>/scripts
-cp .env.example .env        # set BSC_RPC_URL; PRIVATE_KEY only needed for writes
+cp .env.example .env        # RPC overrides optional; PRIVATE_KEY only needed for writes
 yarn install --immutable
 yarn validate && yarn smoke
 ```
@@ -106,7 +106,7 @@ cd <dest>/scripts
 yarn validate    # static checks: frontmatter, links, addresses, checksums, manifest parity, ...
 yarn build       # type-check (tsc --noEmit)
 yarn test        # 213 unit tests (vitest, no RPC)
-yarn smoke       # live read against BNB Chain — requires BSC_RPC_URL
+yarn smoke       # live read against BNB Chain (public RPC by default; BSC_RPC_URL overrides)
 ```
 
 CI runs `validate` + `build` + `test` on every PR. See `.github/workflows/validate.yml`.
@@ -127,7 +127,7 @@ The Topaz website auto-mirrors anything that lands on `main` via Next.js ISR wit
 
 - **For agents:** start at `SKILL.md`, then drill into `references/*.md` and `examples/*.md` as needed.
 - **For developers:** start at `developers/DEVELOPERS.md` for app, SDK, calldata, dashboard, subgraph, and frontend integration guidance.
-- **For partner wallet/account integrations:** start at `developers/topaz-id-connect.md` for `@topazdex/id-connect`, "Connect with Topaz ID", Topaz ID profile display, and demo-app guidance.
+- **For partner wallet/account integrations:** start at `developers/topaz-id-connect.md` for `@topazdex/id-connect` on all five chains, "Connect with Topaz ID", Topaz ID profile display, and demo-app guidance.
 - **For humans doing ops:** address tables below, deeper docs under `references/`, runnable code under `scripts/`.
 
 ## Contract addresses (BNB Chain, chain id 56)
@@ -283,10 +283,10 @@ topaz-skill/
 └── scripts/                 # TypeScript + ethers v6 helpers
     ├── package.json
     └── src/
-        ├── config/          # addresses, chain, tokens, relays
-        ├── lib/             # client, erc20, topazApi, subgraph, tickMath, path, pricing, epoch, relayBuilders
-        ├── read/            # quotes, pools, gauges, locks, votes, claimable, apr, relays, ...
-        ├── write/           # swap, liquidity, gauge, lock, vote, claim, bribe, relay
+        ├── config/          # addresses, deployments (five-chain catalog), chain, tokens, relays
+        ├── lib/             # client, contracts, chainOption, multichain, topazRouting, topazSwap, txBuilders, erc20, topazApi, subgraph, tickMath, path, pricing, epoch, relayBuilders
+        ├── read/            # quotes, pools, gauges, locks, votes, spokePositions, claimable, apr, relays, ...
+        ├── write/           # swap, liquidity, gauge, lock, vote, claim, bribe, relay, spokePosition
         └── cli/             # `yarn tsx src/cli/<cmd>.ts ...` entry points
 ```
 
@@ -295,18 +295,19 @@ topaz-skill/
 ```bash
 cd scripts
 cp .env.example .env
-# edit .env: BSC_RPC_URL (required), PRIVATE_KEY (required only for write ops)
+# optional: BSC_RPC_URL / TOPAZ_RPC_<chainId> RPC overrides; PRIVATE_KEY only for write ops
 yarn install
-yarn tsx src/cli/stats.ts pool 0x<pool-address>    # read-only example
+yarn tsx src/cli/stats.ts pool 0x<pool-address>                     # BNB (default)
+yarn tsx src/cli/swap.ts quote --chain base --in ETH --out 0x<token> --amount 0.01
 ```
 
-Full env + per-CLI usage in `scripts/README.md`.
+`swap`, `lp`, `vote`, `claim`, `bribe` and the on-chain `stats` reads take `--chain <id|name>` for any of the five networks; `position` manages spoke xTOPAZ positions; `lock` and `relay` are BNB-only by protocol. Full env + per-CLI usage in `scripts/README.md`.
 
 ## Developer guides
 
 If you are building an app or SDK on top of Topaz, start with `developers/DEVELOPERS.md`. It links to focused guides for quote widgets, wallet-ready swap calldata, subgraph recipes, position dashboards, gauges/APR, and frontend integration.
 
-For the Topaz account/identity layer — adding "Connect with Topaz ID", showing Topaz ID profiles, or signing through the Topaz ID consent flow — see `developers/topaz-id-connect.md` for the `@topazdex/id-connect` NPM package.
+For the Topaz account/identity layer — adding "Connect with Topaz ID" on BNB Chain, Robinhood Chain, Base, Ethereum or Arc, showing Topaz ID profiles, or signing through the Topaz ID consent flow — see `developers/topaz-id-connect.md` for the `@topazdex/id-connect` NPM package.
 
 ## Status and roadmap
 
@@ -319,8 +320,8 @@ Agent-facing operator layer (read + write):
 - [x] `SKILL.md` frontmatter, trigger phrases, navigation map.
 - [x] `references/` topic docs for swaps (v2/v3/mixed), liquidity (v2/v3), gauges, ve-locks, voting, rewards, bribes, epoch timing, APR, addresses, tokens, pitfalls, analytics (public API + subgraph + on-chain).
 - [x] `references/abis/*.json` for every contract the skill touches.
-- [x] `examples/` walkthroughs for the canonical workflows (swap-v2 stable/volatile, swap-v3 single, mixed route, v2 add-liquidity, v3 mint, CL stake, lock+vote, claim-all-rewards, deposit-bribe, query-pool-stats).
-- [x] `scripts/` CLIs: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe` — each backed by a typed library function in `scripts/src/read/` or `scripts/src/write/`.
+- [x] `examples/` walkthroughs for the canonical workflows (swap-v2 stable/volatile, swap-v3 single, mixed route, v2 add-liquidity, v3 mint, CL stake, lock+vote, claim-all-rewards, deposit-bribe, query-pool-stats, spoke stake/vote/claim).
+- [x] `scripts/` CLIs: `stats`, `swap`, `lp`, `lock`, `vote`, `claim`, `bribe`, `relay`, `position` (with `--chain` for the five networks where the protocol supports the action) — each backed by a typed library function in `scripts/src/read/` or `scripts/src/write/`.
 - [x] Single canonical address table (`scripts/src/config/addresses.ts` ↔ `references/addresses.md` ↔ this README).
 - [x] FS-loaded ABIs out of `references/abis/` so docs and runtime stay in sync.
 - [x] `yarn smoke` end-to-end live read against BNB Chain.
@@ -341,7 +342,7 @@ Builder-side input validation and safety (added on this branch):
 - [x] Optional `payer?: string` triggers an on-chain `allowance(tokenIn, payer, spender)` read; the `approval` field is omitted when existing allowance already covers `amountIn`, saving the user a redundant tx.
 - [x] `BuiltSwapTx` carries `quotedAt` and `deadline` (unix seconds) for staleness UX.
 - [x] `quoteV2` and the v3 quoters all `try/catch` reverts; one bad pool can't kill a `bestQuote`.
-- [x] Chain-bound multichain helpers explicitly read `eth_chainId` and reject wrong-chain RPCs. Legacy helpers remain BNB-scoped; a static network setting alone is not evidence of RPC chain identity.
+- [x] Chain-bound multichain helpers explicitly read `eth_chainId` and reject wrong-chain RPCs; the CLIs call `verifyChain` for the selected `--chain` before any read or write. A static network setting alone is not evidence of RPC chain identity.
 - [x] Write helpers throw on missing `PRIVATE_KEY` (no silent degradation); write CLIs broadcast only when explicitly invoked with a configured key, while no-broadcast wallet flows use builders.
 
 Skill hygiene, validator, and brand surface (added on this branch):
@@ -350,7 +351,7 @@ Skill hygiene, validator, and brand surface (added on this branch):
 - [x] `.claude/INTERNAL-SOURCE-POINTERS.md` (gitignored) captures the developer-machine paths under `~/topaz/topaz-{contracts,slipstream,interface,v2-subgraph,v3-subgraph}/`. Those pointers were removed from all tracked public docs and `scripts/src/config/addresses.ts`; the validator now rejects any future leak of those paths.
 - [x] `scripts/.yarn/install-state.gz` untracked + `**/.yarn/{cache,unplugged,build-state.yml,install-state.gz}` gitignored.
 - [x] Doc-only addresses (`BalanceLogicLibrary`, `DelegationLogicLibrary`, `NFTDescriptor`, `NFTSVG`, legacy `NonfungibleTokenPositionDescriptor_V1`) added to `scripts/src/config/addresses.ts` and `README.md` to satisfy strict byte-for-byte parity with `references/addresses.md`.
-- [x] Vitest harness + 213 unit tests across `path`, `epoch`, `tickMath`, `tokens`, `txBuilders`, `actionBuilders`, `relayBuilders`, `topazRouting`, `topazSwap`, `multichain`, `topazApi`, `apr`, `quotes`, `gauges`, and `multicall` (incl. mocked `buildBestSwapTx` calldata-shape test, bribe approval/deposit calldata tests, the 1.D goldens, multicall3 enumerate/decode coverage, `isStale` boundary/deadline cases, v3 native-BNB-out multicall/unwrap assertions, realized-fees APR goldens, and aggregate3 retry-policy coverage with injectable exec). `yarn test` / `yarn test:watch`.
+- [x] Vitest harness + 236 unit tests across `path`, `epoch`, `tickMath`, `tokens`, `chainScope`, `spokeDispatch`, `txBuilders`, `actionBuilders`, `relayBuilders`, `topazRouting`, `topazSwap`, `multichain`, `topazApi`, `apr`, `quotes`, `gauges`, and `multicall` (incl. mocked `buildBestSwapTx` calldata-shape test, bribe approval/deposit calldata tests, the 1.D goldens, multicall3 enumerate/decode coverage, `isStale` boundary/deadline cases, v3 native-BNB-out multicall/unwrap assertions, realized-fees APR goldens, and aggregate3 retry-policy coverage with injectable exec). `yarn test` / `yarn test:watch`.
 - [x] Real bug fix surfaced by the tests: `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}` — JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `src/lib/tickMath.ts`. Smoke test still passes.
 - [x] Brand surface: `scripts/src/config/brand.ts` typed `BRAND` constant (web, docs, X, Telegram, GitHub, assetsRepo, plus `assets.{logoPng,logoSvg,tokenLogoPng,topaz100Png,previewJpg}` pointing at `raw.githubusercontent.com/topazdex/assets/main/*`). Catalog page `references/brand.md` with embedding examples. Links section in `README.md`, project-links section in `SKILL.md`. Validator enforces channel-URL parity across README/SKILL/brand.md and asset-URL presence in brand.md.
 - [x] Live smoke test (`yarn smoke`) extended from 5 to 9 checks (bytecode on every `ADDR`, TOPAZ symbol+decimals, v2/v3 TVL > 0, live `bestQuote` + route-type assertion, full `buildBestSwapTx` shape, live `Voter.gauges` + `isAlive`). Exits non-zero on any FAIL.
@@ -365,6 +366,12 @@ Analytics source of truth (2026-09-28):
 - [x] `scripts/src/lib/topazApi.ts` (`fetchV1`, `fetchV1Pages`, `chainQualified`, `TopazApiRequestError`) plus the `stats.ts v1 <path> [--param value] [--all]` passthrough; `yarn smoke` checks `/v1/health` reports BNB ready.
 - [x] The `topaz-ve/prod` Goldsky graph is the third BNB subgraph (`veClient`, `SUBGRAPH_VE_URL`, entity catalog and queries in `references/analytics-subgraph.md`, `subgraphs` block in `skill.json`). The validator's drift check covers v2, v3 and ve across eight files. Stale "votes/bribes/locks aren't indexed" and "v3 `Position` not deployed to `prod`" claims were removed after verifying the live deployments.
 - [x] Auto Manage (ALM) read-side coverage: `references/auto-manage.md` explains what a vault is, where it is live (BNB, Robinhood, Arc), the `/v1/auto-manage/*` routes and their number-not-string / fraction-not-percent conventions, how a user's shares surface as `kind: managed-cl-position` in the account API, and the BNB `alm*` subgraph entities. Linked from `SKILL.md`, `developers/user-positions.md`, `references/liquidity-v3.md` and `references/multichain.md`.
+
+Five-chain accounts and scripts (2026-09-28):
+
+- [x] `developers/topaz-id-connect.md` resynced with `@topazdex/id-connect` 0.5.x: all five chains, per-chain gas and funding, chain switching, UserOperation receipts, per-chain signature verification, and submitting Topaz swap batches through `sendCalls({ calls, atomicRequired })`. Stale "Topaz ID is BNB-only" claims removed from `SKILL.md`, `developers/DEVELOPERS.md` and `skill.json`.
+- [x] Every `read/` / `write/` helper and builder takes `chainId`; contracts resolve from `references/deployments.json` and fail closed where absent. Spoke votes and fee/bribe claims route through `XTopazVotingVault`; `position.ts` manages spoke positions; `swap`, `lp`, `vote`, `claim`, `bribe` and `stats` take `--chain`; `lock`, `relay` and rebase refuse spokes.
+- [x] Live-verified read paths on Robinhood, Base, Ethereum and Arc (vault state, positions, votes, claimables, gauges, API quotes and batches, on-chain route search). Eval 13 and 23 new unit tests guard the behaviour.
 
 ### TODO — priority 1: foundational skill quality
 

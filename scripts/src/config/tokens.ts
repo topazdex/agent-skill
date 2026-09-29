@@ -11,6 +11,9 @@
 //     transparently, so callers can pass `BNB` and the builder substitutes
 //     WBNB internally.
 
+import { getAddress } from "ethers";
+import { contractAddress, deployment } from "./deployments.js";
+
 export interface TokenMeta {
   address: `0x${string}`;
   symbol: string;
@@ -208,4 +211,63 @@ export function findToken(query: string): TokenMeta | undefined {
   // Address lookup (case-insensitive).
   const ql = q.toLowerCase();
   return Object.values(TOKENS).find((t) => t.address.toLowerCase() === ql);
+}
+
+/** Arc has no wrapped native; its DEX legs trade this 6-decimal USDC ERC20. */
+export const ARC_USDC = "0x3600000000000000000000000000000000000000";
+
+export interface ResolvedToken {
+  /** ERC20 address the contracts see (the wrapped native for a native alias). */
+  address: string;
+  /** True when the caller named the chain's native asset (BNB, ETH, "native"). */
+  native: boolean;
+}
+
+const unknownTokenHint = (query: string, chainId: number) =>
+  `unknown token "${query}" on ${deployment(chainId).name} (${chainId}); pass a 0x address ` +
+  `(look it up with GET https://api.topazdex.com/v1/tokens?chainIds=${chainId})`;
+
+/**
+ * Chain-aware token lookup. BNB keeps the curated symbol list above. Spokes accept
+ * 0x addresses, the native symbol / "native" (resolved to the wrapped native),
+ * `W<native>`, `xTOPAZ` and, on Arc, `USDC`. Unknown symbols throw instead of
+ * guessing, because a symbol can map to several tokens on a chain.
+ */
+export function resolveTokenOnChain(query: string, chainId = 56): ResolvedToken {
+  const q = query.trim();
+  const upper = q.toUpperCase();
+  const chain = deployment(chainId);
+  if (/^0x[0-9a-fA-F]{40}$/.test(q)) {
+    if (/^0x0{40}$/.test(q)) throw new Error("the zero address is not a token; pass the chain's native symbol");
+    return { address: getAddress(q), native: false };
+  }
+  const nativeAlias = upper === "NATIVE" || (upper === chain.nativeSymbol && chain.wrappedNative !== null);
+  if (nativeAlias) {
+    if (!chain.wrappedNative) throw new Error(`${chain.name} has no wrapped native; use the USDC ERC20 ${ARC_USDC}`);
+    return { address: getAddress(chain.wrappedNative), native: true };
+  }
+  if (chainId === 56) {
+    const found = findToken(q);
+    if (!found) throw new Error(unknownTokenHint(q, chainId));
+    return { address: found.address, native: false };
+  }
+  if (chain.wrappedNative && upper === `W${chain.nativeSymbol}`) return { address: getAddress(chain.wrappedNative), native: false };
+  if (upper === "XTOPAZ") return { address: getAddress(contractAddress(chainId, "XTopazOFT")), native: false };
+  if (chainId === 5042 && upper === "USDC") return { address: ARC_USDC, native: false };
+  throw new Error(unknownTokenHint(q, chainId));
+}
+
+export function isWrappedNative(token: string, chainId = 56): boolean {
+  const wrapped = deployment(chainId).wrappedNative;
+  return wrapped !== null && token.toLowerCase() === wrapped.toLowerCase();
+}
+
+/** Intermediaries for the explicit on-chain route search. Spokes have no curated list. */
+export function hopTokens(chainId = 56): string[] {
+  if (chainId === 56) return HOP_TOKENS.map((t) => t.address);
+  const chain = deployment(chainId);
+  const hops = [contractAddress(chainId, "XTopazOFT")];
+  if (chain.wrappedNative) hops.unshift(chain.wrappedNative);
+  if (chainId === 5042) hops.unshift(ARC_USDC);
+  return hops.map((a) => getAddress(a));
 }

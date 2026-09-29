@@ -18,7 +18,9 @@ import { getPosition, listOwnerPositions } from "../read/positions.js";
 import { claimableSummary } from "../read/claimable.js";
 import { poolApr, rebaseApr, votingApr } from "../read/apr.js";
 import { bestQuote, quoteHuman } from "../read/quotes.js";
-import { TOKENS, findToken } from "../config/tokens.js";
+import { TOKENS, resolveTokenOnChain } from "../config/tokens.js";
+import { deployment, isHubChain, requireHubChain } from "../config/deployments.js";
+import { CHAIN_FLAG_HELP, parseChainOption, selectChain } from "../lib/chainOption.js";
 import { getSymbol, getDecimals } from "../lib/erc20.js";
 import { topV2Pools, topV3Pools } from "../read/subgraphQueries.js";
 import { provider } from "../lib/client.js";
@@ -51,19 +53,21 @@ import { fetchV1, fetchV1Pages, type TopazApiQuery } from "../lib/topazApi.js";
 const USAGE = `
 Usage: yarn tsx src/cli/stats.ts <command> [options]
 
-Commands:
+On-chain reads (add --chain <id|name> for Robinhood, Base, Ethereum or Arc; default BNB 56):
   pool <address>                Full pool snapshot (v2 or v3 auto-detected)
   gauge <pool>                  Gauge state for a pool
-  position --id <tokenId>       v3 position details
-  lock --id <tokenId>           veNFT lock details
-  vote --id <tokenId>           Current vote allocation for a veNFT
-  claimable --id <tokenId> --address <addr>   All four reward streams
-  gauges [--limit 50]           List gauges (subgraph TVL-sorted; on-chain APR)
+  position --id <tokenId>       v3 (CL NFT) position details
+  lock --id <tokenId>           veNFT lock details (BNB only; spokes: position.ts show)
+  vote --id <id>                Current vote allocation (veNFT on BNB, vault position on a spoke)
+  claimable --id <id> --address <addr>   Gauge, fee, bribe (and on BNB rebase) rewards
+  gauges [--limit 50]           List gauges with Voter weights
   gauges-for-pair <A> <B>       All gauges for token pair (enumerates v2 stable/volatile + every v3 tick spacing)
   bribes --pool <address>       This-epoch bribes posted on a pool
-  apr --pool <address>          Pool APR breakdown
-  quote --in <addr> --out <addr> --amount <human>   Best-route quote
+  apr --pool <address>          Pool APR breakdown (BNB only; spokes: v1 /pools)
+  quote --in <token> --out <token> --amount <human>   Topaz API best-route quote
   smoke                         End-to-end sanity check (verifies RPC + subgraphs + API + ABIs)
+
+  ${CHAIN_FLAG_HELP}
 
 Public multichain API (https://api.topazdex.com/v1 — preferred for analytics on all five chains):
   v1 <path> [--param value ...] [--all]   Raw GET of any /v1 route; prints the JSON envelope.
@@ -97,10 +101,10 @@ Legacy BNB Stats reports (https://api.topazdex.com/api/stats — retained histor
   health                        API health and data freshness
 `.trim();
 
-async function cmdPool(argv: any) {
+async function cmdPool(argv: any, chainId: number) {
   const addr = argv._[1];
   if (!addr) throw new Error("usage: pool <address>");
-  const info = await getPool(addr);
+  const info = await getPool(addr, chainId);
   console.log("Pool:", info.address);
   console.log("  type:", info.type);
   console.log("  tokens:", `${info.symbol0} (${info.decimals0}) / ${info.symbol1} (${info.decimals1})`);
@@ -121,10 +125,10 @@ async function cmdPool(argv: any) {
     console.log("  liquidity:", info.liquidity.toString());
     console.log("  stakedLiquidity:", info.stakedLiquidity.toString());
   }
-  const gs = await getGaugeStateForPool(info.address);
+  const gs = await getGaugeStateForPool(info.address, chainId);
   if (gs) {
     console.log("  gauge:", gs.gauge, gs.alive ? "(alive)" : "(KILLED)");
-    console.log("    rewardRate:", gs.rewardRate.toString(), "TOPAZ wei/s");
+    console.log("    rewardRate:", gs.rewardRate.toString(), `${isHubChain(chainId) ? "TOPAZ" : "xTOPAZ"} wei/s`);
     console.log("    periodFinish:", fmtEpoch(Number(gs.periodFinish)));
     console.log("    weight:", gs.weight.toString());
     console.log("    feesVotingReward:", gs.feesVotingReward);
@@ -134,58 +138,59 @@ async function cmdPool(argv: any) {
   }
 }
 
-async function cmdGauge(argv: any) {
+async function cmdGauge(argv: any, chainId: number) {
   const pool = argv._[1];
   if (!pool) throw new Error("usage: gauge <pool>");
-  const gs = await getGaugeStateForPool(pool);
+  const gs = await getGaugeStateForPool(pool, chainId);
   console.log(JSON.stringify(serialize(gs), null, 2));
 }
 
-async function cmdPosition(argv: any) {
+async function cmdPosition(argv: any, chainId: number) {
   if (!argv.id) throw new Error("usage: position --id <tokenId>");
-  const p = await getPosition(BigInt(argv.id));
+  const p = await getPosition(BigInt(argv.id), chainId);
   console.log(JSON.stringify(serialize(p), null, 2));
 }
 
-async function cmdLock(argv: any) {
+async function cmdLock(argv: any, chainId: number) {
+  requireHubChain(chainId, "veTOPAZ lock (use position.ts show on a spoke)");
   if (!argv.id) throw new Error("usage: lock --id <tokenId>");
   const l = await getLock(BigInt(argv.id));
   console.log(JSON.stringify(serialize(l), null, 2));
 }
 
-async function cmdVote(argv: any) {
+async function cmdVote(argv: any, chainId: number) {
   if (!argv.id) throw new Error("usage: vote --id <tokenId>");
-  const v = await getVote(BigInt(argv.id));
+  const v = await getVote(BigInt(argv.id), chainId);
   console.log(JSON.stringify(serialize(v), null, 2));
 }
 
-async function cmdClaimable(argv: any) {
+async function cmdClaimable(argv: any, chainId: number) {
   if (!argv.id) throw new Error("--id required");
   if (!argv.address) throw new Error("--address required");
-  const s = await claimableSummary(BigInt(argv.id), argv.address, { includeUsd: true });
+  const s = await claimableSummary(BigInt(argv.id), argv.address, { includeUsd: true, chainId });
   console.log(JSON.stringify(serialize(s), null, 2));
 }
 
-async function cmdGauges(argv: any) {
+async function cmdGauges(argv: any, chainId: number) {
   const limit = Number(argv.limit ?? 20);
-  const pools = (await listAllPools()).slice(0, limit);
+  const pools = (await listAllPools(chainId)).slice(0, limit);
   console.log(`pool                                          gauge                                         weight`);
   for (const p of pools) {
-    const gs = await getGaugeStateForPool(p);
+    const gs = await getGaugeStateForPool(p, chainId);
     if (!gs) continue;
     console.log(`${p} ${gs.gauge} ${gs.weight.toString()}  ${gs.alive ? "alive" : "killed"}`);
   }
 }
 
-async function cmdGaugesForPair(argv: any) {
+async function cmdGaugesForPair(argv: any, chainId: number) {
   const a = argv._[1];
   const b = argv._[2];
   if (!a || !b) {
     throw new Error("usage: gauges-for-pair <tokenA> <tokenB>  (addresses or symbols)");
   }
-  const tokenA = resolveTokenArg(String(a));
-  const tokenB = resolveTokenArg(String(b));
-  const entries = await listGaugesForPair(tokenA, tokenB);
+  const tokenA = resolveTokenOnChain(String(a), chainId).address;
+  const tokenB = resolveTokenOnChain(String(b), chainId).address;
+  const entries = await listGaugesForPair(tokenA, tokenB, chainId);
   if (entries.length === 0) {
     console.log(`No gauges found for ${a}/${b}.`);
     console.log("This means every (v2-stable, v2-volatile, v3 at each tick spacing) variant");
@@ -199,9 +204,9 @@ async function cmdGaugesForPair(argv: any) {
   }
 }
 
-async function cmdBribes(argv: any) {
+async function cmdBribes(argv: any, chainId: number) {
   if (!argv.pool) throw new Error("--pool required");
-  const info = await getBribeInfo(argv.pool);
+  const info = await getBribeInfo(argv.pool, chainId);
   if (!info) {
     console.log("No gauge / no bribe contract for that pool");
     return;
@@ -210,12 +215,13 @@ async function cmdBribes(argv: any) {
   for (let i = 0; i < info.rewardTokens.length; i++) {
     const t = info.rewardTokens[i];
     const a = info.perEpochAmounts[i];
-    const [sym, dec] = await Promise.all([getSymbol(t), getDecimals(t)]);
+    const [sym, dec] = await Promise.all([getSymbol(t, chainId), getDecimals(t, chainId)]);
     console.log(`  ${sym.padEnd(8)} ${t}  this epoch: ${formatUnits(a, dec)}`);
   }
 }
 
-async function cmdApr(argv: any) {
+async function cmdApr(argv: any, chainId: number) {
+  requireHubChain(chainId, "On-chain APR (subgraph-priced); use v1 /pools --chainIds <id> for spoke APRs");
   if (!argv.pool) throw new Error("--pool required");
   const apr = await poolApr(argv.pool);
   const voting = await votingApr(argv.pool).catch(() => 0);
@@ -223,19 +229,13 @@ async function cmdApr(argv: any) {
   console.log(JSON.stringify({ ...serialized, votingApr: voting }, null, 2));
 }
 
-function resolveTokenArg(query: string): string {
-  const t = findToken(query);
-  if (t) return t.address;
-  if (query.startsWith("0x") && query.length === 42) return query;
-  throw new Error(`unknown token: ${query}`);
-}
-
-async function cmdQuote(argv: any) {
+async function cmdQuote(argv: any, chainId: number) {
   if (!argv.in || !argv.out || !argv.amount) throw new Error("--in --out --amount required");
-  const tokenIn = resolveTokenArg(String(argv.in));
-  const tokenOut = resolveTokenArg(String(argv.out));
-  const q = await quoteHuman(tokenIn, tokenOut, String(argv.amount));
+  const tokenIn = resolveTokenOnChain(String(argv.in), chainId).address;
+  const tokenOut = resolveTokenOnChain(String(argv.out), chainId).address;
+  const q = await quoteHuman(tokenIn, tokenOut, String(argv.amount), { chainId });
   console.log(JSON.stringify({
+    chain: deployment(chainId).name,
     best: { route: q.best.route, amountOut: q.best.amountOut.toString() },
     human: `${argv.amount} → ${q.amountOutHuman}`,
   }, null, 2));
@@ -708,25 +708,38 @@ function serialize(value: unknown): unknown {
 
 async function main() {
   const argv = minimist(process.argv.slice(2), {
-    string: ["_", "in", "out", "pool", "gauge", "address", "amount", "token"],
+    string: ["_", "chain", "in", "out", "pool", "gauge", "address", "amount", "token"],
   });
   const cmd = String(argv._[0] ?? "");
   if (!cmd || cmd === "help" || argv.h || argv.help) {
     console.log(USAGE);
     return;
   }
+  const onchain: Record<string, (argv: any, chainId: number) => Promise<void>> = {
+    pool: cmdPool,
+    gauge: cmdGauge,
+    position: cmdPosition,
+    lock: cmdLock,
+    vote: cmdVote,
+    claimable: cmdClaimable,
+    gauges: cmdGauges,
+    "gauges-for-pair": cmdGaugesForPair,
+    bribes: cmdBribes,
+    apr: cmdApr,
+    quote: cmdQuote,
+  };
+  if (Object.hasOwn(onchain, cmd)) {
+    const chainId = parseChainOption(argv.chain);
+    if (["lock", "apr"].includes(cmd)) return await onchain[cmd](argv, chainId);
+    return await onchain[cmd](argv, await selectChain(argv.chain));
+  }
+  if (argv.chain !== undefined)
+    throw new Error(
+      cmd === "v1"
+        ? "v1 routes filter by chain with --chainIds <id> (or a chain id in the path), not --chain"
+        : `--chain applies to on-chain reads; "${cmd}" is a BNB-only legacy report. Use v1 <path> --chainIds <id>.`,
+    );
   switch (cmd) {
-    case "pool": return await cmdPool(argv);
-    case "gauge": return await cmdGauge(argv);
-    case "position": return await cmdPosition(argv);
-    case "lock": return await cmdLock(argv);
-    case "vote": return await cmdVote(argv);
-    case "claimable": return await cmdClaimable(argv);
-    case "gauges": return await cmdGauges(argv);
-    case "gauges-for-pair": return await cmdGaugesForPair(argv);
-    case "bribes": return await cmdBribes(argv);
-    case "apr": return await cmdApr(argv);
-    case "quote": return await cmdQuote(argv);
     case "v1": return await cmdV1(argv);
     case "protocol": return await cmdProtocol();
     case "protocol-history": return await cmdProtocolHistory(argv);

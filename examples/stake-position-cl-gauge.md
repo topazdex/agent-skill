@@ -83,11 +83,11 @@ await clGauge.attach(gauge).withdraw(tokenId);
 
 ```bash
 yarn tsx src/cli/lp.ts stake --tokenId 1234
-yarn tsx src/cli/claim.ts gauge --tokenId 1234
+yarn tsx src/cli/claim.ts gauge --gauge 0xGAUGE --tokenId 1234
 yarn tsx src/cli/lp.ts unstake --tokenId 1234
 ```
 
-`stats.ts position --id 1234` shows staked-vs-unstaked, in-range vs out-of-range, and current emission APR for that specific position based on its liquidity share of `pool.stakedLiquidity`.
+`stats.ts position --id 1234` shows range, liquidity and whether the position is in range; `stats.ts claimable --id <veNFT or position id> --address 0xYOU` lists its pending gauge rewards. Add `--chain <id|name>` on another chain (spoke gauges emit xTOPAZ).
 
 ## Things to watch
 

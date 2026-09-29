@@ -9,9 +9,11 @@ import {
   lockPermanent,
   unlockPermanent,
 } from "../write/lock.js";
+import { requireHubChain } from "../config/deployments.js";
+import { parseChainOption } from "../lib/chainOption.js";
 
 const USAGE = `
-Usage: yarn tsx src/cli/lock.ts <cmd> [options]
+Usage: yarn tsx src/cli/lock.ts <cmd> [options]      # BNB Chain (56) only
 
   create     --amount <n> --duration <SECS|2y|1w|...>
   add        --id <tokenId> --amount <n>
@@ -20,6 +22,9 @@ Usage: yarn tsx src/cli/lock.ts <cmd> [options]
   split      --id <tokenId> --amount <n>
   permanent  --id <tokenId> [--off]
   withdraw   --id <tokenId>     # only after lock expires
+
+veTOPAZ exists only on BNB Chain. On Robinhood, Base, Ethereum and Arc, stake
+xTOPAZ into the local voting vault instead: yarn tsx src/cli/position.ts --chain <id> ...
 `.trim();
 
 function parseDuration(s: string): number {
@@ -33,12 +38,13 @@ function parseDuration(s: string): number {
 }
 
 async function main() {
-  const argv = minimist(process.argv.slice(2), { string: ["_", "in", "out", "pool", "gauge", "address", "amount", "amount-a", "amount-b", "amount0", "amount1", "id", "tokenId", "token", "a", "b", "t0", "t1", "from", "to", "lower-price", "upper-price", "duration"] });
+  const argv = minimist(process.argv.slice(2), { string: ["_", "chain", "in", "out", "pool", "gauge", "address", "amount", "amount-a", "amount-b", "amount0", "amount1", "id", "tokenId", "token", "a", "b", "t0", "t1", "from", "to", "lower-price", "upper-price", "duration"] });
   const cmd = argv._[0];
   if (!cmd || cmd === "help" || argv.h || argv.help) {
     console.log(USAGE);
     return;
   }
+  requireHubChain(parseChainOption(argv.chain), "veTOPAZ (VotingEscrow)");
   switch (cmd) {
     case "create": {
       const tx = await createLock({

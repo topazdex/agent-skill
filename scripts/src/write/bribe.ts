@@ -1,25 +1,28 @@
 import { Contract, parseUnits, ZeroAddress } from "ethers";
 import { ABIS } from "../lib/abis.js";
 import { signer } from "../lib/client.js";
-import { ADDR } from "../config/addresses.js";
+import { coreContract } from "../lib/contracts.js";
+import { CHAIN_ID } from "../config/chain.js";
 import { approveIfNeeded, getDecimals } from "../lib/erc20.js";
-
-const voter = () => new Contract(ADDR.Voter, ABIS.Voter, signer());
 
 export interface DepositBribeArgs {
   pool: string;
   token: string;
   amount: string | bigint;       // human or wei
+  /** Default BNB Chain (56). Pool, token and whitelist are all chain-local. */
+  chainId?: number;
 }
 
 export async function depositBribe(args: DepositBribeArgs) {
-  const v = voter();
+  const chainId = args.chainId ?? CHAIN_ID;
+  const s = signer(chainId);
+  const v = coreContract("Voter", chainId, s);
   const gauge: string = await v.gauges(args.pool);
   if (gauge === ZeroAddress) throw new Error("no gauge for that pool");
   if (!(await v.isAlive(gauge)))
     throw new Error("gauge is killed — bribes wouldn't flow");
   const bribeAddr: string = await v.gaugeToBribe(gauge);
-  const bribe = new Contract(bribeAddr, ABIS.Reward, signer());
+  const bribe = new Contract(bribeAddr, ABIS.Reward, s);
 
   const isRewardAlready: boolean = await bribe.isReward(args.token);
   if (!isRewardAlready) {
@@ -30,10 +33,10 @@ export async function depositBribe(args: DepositBribeArgs) {
       );
   }
 
-  const dec = await getDecimals(args.token);
+  const dec = await getDecimals(args.token, chainId);
   const amount =
     typeof args.amount === "string" ? parseUnits(args.amount, dec) : args.amount;
 
-  await approveIfNeeded(args.token, bribeAddr, amount);
+  await approveIfNeeded(args.token, bribeAddr, amount, { chainId });
   return await bribe.notifyRewardAmount(args.token, amount);
 }

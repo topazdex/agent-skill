@@ -1,7 +1,9 @@
 import { buildTopazSwapBatch, type TopazSwapBatch } from "./topazSwap.js";
 import { Interface, ZeroAddress, getAddress, parseUnits } from "ethers";
 import { ABIS } from "./abis.js";
-import { ADDR } from "../config/addresses.js";
+import { CHAIN_ID } from "../config/chain.js";
+import { contractAddress, deployment } from "../config/deployments.js";
+import { isWrappedNative } from "../config/tokens.js";
 import { allowance, getDecimals } from "./erc20.js";
 import { encodePath } from "./path.js";
 import { findV2Pool, findV3Pool } from "../read/pools.js";
@@ -17,7 +19,6 @@ import {
 
 const DEFAULT_DEADLINE = () => Math.floor(Date.now() / 1000) + 60 * 20;
 export const MAX_SLIPPAGE_BPS = 10_000n;
-const isWbnb = (token: string) => token.toLowerCase() === ADDR.WBNB.toLowerCase();
 export const slip = (amount: bigint, bps: bigint): bigint => (amount * (10_000n - bps)) / 10_000n;
 const nowSec = () => Math.floor(Date.now() / 1000);
 
@@ -53,6 +54,8 @@ export function isStale(
 }
 
 export interface BuiltSwapTx {
+  /** Chain the calldata targets; submitting it anywhere else is always wrong. */
+  chainId: number;
   to: string;
   data: string;
   value: bigint;
@@ -77,6 +80,8 @@ export interface BuildV2SwapTxArgs {
   useBnb?: boolean;
   /** Address that will sign + pay tokenIn. Used to skip approvals when allowance already covers amountIn. */
   payer?: string;
+  /** Default BNB Chain (56). `useBnb` means the chain's native asset (BNB/ETH); Arc has none. */
+  chainId?: number;
 }
 
 export interface BuildV2RouteSwapTxArgs {
@@ -89,6 +94,8 @@ export interface BuildV2RouteSwapTxArgs {
   useBnb?: boolean;
   routeLabel?: string;
   payer?: string;
+  /** Default BNB Chain (56). `useBnb` means the chain's native asset (BNB/ETH); Arc has none. */
+  chainId?: number;
 }
 
 export interface BuildV3SwapTxArgs {
@@ -102,6 +109,8 @@ export interface BuildV3SwapTxArgs {
   sqrtPriceLimitX96?: bigint;
   useBnb?: boolean;
   payer?: string;
+  /** Default BNB Chain (56). `useBnb` means the chain's native asset (BNB/ETH); Arc has none. */
+  chainId?: number;
 }
 
 export interface BuildV3PathSwapTxArgs {
@@ -114,6 +123,8 @@ export interface BuildV3PathSwapTxArgs {
   useBnb?: boolean;
   routeLabel?: string;
   payer?: string;
+  /** Default BNB Chain (56). `useBnb` means the chain's native asset (BNB/ETH); Arc has none. */
+  chainId?: number;
 }
 
 export interface BuildBestSwapTxArgs {
@@ -125,9 +136,12 @@ export interface BuildBestSwapTxArgs {
   deadline?: number;
   useBnb?: boolean;
   payer?: string;
+  /** Default BNB Chain (56). `useBnb` means the chain's native asset (BNB/ETH); Arc has none. */
+  chainId?: number;
 }
 
 interface NormalizedSwapInputs {
+  chainId: number;
   tokenIn: string;
   tokenOut?: string;
   recipient: string;
@@ -145,8 +159,10 @@ export function normalizeAndValidate(args: {
   slippageBps?: bigint;
   deadline?: number;
   useBnb?: boolean;
+  chainId?: number;
   defaultSlippageBps: bigint;
 }): NormalizedSwapInputs {
+  const chainId = deployment(args.chainId ?? CHAIN_ID).chainId;
   const tokenIn = getAddress(args.tokenIn);
   const tokenOut = args.tokenOut !== undefined ? getAddress(args.tokenOut) : undefined;
   const recipient = getAddress(args.recipient);
@@ -170,6 +186,7 @@ export function normalizeAndValidate(args: {
   }
 
   return {
+    chainId,
     tokenIn,
     tokenOut,
     recipient,
@@ -180,12 +197,16 @@ export function normalizeAndValidate(args: {
   };
 }
 
-async function normalizeAmount(tokenIn: string, amountIn: string | bigint): Promise<bigint> {
+async function normalizeAmount(
+  tokenIn: string,
+  amountIn: string | bigint,
+  chainId: number,
+): Promise<bigint> {
   if (typeof amountIn === "bigint") {
     if (amountIn <= 0n) throw new Error("amountIn must be > 0");
     return amountIn;
   }
-  const decimals = await getDecimals(tokenIn);
+  const decimals = await getDecimals(tokenIn, chainId);
   const parsed = parseUnits(amountIn, decimals);
   if (parsed <= 0n) throw new Error("amountIn must be > 0");
   return parsed;
@@ -196,11 +217,12 @@ async function approvalFor(
   spender: string,
   amountIn: bigint,
   useBnb: boolean,
-  payer: string | undefined
+  payer: string | undefined,
+  chainId: number,
 ): Promise<ApprovalRequirement | undefined> {
-  if (useBnb && isWbnb(tokenIn)) return undefined;
+  if (useBnb && isWrappedNative(tokenIn, chainId)) return undefined;
   if (payer) {
-    const current = await allowance(tokenIn, payer, spender);
+    const current = await allowance(tokenIn, payer, spender, chainId);
     if (current >= amountIn) return undefined;
   }
   return { token: tokenIn, spender, amount: amountIn };
@@ -208,22 +230,23 @@ async function approvalFor(
 
 export async function buildV2SwapTx(args: BuildV2SwapTxArgs): Promise<BuiltSwapTx> {
   const v = normalizeAndValidate({ ...args, defaultSlippageBps: 50n });
-  const pool = await findV2Pool(v.tokenIn, v.tokenOut!, args.stable);
+  const pool = await findV2Pool(v.tokenIn, v.tokenOut!, args.stable, v.chainId);
   if (pool === ZeroAddress) throw new Error("no v2 pool for that pair/stable flag");
 
-  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
-  const expectedOut = await quoteV2(v.tokenIn, v.tokenOut!, amountIn, args.stable);
+  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn, v.chainId);
+  const expectedOut = await quoteV2(v.tokenIn, v.tokenOut!, amountIn, args.stable, v.chainId);
   if (expectedOut === 0n) throw new Error("quote returned 0; pool may be empty");
 
   return buildV2RouteSwapTx({
     tokenIn: v.tokenIn,
     amountIn,
-    route: [{ from: v.tokenIn, to: v.tokenOut!, stable: args.stable, factory: ADDR.PoolFactory }],
+    route: [{ from: v.tokenIn, to: v.tokenOut!, stable: args.stable, factory: contractAddress(v.chainId, "PoolFactory") }],
     slippageBps: v.slippageBps,
     recipient: v.recipient,
     deadline: v.deadline,
     useBnb: v.useBnb,
     payer: v.payer,
+    chainId: v.chainId,
     routeLabel: `v2 ${args.stable ? "stable" : "volatile"} direct`,
   });
 }
@@ -240,19 +263,22 @@ export async function buildV2RouteSwapTx(args: BuildV2RouteSwapTxArgs): Promise<
     slippageBps: args.slippageBps,
     deadline: args.deadline,
     useBnb: args.useBnb,
+    chainId: args.chainId,
     defaultSlippageBps: 50n,
   });
 
-  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
-  const expectedOut = await quoteV2Route(amountIn, args.route);
+  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn, v.chainId);
+  const expectedOut = await quoteV2Route(amountIn, args.route, v.chainId);
   if (expectedOut === 0n) throw new Error("quote returned 0; route may be unavailable");
 
   const amountOutMin = slip(expectedOut, v.slippageBps);
   const router = new Interface(ABIS.Router);
-  const nativeIn = v.useBnb && isWbnb(v.tokenIn);
-  const nativeOut = v.useBnb && !!finalToken && isWbnb(finalToken);
+  const routerAddress = contractAddress(v.chainId, "Router");
+  const nativeIn = v.useBnb && isWrappedNative(v.tokenIn, v.chainId);
+  const nativeOut = v.useBnb && !!finalToken && isWrappedNative(finalToken, v.chainId);
 
   const shared = {
+    chainId: v.chainId,
     expectedOut,
     amountOutMin,
     route: args.routeLabel ?? "v2 route",
@@ -262,7 +288,7 @@ export async function buildV2RouteSwapTx(args: BuildV2RouteSwapTxArgs): Promise<
 
   if (nativeIn) {
     return {
-      to: ADDR.Router,
+      to: routerAddress,
       data: router.encodeFunctionData("swapExactETHForTokens", [amountOutMin, args.route, v.recipient, v.deadline]),
       value: amountIn,
       ...shared,
@@ -271,50 +297,54 @@ export async function buildV2RouteSwapTx(args: BuildV2RouteSwapTxArgs): Promise<
 
   if (nativeOut) {
     return {
-      to: ADDR.Router,
+      to: routerAddress,
       data: router.encodeFunctionData("swapExactTokensForETH", [amountIn, amountOutMin, args.route, v.recipient, v.deadline]),
       value: 0n,
       ...shared,
-      approval: await approvalFor(v.tokenIn, ADDR.Router, amountIn, false, v.payer),
+      approval: await approvalFor(v.tokenIn, routerAddress, amountIn, false, v.payer, v.chainId),
     };
   }
 
   return {
-    to: ADDR.Router,
+    to: routerAddress,
     data: router.encodeFunctionData("swapExactTokensForTokens", [amountIn, amountOutMin, args.route, v.recipient, v.deadline]),
     value: 0n,
     ...shared,
-    approval: await approvalFor(v.tokenIn, ADDR.Router, amountIn, false, v.payer),
+    approval: await approvalFor(v.tokenIn, routerAddress, amountIn, false, v.payer, v.chainId),
   };
 }
 
 export async function buildV3SwapTx(args: BuildV3SwapTxArgs): Promise<BuiltSwapTx> {
   const v = normalizeAndValidate({ ...args, defaultSlippageBps: 100n });
-  const pool = await findV3Pool(v.tokenIn, v.tokenOut!, args.tickSpacing);
+  const pool = await findV3Pool(v.tokenIn, v.tokenOut!, args.tickSpacing, v.chainId);
   if (pool === ZeroAddress) throw new Error("no v3 pool at that tick spacing");
 
-  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
+  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn, v.chainId);
   const expectedOut = await quoteV3Single(
     v.tokenIn,
     v.tokenOut!,
     amountIn,
     args.tickSpacing,
-    args.sqrtPriceLimitX96 ?? 0n
+    args.sqrtPriceLimitX96 ?? 0n,
+    v.chainId,
   );
   if (expectedOut === 0n) throw new Error("quote returned 0");
 
   const amountOutMin = slip(expectedOut, v.slippageBps);
   const router = new Interface(ABIS.SwapRouter);
-  const nativeIn = v.useBnb && isWbnb(v.tokenIn);
-  const nativeOut = v.useBnb && isWbnb(v.tokenOut!);
+  const swapRouter = contractAddress(v.chainId, "SwapRouter");
+  const nativeSymbol = deployment(v.chainId).nativeSymbol;
+  const nativeIn = v.useBnb && isWrappedNative(v.tokenIn, v.chainId);
+  const nativeOut = v.useBnb && isWrappedNative(v.tokenOut!, v.chainId);
 
   const sharedTail = {
+    chainId: v.chainId,
     value: nativeIn ? amountIn : 0n,
     expectedOut,
     amountOutMin,
     quotedAt: nowSec(),
     deadline: v.deadline,
-    approval: await approvalFor(v.tokenIn, ADDR.SwapRouter, amountIn, nativeIn, v.payer),
+    approval: await approvalFor(v.tokenIn, swapRouter, amountIn, nativeIn, v.payer, v.chainId),
   };
 
   // Native-BNB-out: route the swap into the SwapRouter itself, then unwrap WETH9
@@ -326,7 +356,7 @@ export async function buildV3SwapTx(args: BuildV3SwapTxArgs): Promise<BuiltSwapT
       tokenIn: v.tokenIn,
       tokenOut: v.tokenOut!,
       tickSpacing: args.tickSpacing,
-      recipient: ADDR.SwapRouter,
+      recipient: swapRouter,
       deadline: v.deadline,
       amountIn,
       amountOutMinimum: 0n,
@@ -334,15 +364,15 @@ export async function buildV3SwapTx(args: BuildV3SwapTxArgs): Promise<BuiltSwapT
     }]);
     const unwrap = router.encodeFunctionData("unwrapWETH9", [amountOutMin, v.recipient]);
     return {
-      to: ADDR.SwapRouter,
+      to: swapRouter,
       data: router.encodeFunctionData("multicall", [[inner, unwrap]]),
-      route: `v3 direct ts=${args.tickSpacing} → unwrap to BNB`,
+      route: `v3 direct ts=${args.tickSpacing} → unwrap to ${nativeSymbol}`,
       ...sharedTail,
     };
   }
 
   return {
-    to: ADDR.SwapRouter,
+    to: swapRouter,
     data: router.encodeFunctionData("exactInputSingle", [{
       tokenIn: v.tokenIn,
       tokenOut: v.tokenOut!,
@@ -371,47 +401,51 @@ export async function buildV3PathSwapTx(args: BuildV3PathSwapTxArgs): Promise<Bu
     slippageBps: args.slippageBps,
     deadline: args.deadline,
     useBnb: args.useBnb,
+    chainId: args.chainId,
     defaultSlippageBps: 100n,
   });
 
-  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
+  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn, v.chainId);
   const path = encodePath(tokens, args.spacings);
-  const expectedOut = await quoteV3Path(path, amountIn);
+  const expectedOut = await quoteV3Path(path, amountIn, v.chainId);
   if (expectedOut === 0n) throw new Error("quote returned 0");
 
   const amountOutMin = slip(expectedOut, v.slippageBps);
   const router = new Interface(ABIS.SwapRouter);
-  const nativeIn = v.useBnb && isWbnb(v.tokenIn);
-  const nativeOut = v.useBnb && isWbnb(v.tokenOut!);
+  const swapRouter = contractAddress(v.chainId, "SwapRouter");
+  const nativeSymbol = deployment(v.chainId).nativeSymbol;
+  const nativeIn = v.useBnb && isWrappedNative(v.tokenIn, v.chainId);
+  const nativeOut = v.useBnb && isWrappedNative(v.tokenOut!, v.chainId);
 
   const sharedTail = {
+    chainId: v.chainId,
     value: nativeIn ? amountIn : 0n,
     expectedOut,
     amountOutMin,
     quotedAt: nowSec(),
     deadline: v.deadline,
-    approval: await approvalFor(v.tokenIn, ADDR.SwapRouter, amountIn, nativeIn, v.payer),
+    approval: await approvalFor(v.tokenIn, swapRouter, amountIn, nativeIn, v.payer, v.chainId),
   };
 
   if (nativeOut) {
     const inner = router.encodeFunctionData("exactInput", [{
       path,
-      recipient: ADDR.SwapRouter,
+      recipient: swapRouter,
       deadline: v.deadline,
       amountIn,
       amountOutMinimum: 0n,
     }]);
     const unwrap = router.encodeFunctionData("unwrapWETH9", [amountOutMin, v.recipient]);
     return {
-      to: ADDR.SwapRouter,
+      to: swapRouter,
       data: router.encodeFunctionData("multicall", [[inner, unwrap]]),
-      route: `${args.routeLabel ?? "v3 path"} → unwrap to BNB`,
+      route: `${args.routeLabel ?? "v3 path"} → unwrap to ${nativeSymbol}`,
       ...sharedTail,
     };
   }
 
   return {
-    to: ADDR.SwapRouter,
+    to: swapRouter,
     data: router.encodeFunctionData("exactInput", [{
       path,
       recipient: v.recipient,
@@ -427,10 +461,10 @@ export async function buildV3PathSwapTx(args: BuildV3PathSwapTxArgs): Promise<Bu
 export async function buildBestLegacySwapTx(args: BuildBestSwapTxArgs): Promise<BuiltSwapTx> {
   // Validate up front so a bad input fails before we eat hundreds of RPC quotes.
   const v = normalizeAndValidate({ ...args, defaultSlippageBps: 100n });
-  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
+  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn, v.chainId);
   // bestQuote searches v2 and v3 independently and never emits a mixed route,
   // so every result is executable as a single wallet signature.
-  const best = await onchainBestQuote(v.tokenIn, v.tokenOut!, amountIn);
+  const best = await onchainBestQuote(v.tokenIn, v.tokenOut!, amountIn, { chainId: v.chainId });
   return buildFromExecRoute({
     exec: best.exec,
     tokenIn: v.tokenIn,
@@ -440,6 +474,7 @@ export async function buildBestLegacySwapTx(args: BuildBestSwapTxArgs): Promise<
     deadline: v.deadline,
     useBnb: v.useBnb,
     payer: v.payer,
+    chainId: v.chainId,
     routeLabel: best.route,
   });
 }
@@ -454,6 +489,7 @@ export async function buildFromExecRoute(args: {
   useBnb?: boolean;
   payer?: string;
   routeLabel?: string;
+  chainId?: number;
 }): Promise<BuiltSwapTx> {
   switch (args.exec.type) {
     case "v2":
@@ -466,6 +502,7 @@ export async function buildFromExecRoute(args: {
         deadline: args.deadline,
         useBnb: args.useBnb,
         payer: args.payer,
+        chainId: args.chainId,
         routeLabel: args.routeLabel,
       });
     case "v3-single":
@@ -479,6 +516,7 @@ export async function buildFromExecRoute(args: {
         deadline: args.deadline,
         useBnb: args.useBnb,
         payer: args.payer,
+        chainId: args.chainId,
       });
     case "v3-path":
       return buildV3PathSwapTx({
@@ -490,6 +528,7 @@ export async function buildFromExecRoute(args: {
         deadline: args.deadline,
         useBnb: args.useBnb,
         payer: args.payer,
+        chainId: args.chainId,
         routeLabel: args.routeLabel,
       });
     case "topaz-api":
@@ -504,12 +543,14 @@ export async function buildFromExecRoute(args: {
 }
 
 /** The canonical builder now returns a complete batch, never a bare swap call.
- * useBnb is explicit: ERC20 WBNB must not silently become native BNB. */
+ * useBnb is explicit: ERC20 WBNB/WETH must not silently become the native asset. */
 export async function buildBestSwapTx(args: BuildBestSwapTxArgs): Promise<TopazSwapBatch> {
   const v = normalizeAndValidate({ ...args, useBnb: args.useBnb ?? false, defaultSlippageBps: 100n });
-  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn);
-  return buildTopazSwapBatch({ tokenIn: v.useBnb && isWbnb(v.tokenIn) ? "BNB" : v.tokenIn,
-    tokenOut: v.useBnb && isWbnb(v.tokenOut!) ? "BNB" : v.tokenOut!, amountIn,
+  const amountIn = await normalizeAmount(v.tokenIn, args.amountIn, v.chainId);
+  const native = deployment(v.chainId).nativeSymbol;
+  const asNative = (token: string) => (v.useBnb && isWrappedNative(token, v.chainId) ? native : token);
+  return buildTopazSwapBatch({ chainId: v.chainId, tokenIn: asNative(v.tokenIn),
+    tokenOut: asNative(v.tokenOut!), amountIn,
     payer: v.payer ?? v.recipient, recipient: v.recipient, slippageBps: Number(v.slippageBps),
     deadlineSeconds: v.deadline - Math.floor(Date.now() / 1000) });
 }

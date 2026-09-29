@@ -233,6 +233,8 @@ export async function fetchTopazQuote(
       signal: AbortSignal.timeout(8_000),
       cache: "no-store",
     });
+    if (response.status === 404)
+      throw new Error(`No Topaz route found on chain ${request.chainId ?? 56} for this pair and amount`);
     if (!response.ok)
       throw new Error(`Topaz routing API unavailable (${response.status})`);
     return validateTopazQuote(await response.json(), { ...request, chainId: request.chainId ?? 56 });

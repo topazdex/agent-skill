@@ -3,7 +3,7 @@
   "name": "topaz",
   "display_name": "Topaz Dex Agent Skill",
   "version": "3.3.0",
-  "description": "Topaz across BNB, Robinhood, Base, Ethereum and Arc: contracts and ABIs, swaps, liquidity, xTOPAZ bridging, vault entry/redemption, spoke voting, rewards and analytics.",
+  "description": "Topaz across BNB, Robinhood, Base, Ethereum and Arc: contracts and ABIs, swaps, liquidity, xTOPAZ bridging, vault entry/redemption, spoke voting, rewards, Topaz ID wallet integration and analytics.",
   "homepage": "https://topazdex.com",
   "agents_page": "https://topazdex.com/agents",
   "repository": "https://github.com/topazdex/agent-skill",
@@ -132,7 +132,7 @@
     "auto_manage": "references/auto-manage.md"
   },
   "topaz_id": {
-    "description": "Topaz ID is the Topaz ecosystem account/identity layer — a self-custodial BNB Chain global wallet. The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
+    "description": "Topaz ID is the Topaz ecosystem account/identity layer — a self-custodial smart-contract global wallet with the same address on BNB Chain, Robinhood Chain, Base, Ethereum and Arc (gas sponsored on BNB Chain only). The @topazdex/id-connect NPM package adds 'Connect with Topaz ID', Topaz ID profile display, and consent-flow signing to partner dApps. Separate from the DEX protocol builders.",
     "profile_host": "https://id.topazdex.com",
     "npm": "https://www.npmjs.com/package/@topazdex/id-connect",
     "package": "@topazdex/id-connect",

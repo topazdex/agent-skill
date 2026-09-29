@@ -140,6 +140,6 @@ const tx = await router.swapExactTokensForTokens(
 | Quote | `scripts/src/read/quotes.ts` — `quoteV2(tokenIn, tokenOut, amountIn, stable)`, `bestV2Quote(...)`, `bestQuoteBundle(...)`, `topRoutes(...)` |
 | Build calldata | `scripts/src/lib/txBuilders.ts` — `buildV2SwapTx(...)` for explicit direct v2; `buildBestSwapTx(...)` for the complete API/Permit2 batch |
 | Broadcast token→token | `scripts/src/write/swap.ts` — `swapV2({ tokenIn, tokenOut, amountIn, stable, slippageBps, deadline })` |
-| CLI | `yarn tsx src/cli/swap.ts v2 --in <addr> --out <addr> --amount <n> [--stable] [--slippage 50]` |
+| CLI | `yarn tsx src/cli/swap.ts v2 --in <addr> --out <addr> --amount <n> [--stable] [--slippage 50]` — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |
 
 See also `examples/swap-v2-volatile.md`, `examples/swap-v2-stable.md`.

@@ -57,7 +57,7 @@ struct MintParams {
     uint256 amount1Min;
     address recipient;
     uint256 deadline;
-    uint160 sqrtPriceX96;      // *initial* price if pool needs creating (else ignored)
+    uint160 sqrtPriceX96;      // 0 for an existing pool; nonzero = create the pool at this price first (reverts if it exists)
 }
 function mint(MintParams calldata params)
     external payable returns (uint256 tokenId, uint128 liquidity, uint256 amount0, uint256 amount1);
@@ -213,4 +213,4 @@ See `gauges.md` for `CLGauge` specifics and `examples/mint-v3-position.md` + `ex
 | Collect | `collectFees({ tokenId, recipient })` |
 | Burn | `burnPosition(tokenId)` |
 | Read position | `scripts/src/read/positions.ts` — `getPositionWithFees(tokenId)`, `listOwnerPositions(owner)` |
-| CLI | `yarn tsx src/cli/lp.ts mint-v3 --t0 <addr> --t1 <addr> --ts 200 --lower-price 1.2 --upper-price 1.8 --amount0 100` etc. |
+| CLI | `yarn tsx src/cli/lp.ts mint-v3 --t0 <addr> --t1 <addr> --ts 200 --lower-price 1.2 --upper-price 1.8 --amount0 100` etc. — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |

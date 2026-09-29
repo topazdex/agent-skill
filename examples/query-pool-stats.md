@@ -91,7 +91,7 @@ Pool 0xPOOL
     USD/1k vote:  $1.28
 ```
 
-The script (`src/cli/stats.ts` calling `src/read/pools.ts:getPoolFullReport`) does:
+The script (`src/cli/stats.ts` calling `getPool` in `src/read/pools.ts` and `getGaugeStateForPool` in `src/read/gauges.ts`, plus the APR helpers) does:
 
 ## 1. Read pool basics on-chain
 
@@ -203,10 +203,10 @@ The same pattern with `feesVotingReward` gives this-epoch trading-fee accrual.
 ## Doing it for many pools at once
 
 ```bash
-yarn tsx src/cli/stats.ts gauges --limit 50 --sort-by emissionApr
+yarn tsx src/cli/stats.ts gauges --limit 50 [--chain <id|name>]
 ```
 
-Iterates every gauge from `Voter.length()` / `Voter.pools(i)`, batches the reads with multicall, and prints a sortable table. Use `--csv` to emit machine-readable output for downstream analysis.
+Iterates the first `--limit` pools from `Voter.length()` / `Voter.pools(i)` and prints pool, gauge, vote weight and alive status. For sorted, APR-annotated tables on any chain use the API: `stats.ts v1 /pools --chainIds 56 --sort emissionsApr --limit 50`.
 
 ## Where the heuristics live
 

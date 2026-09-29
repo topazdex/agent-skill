@@ -196,4 +196,4 @@ Always check `Voter.isAlive(gauge)` before voting for or staking in a gauge.
 | Stake v3 NFT | `stakePositionV3({ tokenId })` |
 | Unstake | `unstakeLpV2`, `unstakePositionV3` |
 | Claim emissions | `claimGaugeRewardsV2({ gauges })`, `claimGaugeRewardsV3({ gauge, tokenIds })` |
-| CLI | `yarn tsx src/cli/lp.ts stake --pool <addr> [--amount n | --tokenId n]` |
+| CLI | `yarn tsx src/cli/lp.ts stake --pool <addr> --amount <wei>` or `lp.ts stake --tokenId <id>` — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |

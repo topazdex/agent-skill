@@ -153,8 +153,9 @@ await voter.vote(tokenId, poolAddrs, weights);
 | Operation | Where |
 |---|---|
 | Read vote | `scripts/src/read/votes.ts` — `getVote(tokenId)` returns pools + weights + usedWeights + lastVoted |
-| List gauges | `scripts/src/read/gauges.ts` — `listAllGauges()` |
+| List gauge pools | `scripts/src/read/gauges.ts` — `listAllPools(chainId?)`, then `getGaugeStateForPool(pool, chainId?)` |
 | Vote | `scripts/src/write/vote.ts` — `vote({ tokenId, allocations: [{pool, weight}, ...] })` |
-| Reset | `resetVote({ tokenId })` |
-| Poke | `pokeVote({ tokenId })` |
+| Reset | `resetVote(tokenId, chainId?)` |
+| Poke | `pokeVote(tokenId, chainId?)` |
 | CLI | `yarn tsx src/cli/vote.ts cast --id 123 --pool 0xA --weight 60 --pool 0xB --weight 30 --pool 0xC --weight 10` |
+| Spoke chains | Add `--chain <robinhood\|base\|ethereum\|arc>` (or `chainId` in the helpers); `--id` is then an `XTopazVotingVault` position id and the call goes through the local vault. Open positions with `position.ts stake`; see [spoke voting](spoke-voting.md). |

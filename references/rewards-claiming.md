@@ -175,4 +175,4 @@ await rewardsDistributor.claim(tokenId);
 | Claim bribes | `claimBribes({ tokenId, pools })` — auto-resolves gauges, bribe contracts, and active reward tokens |
 | Claim rebase | `claimRebase({ tokenId })` |
 | Claim everything | `claimAll({ tokenId, account })` |
-| CLI | `yarn tsx src/cli/claim.ts all --id 123` (uses signer address for account) |
+| CLI | `yarn tsx src/cli/claim.ts all --id 123` (uses signer address for account) — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |

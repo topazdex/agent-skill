@@ -1,7 +1,6 @@
 import { fetchTopazQuote, type TopazQuote } from "../lib/topazRouting.js";
 import {
   AbiCoder,
-  Contract,
   Interface,
   ZeroAddress,
   formatUnits,
@@ -9,23 +8,24 @@ import {
   parseUnits,
 } from "ethers";
 import { ABIS } from "../lib/abis.js";
-import { provider } from "../lib/client.js";
-import { ADDR, TICK_SPACINGS } from "../config/addresses.js";
+import { coreContract } from "../lib/contracts.js";
+import { TICK_SPACINGS } from "../config/addresses.js";
+import { CHAIN_ID } from "../config/chain.js";
+import { contractAddress } from "../config/deployments.js";
 import { encodePath, encodeMixedPath, V2_VOLATILE, V2_STABLE } from "../lib/path.js";
 import { findV2Pool, findV3Pool } from "./pools.js";
 import { tokenPricesUSD } from "./subgraphQueries.js";
 import { getDecimals } from "../lib/erc20.js";
-import { HOP_TOKENS } from "../config/tokens.js";
+import { hopTokens } from "../config/tokens.js";
 import {
   aggregate3Chunked,
   type MulticallRequest,
   type MulticallResult,
 } from "../lib/multicall.js";
 
-const router = () => new Contract(ADDR.Router, ABIS.Router, provider());
-const quoter = () => new Contract(ADDR.QuoterV2, ABIS.QuoterV2, provider());
-const mixedQuoter = () =>
-  new Contract(ADDR.MixedRouteQuoterV1, ABIS.MixedRouteQuoterV1, provider());
+const router = (chainId: number) => coreContract("Router", chainId);
+const quoter = (chainId: number) => coreContract("QuoterV2", chainId);
+const mixedQuoter = (chainId: number) => coreContract("MixedRouteQuoterV1", chainId);
 
 // Long-lived ABI interfaces used for encoding/decoding multicall payloads.
 // Built once at module load so we're not re-parsing the JSON on every quote.
@@ -61,21 +61,22 @@ export interface V2Route {
   factory: string;
 }
 
-export function v2Route(from: string, to: string, stable: boolean): V2Route {
-  return { from, to, stable, factory: ADDR.PoolFactory };
+export function v2Route(from: string, to: string, stable: boolean, chainId: number = CHAIN_ID): V2Route {
+  return { from, to, stable, factory: contractAddress(chainId, "PoolFactory") };
 }
 
 export async function quoteV2(
   tokenIn: string,
   tokenOut: string,
   amountIn: bigint,
-  stable: boolean
+  stable: boolean,
+  chainId: number = CHAIN_ID,
 ): Promise<bigint> {
-  const pool = await findV2Pool(tokenIn, tokenOut, stable);
+  const pool = await findV2Pool(tokenIn, tokenOut, stable, chainId);
   if (pool === ZeroAddress) return 0n;
   try {
-    const amounts: bigint[] = await router().getAmountsOut(amountIn, [
-      v2Route(tokenIn, tokenOut, stable),
+    const amounts: bigint[] = await router(chainId).getAmountsOut(amountIn, [
+      v2Route(tokenIn, tokenOut, stable, chainId),
     ]);
     return amounts[amounts.length - 1] ?? 0n;
   } catch {
@@ -85,10 +86,11 @@ export async function quoteV2(
 
 export async function quoteV2Route(
   amountIn: bigint,
-  routes: V2Route[]
+  routes: V2Route[],
+  chainId: number = CHAIN_ID,
 ): Promise<bigint> {
   try {
-    const amounts: bigint[] = await router().getAmountsOut(amountIn, routes);
+    const amounts: bigint[] = await router(chainId).getAmountsOut(amountIn, routes);
     return amounts[amounts.length - 1] ?? 0n;
   } catch {
     return 0n;
@@ -100,12 +102,13 @@ export async function quoteV3Single(
   tokenOut: string,
   amountIn: bigint,
   tickSpacing: number,
-  sqrtPriceLimitX96: bigint = 0n
+  sqrtPriceLimitX96: bigint = 0n,
+  chainId: number = CHAIN_ID,
 ): Promise<bigint> {
   try {
-    const pool = await findV3Pool(tokenIn, tokenOut, tickSpacing);
+    const pool = await findV3Pool(tokenIn, tokenOut, tickSpacing, chainId);
     if (pool === ZeroAddress) return 0n;
-    const result = await quoter().quoteExactInputSingle.staticCall({
+    const result = await quoter(chainId).quoteExactInputSingle.staticCall({
       tokenIn,
       tokenOut,
       amountIn,
@@ -120,19 +123,24 @@ export async function quoteV3Single(
 
 export async function quoteV3Path(
   pathBytes: string,
-  amountIn: bigint
+  amountIn: bigint,
+  chainId: number = CHAIN_ID,
 ): Promise<bigint> {
   try {
-    const result = await quoter().quoteExactInput.staticCall(pathBytes, amountIn);
+    const result = await quoter(chainId).quoteExactInput.staticCall(pathBytes, amountIn);
     return result[0] as bigint;
   } catch {
     return 0n;
   }
 }
 
-export async function quoteMixed(pathBytes: string, amountIn: bigint): Promise<bigint> {
+export async function quoteMixed(
+  pathBytes: string,
+  amountIn: bigint,
+  chainId: number = CHAIN_ID,
+): Promise<bigint> {
   try {
-    const result = await mixedQuoter().quoteExactInput.staticCall(pathBytes, amountIn);
+    const result = await mixedQuoter(chainId).quoteExactInput.staticCall(pathBytes, amountIn);
     return result[0] as bigint;
   } catch {
     return 0n;
@@ -171,6 +179,8 @@ export type ExecRoute =
   | { type: "mixed"; tokens: string[]; hops: number[] };
 
 export interface BestQuoteOptions {
+  /** Chain to search. Default BNB Chain (56). */
+  chainId?: number;
   /**
    * @deprecated A no-op in the explicit legacy on-chain search. The default
    * API search supports mixed and split routes without this option.
@@ -193,6 +203,7 @@ export interface BestQuoteOptions {
    * has no subgraph price fall through to the relative filter only. Default
    * 0.5 (50%) — catches the "stale pool returning $2 for $1000" case while
    * leaving room for legitimate high-slippage trades. Set to 1 to disable.
+   * Subgraph prices are BNB-only, so on a spoke only the relative filter runs.
    */
   maxPriceImpactPct?: number;
   /**
@@ -291,7 +302,10 @@ interface PoolInventoryEntry {
  */
 export async function detectPoolInventory(
   uniqueTokens: string[],
+  chainId: number = CHAIN_ID,
 ): Promise<PoolInventory> {
+  const poolFactoryAddress = contractAddress(chainId, "PoolFactory");
+  const clFactoryAddress = contractAddress(chainId, "CLFactory");
   const map = new Map<string, PoolInventoryEntry>();
   const tokens = Array.from(new Set(uniqueTokens.map((t) => t.toLowerCase())));
   if (tokens.length < 2) return makeInventory(map);
@@ -311,20 +325,20 @@ export async function detectPoolInventory(
       const k = edgeKey(a, b);
 
       calls.push({
-        target: ADDR.PoolFactory,
+        target: poolFactoryAddress,
         callData: poolFactoryIface.encodeFunctionData("getPool", [a, b, false]),
       });
       keys.push({ edge: k, kind: "v2-volatile" });
 
       calls.push({
-        target: ADDR.PoolFactory,
+        target: poolFactoryAddress,
         callData: poolFactoryIface.encodeFunctionData("getPool", [a, b, true]),
       });
       keys.push({ edge: k, kind: "v2-stable" });
 
       for (const ts of TICK_SPACINGS) {
         calls.push({
-          target: ADDR.CLFactory,
+          target: clFactoryAddress,
           callData: clFactoryIface.encodeFunctionData("getPool", [a, b, ts]),
         });
         keys.push({ edge: k, kind: "v3", tickSpacing: ts });
@@ -332,7 +346,7 @@ export async function detectPoolInventory(
     }
   }
 
-  const results = await aggregate3Chunked(calls);
+  const results = await aggregate3Chunked(calls, undefined, { chainId });
 
   for (let idx = 0; idx < results.length; idx++) {
     const r = results[idx];
@@ -401,10 +415,11 @@ function* enumeratePaths(
   tokenIn: string,
   tokenOut: string,
   maxHops: number,
+  chainId: number,
 ): Generator<string[]> {
   const lowerIn = tokenIn.toLowerCase();
   const lowerOut = tokenOut.toLowerCase();
-  const hops = HOP_TOKENS.map((t) => t.address).filter(
+  const hops = hopTokens(chainId).filter(
     (a) => a.toLowerCase() !== lowerIn && a.toLowerCase() !== lowerOut,
   );
 
@@ -434,10 +449,11 @@ export function enumerateV2Plans(
   amountIn: bigint,
   inventory: PoolInventory,
   maxHops: number = MAX_ROUTE_HOPS,
+  chainId: number = CHAIN_ID,
 ): CandidatePlan[] {
   const plans: CandidatePlan[] = [];
   const hopBudget = clampMaxHops(maxHops);
-  for (const tokens of enumeratePaths(tokenIn, tokenOut, hopBudget)) {
+  for (const tokens of enumeratePaths(tokenIn, tokenOut, hopBudget, chainId)) {
     const legs = tokens.length - 1;
     const combos = 1 << legs;
     for (let mask = 0; mask < combos; mask++) {
@@ -453,12 +469,12 @@ export function enumerateV2Plans(
       }
       if (!viable) continue;
       const route: V2Route[] = stables.map((stable, i) =>
-        v2Route(tokens[i], tokens[i + 1], stable),
+        v2Route(tokens[i], tokens[i + 1], stable, chainId),
       );
       const label = v2RouteLabel(tokens, stables);
       plans.push({
         call: {
-          target: ADDR.Router,
+          target: contractAddress(chainId, "Router"),
           callData: routerIface.encodeFunctionData("getAmountsOut", [amountIn, route]),
         },
         build: (r) => {
@@ -484,10 +500,11 @@ export function enumerateV3Plans(
   amountIn: bigint,
   inventory: PoolInventory,
   maxHops: number = MAX_ROUTE_HOPS,
+  chainId: number = CHAIN_ID,
 ): CandidatePlan[] {
   const plans: CandidatePlan[] = [];
   const hopBudget = clampMaxHops(maxHops);
-  for (const tokens of enumeratePaths(tokenIn, tokenOut, hopBudget)) {
+  for (const tokens of enumeratePaths(tokenIn, tokenOut, hopBudget, chainId)) {
     const legs = tokens.length - 1;
     for (const spacings of cartesianTickSpacings(legs)) {
       let viable = true;
@@ -503,7 +520,7 @@ export function enumerateV3Plans(
         const ts = spacings[0];
         plans.push({
           call: {
-            target: ADDR.QuoterV2,
+            target: contractAddress(chainId, "QuoterV2"),
             callData: quoterIface.encodeFunctionData("quoteExactInputSingle", [
               { tokenIn: a, tokenOut: b, amountIn, tickSpacing: ts, sqrtPriceLimitX96: 0n },
             ]),
@@ -523,7 +540,7 @@ export function enumerateV3Plans(
         const label = v3PathLabel(tokens, spacings);
         plans.push({
           call: {
-            target: ADDR.QuoterV2,
+            target: contractAddress(chainId, "QuoterV2"),
             callData: quoterIface.encodeFunctionData("quoteExactInput", [path, amountIn]),
           },
           build: (r) => {
@@ -600,13 +617,14 @@ export function enumerateCandidates(
   _allowMixed: boolean,
   inventory?: PoolInventory,
   maxHops: number = MAX_ROUTE_HOPS,
+  chainId: number = CHAIN_ID,
 ): CandidatePlan[] {
   // Tests provide a permissive synthetic inventory; production callers should
   // go through `onchainQuoteBundle` which probes the chain first.
   const inv = inventory ?? permissiveInventory();
   return [
-    ...enumerateV2Plans(tokenIn, tokenOut, amountIn, inv, maxHops),
-    ...enumerateV3Plans(tokenIn, tokenOut, amountIn, inv, maxHops),
+    ...enumerateV2Plans(tokenIn, tokenOut, amountIn, inv, maxHops, chainId),
+    ...enumerateV3Plans(tokenIn, tokenOut, amountIn, inv, maxHops, chainId),
   ];
 }
 
@@ -735,22 +753,23 @@ export async function onchainQuoteBundle(
 
   // Inventory probe, subgraph prices, and decimals all fan out in parallel —
   // they're independent and dominate latency.
-  const pricesPromise = opts.skipPriceFilter
+  const chainId = opts.chainId ?? CHAIN_ID;
+  const pricesPromise = opts.skipPriceFilter || chainId !== CHAIN_ID
     ? Promise.resolve(new Map<string, number>())
     : tokenPricesUSD([tokenIn, tokenOut]).catch(() => new Map<string, number>());
   const [inventory, prices, decIn, decOut] = await Promise.all([
-    detectPoolInventory([tokenIn, tokenOut, ...HOP_TOKENS.map((t) => t.address)]),
+    detectPoolInventory([tokenIn, tokenOut, ...hopTokens(chainId)], chainId),
     pricesPromise,
-    getDecimals(tokenIn),
-    getDecimals(tokenOut),
+    getDecimals(tokenIn, chainId),
+    getDecimals(tokenOut, chainId),
   ]);
 
-  const v2Plans = enumerateV2Plans(tokenIn, tokenOut, amountIn, inventory, maxHops);
-  const v3Plans = enumerateV3Plans(tokenIn, tokenOut, amountIn, inventory, maxHops);
+  const v2Plans = enumerateV2Plans(tokenIn, tokenOut, amountIn, inventory, maxHops, chainId);
+  const v3Plans = enumerateV3Plans(tokenIn, tokenOut, amountIn, inventory, maxHops, chainId);
 
   const [v2Results, v3Results] = await Promise.all([
-    aggregate3Chunked(v2Plans.map((p) => p.call)),
-    aggregate3Chunked(v3Plans.map((p) => p.call)),
+    aggregate3Chunked(v2Plans.map((p) => p.call), undefined, { chainId }),
+    aggregate3Chunked(v3Plans.map((p) => p.call), undefined, { chainId }),
   ]);
 
   const ctx: FilterContext = {
@@ -837,21 +856,22 @@ export async function topRoutes(
   const maxPriceImpactPct = opts.maxPriceImpactPct ?? 0.5;
   const minRelativeToBest = opts.minRelativeToBest ?? 0.5;
 
-  const pricesPromise = opts.skipPriceFilter
+  const chainId = opts.chainId ?? CHAIN_ID;
+  const pricesPromise = opts.skipPriceFilter || chainId !== CHAIN_ID
     ? Promise.resolve(new Map<string, number>())
     : tokenPricesUSD([tokenIn, tokenOut]).catch(() => new Map<string, number>());
   const [inventory, prices, decIn, decOut] = await Promise.all([
-    detectPoolInventory([tokenIn, tokenOut, ...HOP_TOKENS.map((t) => t.address)]),
+    detectPoolInventory([tokenIn, tokenOut, ...hopTokens(chainId)], chainId),
     pricesPromise,
-    getDecimals(tokenIn),
-    getDecimals(tokenOut),
+    getDecimals(tokenIn, chainId),
+    getDecimals(tokenOut, chainId),
   ]);
 
   const plans = [
-    ...enumerateV2Plans(tokenIn, tokenOut, amountIn, inventory, maxHops),
-    ...enumerateV3Plans(tokenIn, tokenOut, amountIn, inventory, maxHops),
+    ...enumerateV2Plans(tokenIn, tokenOut, amountIn, inventory, maxHops, chainId),
+    ...enumerateV3Plans(tokenIn, tokenOut, amountIn, inventory, maxHops, chainId),
   ];
-  const results = await aggregate3Chunked(plans.map((p) => p.call));
+  const results = await aggregate3Chunked(plans.map((p) => p.call), undefined, { chainId });
   const candidates = decodeCandidates(plans, results);
   candidates.sort(compareByAmountOutDesc);
 
@@ -897,10 +917,11 @@ export async function quoteHuman(
   amountHuman: string,
   opts: BestQuoteOptions = {}
 ): Promise<{ best: BestRoute; amountOutHuman: string; decimalsOut: number }> {
-  const decIn = await getDecimals(tokenIn);
-  const decOut = await getDecimals(tokenOut);
+  const chainId = opts.chainId ?? CHAIN_ID;
+  const decIn = await getDecimals(tokenIn, chainId);
+  const decOut = await getDecimals(tokenOut, chainId);
   const amountIn = parseUnits(amountHuman, decIn);
-  const best = await bestQuote(tokenIn, tokenOut, amountIn);
+  const best = await bestQuote(tokenIn, tokenOut, amountIn, chainId);
   const amountOutHuman = formatUnits(best.amountOut, decOut);
   return { best, amountOutHuman, decimalsOut: decOut };
 }
@@ -913,15 +934,25 @@ export async function quoteHuman(
 export { V2_VOLATILE, V2_STABLE, encodeMixedPath };
 
 /** Canonical SOR quote. Explicit v2/v3 helpers remain available for diagnostics. */
-export async function bestQuoteBundle(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<QuoteBundle> {
-  const quote = await fetchTopazQuote({ tokenIn, tokenOut, amountIn });
+export async function bestQuoteBundle(
+  tokenIn: string,
+  tokenOut: string,
+  amountIn: bigint,
+  chainId: number = CHAIN_ID,
+): Promise<QuoteBundle> {
+  const quote = await fetchTopazQuote({ chainId, tokenIn, tokenOut, amountIn });
   const topaz: BestRoute = { amountOut: BigInt(quote.quote),
     route: `Topaz API (${quote.routes.map((r) => `${r.percent}% ${r.protocol}`).join(" + ")})`,
     exec: { type: "topaz-api", quote } };
   return { topaz, v2: null, v3: null, best: topaz };
 }
-export async function bestQuote(tokenIn: string, tokenOut: string, amountIn: bigint): Promise<BestRoute> {
-  const bundle = await bestQuoteBundle(tokenIn, tokenOut, amountIn);
+export async function bestQuote(
+  tokenIn: string,
+  tokenOut: string,
+  amountIn: bigint,
+  chainId: number = CHAIN_ID,
+): Promise<BestRoute> {
+  const bundle = await bestQuoteBundle(tokenIn, tokenOut, amountIn, chainId);
   if (!bundle.best) throw new Error("No Topaz API route");
   return bundle.best;
 }

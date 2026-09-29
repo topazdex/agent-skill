@@ -519,3 +519,46 @@ describe("isStale", () => {
     expect(result).toBe(true);
   });
 });
+
+describe("legacy builders on a spoke", () => {
+  const amountIn = 10n ** 18n;
+  const expectedOut = 5n * 10n ** 17n;
+  const baseWeth = getAddress("0x4200000000000000000000000000000000000006");
+  const baseUsdc = getAddress("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913");
+
+  it("targets the chain's SwapRouter and unwraps to ETH when the output is WETH", async () => {
+    // #given a Base USDC → WETH CL pool
+    mockFindV3Pool.mockResolvedValue("0xdddddddddddddddddddddddddddddddddddddddd");
+    mockQuoteV3Single.mockResolvedValue(expectedOut);
+    const { contractAddress } = await import("../config/deployments.js");
+    const baseRouter = contractAddress(8453, "SwapRouter");
+
+    // #when
+    const built = await buildV3SwapTx({
+      chainId: 8453, tokenIn: baseUsdc, tokenOut: baseWeth, amountIn, tickSpacing: 100, recipient, payer: recipient,
+    });
+
+    // #then every address and read is Base-local, never the BNB deployment
+    expect(built.chainId).toBe(8453);
+    expect(built.to).toBe(baseRouter);
+    expect(built.to).not.toBe(ADDR.SwapRouter);
+    expect(built.route).toMatch(/unwrap to ETH/);
+    expect(built.approval).toEqual({ token: baseUsdc, spender: baseRouter, amount: amountIn });
+    expect(mockFindV3Pool).toHaveBeenCalledWith(baseUsdc, baseWeth, 100, 8453);
+    expect(mockAllowance).toHaveBeenCalledWith(baseUsdc, recipient, baseRouter, 8453);
+    const inner = new Interface(ABIS.SwapRouter).parseTransaction({ data: built.data, value: 0n });
+    const first = new Interface(ABIS.SwapRouter).parseTransaction({ data: (inner?.args[0] as string[])[0], value: 0n });
+    expect(first?.args[0].recipient).toBe(baseRouter);
+  });
+
+  it("never treats Arc USDC as native, even with useBnb", async () => {
+    mockFindV3Pool.mockResolvedValue("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee");
+    mockQuoteV3Single.mockResolvedValue(expectedOut);
+    const arcUsdc = "0x3600000000000000000000000000000000000000";
+    const built = await buildV3SwapTx({
+      chainId: 5042, tokenIn: arcUsdc, tokenOut: TOPAZ, amountIn: 1_000_000n, tickSpacing: 100, recipient, useBnb: true,
+    });
+    expect(built.value).toBe(0n);
+    expect(built.approval?.token).toBe(arcUsdc);
+  });
+});

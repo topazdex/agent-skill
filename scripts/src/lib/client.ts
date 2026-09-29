@@ -1,19 +1,30 @@
 import * as dotenv from "dotenv";
-import { JsonRpcProvider, Wallet } from "ethers";
-import { CHAIN_ID, DEFAULT_RPC, FALLBACK_RPC } from "../config/chain.js";
+import { FetchRequest, JsonRpcProvider, Wallet } from "ethers";
+import { CHAIN_ID, FALLBACK_RPC } from "../config/chain.js";
+import { deployment } from "../config/deployments.js";
+import { assertChain, rpcUrl } from "./multichain.js";
 
 dotenv.config();
 
-let _provider: JsonRpcProvider | undefined;
-let _signer: Wallet | undefined;
+const providers = new Map<number, JsonRpcProvider>();
+const signers = new Map<number, Wallet>();
+const verified = new Map<number, Promise<void>>();
 
-export function provider(): JsonRpcProvider {
-  if (_provider) return _provider;
-  const url = process.env.BSC_RPC_URL ?? DEFAULT_RPC;
-  _provider = new JsonRpcProvider(url, { chainId: CHAIN_ID, name: "bnb-smart-chain" }, {
-    staticNetwork: true,
-  });
-  return _provider;
+/**
+ * Cached per-chain provider. The network is declared statically, so a
+ * misconfigured URL is not detected here: call `verifyChain` before any write.
+ */
+export function provider(chainId: number = CHAIN_ID): JsonRpcProvider {
+  const cached = providers.get(chainId);
+  if (cached) return cached;
+  const chain = deployment(chainId);
+  const request = new FetchRequest(rpcUrl(chainId));
+  request.timeout = 15_000;
+  // Several spoke public RPCs rate-limit JSON-RPC batches; match chainProvider and send singly.
+  const options = chainId === CHAIN_ID ? { staticNetwork: true } : { staticNetwork: true, batchMaxCount: 1 };
+  const created = new JsonRpcProvider(request, { chainId, name: chain.slug }, options);
+  providers.set(chainId, created);
+  return created;
 }
 
 export function fallbackProvider(): JsonRpcProvider {
@@ -23,18 +34,31 @@ export function fallbackProvider(): JsonRpcProvider {
   });
 }
 
-export function signer(): Wallet {
-  if (_signer) return _signer;
+/** Reads `eth_chainId` once per chain and rejects an RPC that serves another network. */
+export function verifyChain(chainId: number = CHAIN_ID): Promise<void> {
+  let pending = verified.get(chainId);
+  if (!pending) {
+    pending = assertChain(provider(chainId), chainId);
+    pending.catch(() => verified.delete(chainId));
+    verified.set(chainId, pending);
+  }
+  return pending;
+}
+
+export function signer(chainId: number = CHAIN_ID): Wallet {
+  const cached = signers.get(chainId);
+  if (cached) return cached;
   const key = process.env.PRIVATE_KEY;
   if (!key) {
     throw new Error(
       "PRIVATE_KEY missing. This operation requires a signer. Set PRIVATE_KEY in scripts/.env."
     );
   }
-  _signer = new Wallet(key, provider());
-  return _signer;
+  const created = new Wallet(key, provider(chainId));
+  signers.set(chainId, created);
+  return created;
 }
 
-export async function senderAddress(): Promise<string> {
-  return signer().address;
+export async function senderAddress(chainId: number = CHAIN_ID): Promise<string> {
+  return signer(chainId).address;
 }
