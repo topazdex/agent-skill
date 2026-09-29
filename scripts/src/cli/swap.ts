@@ -11,6 +11,7 @@ import { onchainQuoteBundle, bestQuoteBundle, type BestRoute } from "../read/quo
 import { getDecimals, getSymbol } from "../lib/erc20.js";
 import { resolveTokenOnChain, type ResolvedToken } from "../config/tokens.js";
 import { CHAIN_FLAG_HELP, chainLabel, selectChain } from "../lib/chainOption.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/swap.ts <mode> [--chain <id|name>] [options]
@@ -239,7 +240,4 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(exitWithError);

@@ -133,5 +133,7 @@ describe("per-chain RPC selection", () => {
     expect(provider(8453)).toBe(provider(8453));
     expect(provider(8453)).not.toBe(provider(56));
     expect(provider(5042)._network.chainId).toBe(5042n);
+    // A stale shared nonce read broke approve-then-act flows on sub-second chains.
+    expect((provider(4663) as unknown as { _getOption(k: string): number })._getOption("cacheTimeout")).toBe(-1);
   });
 });

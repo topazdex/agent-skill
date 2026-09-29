@@ -19,9 +19,15 @@ export function provider(chainId: number = CHAIN_ID): JsonRpcProvider {
   if (cached) return cached;
   const chain = deployment(chainId);
   const request = new FetchRequest(rpcUrl(chainId));
-  request.timeout = 15_000;
+  // Route searches and relay reads send large multicalls; slow public RPCs need headroom.
+  request.timeout = 120_000;
+  // cacheTimeout -1: ethers otherwise shares identical requests for 250ms, so on fast chains a
+  // nonce read right after an approval confirms can return the stale nonce ("nonce already used").
   // Several spoke public RPCs rate-limit JSON-RPC batches; match chainProvider and send singly.
-  const options = chainId === CHAIN_ID ? { staticNetwork: true } : { staticNetwork: true, batchMaxCount: 1 };
+  const options =
+    chainId === CHAIN_ID
+      ? { staticNetwork: true, cacheTimeout: -1 }
+      : { staticNetwork: true, cacheTimeout: -1, batchMaxCount: 1 };
   const created = new JsonRpcProvider(request, { chainId, name: chain.slug }, options);
   providers.set(chainId, created);
   return created;

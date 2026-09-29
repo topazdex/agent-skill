@@ -2,6 +2,7 @@ import minimist from "minimist";
 import { depositBribe } from "../write/bribe.js";
 import { resolveTokenOnChain } from "../config/tokens.js";
 import { CHAIN_FLAG_HELP, selectChain } from "../lib/chainOption.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/bribe.ts deposit [--chain <id|name>] --pool <addr> --token <addr|sym> --amount <human>
@@ -35,7 +36,4 @@ async function main() {
   console.log("ok:", tx.hash);
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(exitWithError);

@@ -122,13 +122,11 @@ export async function mintPosition(args: MintPositionArgs) {
     throw new Error("must specify at least one of amountA or amountB");
   }
 
-  const amount0Min = slip(amount0Desired, slippageBps);
-  const amount1Min = slip(amount1Desired, slippageBps);
-
   await approveIfNeeded(token0, npmAddress(chainId), amount0Desired, { chainId });
   await approveIfNeeded(token1, npmAddress(chainId), amount1Desired, { chainId });
 
-  return await npmC(chainId).mint({
+  const npm = npmC(chainId);
+  const params = {
     token0,
     token1,
     tickSpacing,
@@ -136,13 +134,16 @@ export async function mintPosition(args: MintPositionArgs) {
     tickUpper,
     amount0Desired,
     amount1Desired,
-    amount0Min,
-    amount1Min,
+    amount0Min: 0n,
+    amount1Min: 0n,
     recipient,
     deadline,
     // Nonzero asks NPM.mint to create the pool first, which reverts for an existing pool.
     sqrtPriceX96: 0n,
-  });
+  };
+  // The pool takes only the range-ratio share of the desired amounts; slip what it will use.
+  const [, , used0, used1] = (await npm.mint.staticCall(params)) as [bigint, bigint, bigint, bigint];
+  return await npm.mint({ ...params, amount0Min: slip(used0, slippageBps), amount1Min: slip(used1, slippageBps) });
 }
 
 export interface IncreaseLiquidityArgs {
@@ -162,14 +163,17 @@ export async function increaseLiquidity(args: IncreaseLiquidityArgs) {
   const pos = await getPosition(args.tokenId, chainId);
   await approveIfNeeded(pos.token0, npmAddress(chainId), args.amount0Desired, { chainId });
   await approveIfNeeded(pos.token1, npmAddress(chainId), args.amount1Desired, { chainId });
-  return await npmC(chainId).increaseLiquidity({
+  const npm = npmC(chainId);
+  const params = {
     tokenId: args.tokenId,
     amount0Desired: args.amount0Desired,
     amount1Desired: args.amount1Desired,
-    amount0Min: slip(args.amount0Desired, slippageBps),
-    amount1Min: slip(args.amount1Desired, slippageBps),
+    amount0Min: 0n,
+    amount1Min: 0n,
     deadline,
-  });
+  };
+  const [, used0, used1] = (await npm.increaseLiquidity.staticCall(params)) as [bigint, bigint, bigint];
+  return await npm.increaseLiquidity({ ...params, amount0Min: slip(used0, slippageBps), amount1Min: slip(used1, slippageBps) });
 }
 
 export interface DecreaseLiquidityArgs {

@@ -19,13 +19,19 @@ vi.mock("../read/pools.js", () => ({
 }));
 
 const { Contract } = await import("ethers");
-const mint = vi.fn(async () => ({ hash: "0xmint" }));
+const mint = Object.assign(vi.fn(async () => ({ hash: "0xmint" })), {
+  // The pool takes less than desired whenever the ratio differs from the range's.
+  staticCall: vi.fn(async () => [1n, 1n, 6n * 10n ** 17n, 3n * 10n ** 17n]),
+});
 vi.mocked(Contract).mockImplementation(() => ({ mint }) as unknown as InstanceType<typeof Contract>);
 const erc20 = await import("../lib/erc20.js");
 const { mintPosition } = await import("./liquidityV3.js");
 const { contractAddress } = await import("../config/deployments.js");
 
-beforeEach(() => mint.mockClear());
+beforeEach(() => {
+  mint.mockClear();
+  mint.staticCall.mockClear();
+});
 
 describe("mintPosition", () => {
   it("passes sqrtPriceX96 = 0 so NPM.mint does not try to create an existing pool", async () => {
@@ -37,9 +43,15 @@ describe("mintPosition", () => {
       rangeTicks: 500,
       amountA: 10n ** 18n,
     });
-    const params = (mint.mock.calls[0] as unknown[])[0] as { sqrtPriceX96: bigint; amount0Desired: bigint };
+    const params = (mint.mock.calls[0] as unknown[])[0] as {
+      sqrtPriceX96: bigint; amount0Desired: bigint; amount0Min: bigint; amount1Min: bigint;
+    };
     expect(params.sqrtPriceX96).toBe(0n);
     expect(params.amount0Desired).toBe(10n ** 18n);
+    // minima are 1% under what the pool will actually take, not under the desired amounts
+    expect(params.amount0Min).toBe((6n * 10n ** 17n * 9_900n) / 10_000n);
+    expect(params.amount1Min).toBe((3n * 10n ** 17n * 9_900n) / 10_000n);
+    expect(mint.staticCall).toHaveBeenCalledWith(expect.objectContaining({ amount0Min: 0n, amount1Min: 0n, sqrtPriceX96: 0n }));
     expect(vi.mocked(erc20.approveIfNeeded)).toHaveBeenCalledWith(
       expect.any(String),
       contractAddress(8453, "NonfungiblePositionManager"),

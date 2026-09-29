@@ -190,10 +190,11 @@ Always check `Voter.isAlive(gauge)` before voting for or staking in a gauge.
 
 | Operation | Where |
 |---|---|
-| Read gauge state | `scripts/src/read/gauges.ts` — `getGaugeState(pool)` returns `{ gauge, rewardRate, periodFinish, left, totalSupply, isAlive, feesVotingReward, bribeVotingReward, type: "v2"|"v3" }` |
-| Earned | `getEarned(gauge, accountOrTokenId)` |
-| Stake v2 LP | `scripts/src/write/gauge.ts` — `stakeLpV2({ pool, amount })` |
-| Stake v3 NFT | `stakePositionV3({ tokenId })` |
+| Read gauge state | `scripts/src/read/gauges.ts` — `getGaugeStateForPool(pool, chainId?)` returns `{ pool, gauge, type, alive, rewardRate, periodFinish, left, totalSupplyOrStaked, feesVotingReward, bribeVotingReward, weight }` or `null` |
+| All gauges for a pair | `listGaugesForPair(tokenA, tokenB, chainId?)` |
+| Earned | `getEarnedV2(gauge, account, chainId?)`, `getEarnedV3(gauge, account, tokenId, chainId?)` |
+| Stake v2 LP | `scripts/src/write/gauge.ts` — `stakeLpV2({ pool, amount, chainId? })` |
+| Stake v3 NFT | `stakePositionV3({ tokenId, chainId? })` |
 | Unstake | `unstakeLpV2`, `unstakePositionV3` |
-| Claim emissions | `claimGaugeRewardsV2({ gauges })`, `claimGaugeRewardsV3({ gauge, tokenIds })` |
+| Claim emissions | `scripts/src/write/claim.ts` — `claimGaugeRewardsV2({ gauges, chainId? })` (via Voter), `claimGaugeRewardV3({ gauge, tokenId, chainId? })` (one CL NFT) |
 | CLI | `yarn tsx src/cli/lp.ts stake --pool <addr> --amount <wei>` or `lp.ts stake --tokenId <id>` — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |

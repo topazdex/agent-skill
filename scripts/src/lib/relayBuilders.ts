@@ -91,6 +91,12 @@ function assertOwner(expected: string | undefined, actual: string, tokenId: bigi
   }
 }
 
+/** Voter windows compare against block.timestamp, so use chain time rather than the local clock. */
+async function chainNow(): Promise<number> {
+  const block = await provider().getBlock("latest");
+  return block ? block.timestamp : nowSec();
+}
+
 export async function buildDepositManagedTx(
   args: DepositManagedArgs,
 ): Promise<BuiltDepositManagedTx> {
@@ -113,7 +119,7 @@ export async function buildDepositManagedTx(
     );
   }
   assertOwner(args.owner, owner, tokenId);
-  const now = nowSec();
+  const now = await chainNow();
   if (!canVoteNow(lastVoted, now)) {
     throw new Error(
       `veNFT #${tokenId} already voted or deposited this epoch — depositManaged reverts until the next epoch`,
@@ -149,7 +155,7 @@ export async function buildWithdrawManagedTx(
     );
   }
   assertOwner(args.owner, owner, tokenId);
-  const now = nowSec();
+  const now = await chainNow();
   if (!canVoteNow(lastVoted, now)) {
     throw new Error(
       `veNFT #${tokenId} cannot be withdrawn in the same epoch it was deposited or voted — wait for the next epoch`,

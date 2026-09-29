@@ -153,15 +153,15 @@ To exit and collect everything:
 7. router.removeLiquidity(...)           // burn LP → receive tokens
 ```
 
-`scripts/src/write/liquidityV2.ts` exposes `addAndStake(...)` and `unstakeAndRemove(...)` that combine these.
+The scripts run these as separate calls: `addLiquidityV2` then `stakeLpV2` (`scripts/src/write/gauge.ts`) to enter; `claimGaugeRewardsV2`, `unstakeLpV2`, then `removeLiquidityV2` to exit. There is no combined helper.
 
 ## Scripts
 
 | Operation | Where |
 |---|---|
-| Add | `scripts/src/write/liquidityV2.ts` — `addLiquidityV2({ tokenA, tokenB, stable, amounts, slippageBps })` |
-| Remove | `removeLiquidityV2({ tokenA, tokenB, stable, liquidity, slippageBps })` |
-| Quote add | `scripts/src/read/quotes.ts` — `quoteAddLiquidityV2(...)` |
+| Add | `scripts/src/write/liquidityV2.ts` — `addLiquidityV2({ tokenA, tokenB, stable, amountADesired, amountBDesired, slippageBps?, useNative?, chainId? })` (human strings or wei); minima come from `Router.quoteAddLiquidity`, so off-ratio desired amounts are safe |
+| Remove | `removeLiquidityV2({ tokenA, tokenB, stable, liquidity? \| pct?, slippageBps?, chainId? })` — minima from `Router.quoteRemoveLiquidity` |
+| Quote add | No wrapper: call `Router.quoteAddLiquidity(tokenA, tokenB, stable, factory, amountADesired, amountBDesired)` on `coreContract("Router", chainId)` |
 | CLI | `yarn tsx src/cli/lp.ts add-v2 --a <addr> --b <addr> --amount-a <n> --amount-b <n> [--stable] [--slippage 100]` — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |
 
 See `examples/add-liquidity-v2.md`.

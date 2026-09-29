@@ -49,6 +49,7 @@ import {
   fetchHealth,
 } from "../lib/statsApi.js";
 import { fetchV1, fetchV1Pages, type TopazApiQuery } from "../lib/topazApi.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/stats.ts <command> [options]
@@ -768,7 +769,4 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(exitWithError);

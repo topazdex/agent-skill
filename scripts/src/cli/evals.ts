@@ -87,7 +87,7 @@ You are running inside an automated eval harness. Two tools are available:
 - **topaz_read({ function, args })** — your only way to read on-chain state and to invoke builder helpers (\`bestQuote\`, \`bestQuoteBundle\`, \`buildBestSwapTx\`, \`buildBribeDepositTx\`, \`Voter.gauges\`, \`Voter.lastVoted\`, \`epochStart\`, \`claimableSummary\`, etc.). Pass the function name as a string and an args object. Use the same names documented in SKILL.md / references / scripts/src/index.ts.
 - **read_file({ path })** — read any tracked file in this repo (SKILL.md, references/*.md, developers/*.md, examples/*.md, scripts/src/**/*.ts). Use this when you need more detail than SKILL.md provides.
 
-There is no \`bash\`, no \`signer\`, no \`broadcastTransaction\`. **Do not** offer to broadcast — only quote and build calldata, per the Operating principles above. When a task is out of scope (testnet, governance, deploy-new-pool), refuse cleanly without making any tool calls.
+There is no \`bash\`, no \`signer\`, no \`broadcastTransaction\`. **Do not** offer to broadcast — only quote and build calldata, per the Operating principles above. When a task is out of scope (testnet, governance), refuse cleanly without making any tool calls. Pool creation is permissionless: when such a request lacks the chain, token addresses or initial price, explain what is missing instead of building calldata.
 `;
   return skill + runnerNote;
 };

@@ -10,7 +10,7 @@ vi.mock("ethers", async () => {
 });
 
 vi.mock("./client.js", () => ({
-  provider: vi.fn(() => ({})),
+  provider: vi.fn(() => ({ getBlock: async () => ({ timestamp: 1_700_000_000 }) })),
 }));
 
 // Pin "now" to a deterministic mid-epoch timestamp so the once-per-epoch and

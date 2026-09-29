@@ -170,9 +170,10 @@ await rewardsDistributor.claim(tokenId);
 |---|---|
 | Read all claimable | `scripts/src/read/claimable.ts` — returns gauge/emissions, fees, bribes, rebase quantities |
 | Claim emissions (v2 batch) | `scripts/src/write/claim.ts` — `claimGaugeRewardsV2({ gauges })` |
-| Claim emissions (v3 single/batch) | `claimGaugeRewardsV3({ gauge, account?, tokenIds? })` |
+| Claim emissions (v3, one NFT) | `claimGaugeRewardV3({ gauge, tokenId })` — call once per staked NFT |
 | Claim fees | `claimFees({ tokenId, pools })` — auto-resolves gauges, fee contracts, and pool tokens |
 | Claim bribes | `claimBribes({ tokenId, pools })` — auto-resolves gauges, bribe contracts, and active reward tokens |
-| Claim rebase | `claimRebase({ tokenId })` |
-| Claim everything | `claimAll({ tokenId, account })` |
+| Claim rebase | `claimRebase(tokenId)` — BNB only |
+| Claim everything | `claimAll({ tokenId, account? })` |
+| Other chains | Every helper above takes `chainId`; on a spoke `tokenId` is an `XTopazVotingVault` position id, fees/bribes are claimed through the vault, and there is no rebase |
 | CLI | `yarn tsx src/cli/claim.ts all --id 123` (uses signer address for account) — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |
