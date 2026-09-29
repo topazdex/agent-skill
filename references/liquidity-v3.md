@@ -180,7 +180,7 @@ const refundData = npm.interface.encodeFunctionData("refundETH", []);
 await npm.multicall([mintData, refundData], { value: amountBNB });
 ```
 
-For BNB-out on `collect`/`decreaseLiquidity`, route to `recipient = NPMAddress`, then `unwrapWETH9(min, user)`.
+For native-out, see [exit with native unwrap](#exit-with-native-unwrap) below.
 
 ## Sequence: mint + stake in CL gauge
 
@@ -199,6 +199,72 @@ To exit:
 7. NPM.decreaseLiquidity(...) + collect(...)   // unwind principal
 8. NPM.burn(tokenId)             // optional cleanup
 ```
+
+## Position lifecycle
+
+Verified on a BNB fork (2026-09-29) against the deployed NonfungiblePositionManager and CLGauge. The same calls apply on every chain; spoke gauges pay xTOPAZ instead of TOPAZ. On Arc there is no native leg, so skip the unwrap pattern there.
+
+### Staked positions
+
+While staked, the **gauge owns the NFT**, and `CLGauge` has no `increaseStakedLiquidity` or `decreaseStakedLiquidity`. So NPM changes to a staked position revert: `increaseLiquidity` with `NG` (only the gauge may add to a staked position), and `decreaseLiquidity` / `collect` / `burn` with `Not approved` (the gauge, not the user, owns the NFT). Before an increase, partial or full exit, or rebalance:
+
+1. `CLGauge.withdraw(tokenId)`. It also collects fees to the owner and pays pending emissions, so there is no separate claim first.
+2. Make the NPM change.
+3. Restake: `NPM.approve(gauge, tokenId)`, then `CLGauge.deposit(tokenId)`. `deposit` requires a live gauge (`Voter.isAlive`) and a position in that gauge's pool.
+
+Claims differ by state. Staked: `CLGauge.getReward(tokenId)` pays emissions, and trading fees go to voters, not the LP. Unstaked: `NPM.collect` pays trading fees, and there are no emissions.
+
+### Rebalance in one transaction
+
+Move an unstaked position to a new range with one `NPM.multicall`:
+
+```ts
+const calls = [
+  npm.interface.encodeFunctionData("decreaseLiquidity", [{ tokenId, liquidity: position.liquidity, amount0Min, amount1Min, deadline }]),
+  npm.interface.encodeFunctionData("collect", [{ tokenId, recipient: owner, amount0Max: MAX_U128, amount1Max: MAX_U128 }]),
+  npm.interface.encodeFunctionData("burn", [tokenId]),
+  npm.interface.encodeFunctionData("mint", [{
+    token0, token1, tickSpacing, tickLower: newLower, tickUpper: newUpper,
+    amount0Desired: proceeds0, amount1Desired: proceeds1,   // decreased principal + tokensOwed
+    amount0Min: mintMin0, amount1Min: mintMin1, recipient: owner, deadline, sqrtPriceX96: 0n,
+  }]),
+];
+await npm.multicall(calls);
+```
+
+- `collect` pays the owner, then `mint` pulls from the owner in the same transaction. So the owner needs **ERC20 allowances to the NPM** for both proceeds before sending; check and approve first.
+- Take `proceeds0/1` from a `staticCall` of the decrease plus collect (or position math plus `tokensOwed`). Derive the mint minimums from the new range at the current price, not from the proceeds.
+- Nothing is swapped. The new range uses what it can, and the rest stays in the owner's wallet, not in the NPM. The new position starts unstaked; read its id from the mint's `Transfer` from `address(0)`, then restake.
+- A staked position must be unstaked in an earlier transaction, because the gauge owns the NFT.
+
+### Exit with native unwrap
+
+To receive native BNB/ETH instead of the wrapped token, collect into the NPM and pay out from there:
+
+```ts
+await npm.multicall([
+  npm.interface.encodeFunctionData("decreaseLiquidity", [{ tokenId, liquidity, amount0Min, amount1Min, deadline }]),
+  npm.interface.encodeFunctionData("collect", [{ tokenId, recipient: ZeroAddress, amount0Max: MAX_U128, amount1Max: MAX_U128 }]),
+  npm.interface.encodeFunctionData("unwrapWETH9", [minWrapped, owner]),
+  npm.interface.encodeFunctionData("sweepToken", [otherToken, minOther, owner]),
+  npm.interface.encodeFunctionData("burn", [tokenId]),   // full exit only
+]);
+```
+
+`collect` with `recipient = address(0)` leaves the tokens in the NPM. `unwrapWETH9` pays the wrapped side as native, and `sweepToken` pays the other token. Set both minimums from the decrease minimums plus fees owed, never zero on a leg you expect to receive. Arc's `WETH9()` is a reverting placeholder, so use a plain `collect` to the owner there.
+
+### Range presets
+
+The Topaz AI Wallet and agent service size ranges in tick spacings around the current tick, centred on `round(tick / tickSpacing) * tickSpacing`:
+
+| Preset | Range |
+|---|---|
+| narrow | ±5 tick spacings |
+| medium (default) | ±20 tick spacings |
+| wide | ±60 tick spacings |
+| full | the lowest and highest usable ticks for the spacing |
+
+Clamp both bounds to the usable tick range for the spacing. Narrow ranges earn more per dollar while in range but go out of range sooner. Presets are a starting point, not advice for a specific pool.
 
 See `gauges.md` for `CLGauge` specifics and `examples/mint-v3-position.md` + `examples/stake-position-cl-gauge.md` for walkthroughs.
 
