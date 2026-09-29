@@ -2,7 +2,11 @@
 
 CL Zap creates a **new, initially unstaked NFT in an existing CL pool** from one input token, using zero, one or two 0x swap legs. It does not increase an existing NFT, initialize a pool, stake it, or mint xTOPAZ shares. The BNB vault's XTopazZap is unrelated.
 
-The [deployment catalog](deployments.md) includes CLZap on BNB, Robinhood, Base and Ethereum, with the [integration ABI](abis/deployed/CLZap.json). Arc has no deployed CLZap in this snapshot. The ABI is the user-facing function/event/error surface, not a claim that admin functions are included.
+The [deployment catalog](deployments.md) includes CLZap on all five chains, with the [integration ABI](abis/deployed/CLZap.json). The ABI is the user-facing function/event/error surface, not a claim that admin functions are included.
+
+**Rollout.** The contract is deployed and unpaused on every chain, but as of 2026-09-29 the website enables the zap on **BNB only**. Robinhood, Base, Ethereum and Arc are deployed from unchanged source and wait on full zap simulation and canary deposits. On those chains, a zap built from this guide is outside the website's tested path: simulate the complete transaction and tell the user it is a new rollout.
+
+**Arc.** Input is the USDC ERC20 (`0x3600…0000`, 6 decimals) only. `WRAPPED_NATIVE()` returns a placeholder that always reverts, so native input and `unwrapNativeRefund` fail. 0x currently has no Arc liquidity, so an Arc zap works only when no swap leg is needed: USDC into a USDC pair where the range needs only USDC, or a one-sided out-of-range mint funded in USDC.
 
 ## Prepare and verify
 

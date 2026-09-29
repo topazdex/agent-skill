@@ -69,6 +69,7 @@ for (const chain of DEPLOYMENTS.filter((c) => !ids.length || ids.includes(c.chai
       await check("CLZap", "CL_FACTORY", addr("CLFactory"));
       await check("CLZap", "NPM", addr("NonfungiblePositionManager"));
       await check("CLZap", "WRAPPED_NATIVE", weth);
+      await check("CLZap", "ALLOWANCE_HOLDER", "0x0000000000001fF3684f28c67538d4D072C22734");
     }
     await assertChain(provider, chain.chainId);
     failures += issues.length;

@@ -216,10 +216,11 @@ Wrapped native: `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`.
 
 EVM ID **5042**; LayerZero EID **30417**; spoke. Gas: USDC, 18 native decimals. RPC: https://rpc.mainnet.arc.io. Explorer: https://arcscan.app.
 
-No wrapped native. USDC ERC20 is `0x3600000000000000000000000000000000000000`, 6 decimals. The WETH stub is not a token. Use token-only router paths; bridge messaging fees still use native USDC units.
+No wrapped native. USDC ERC20 is `0x3600000000000000000000000000000000000000`, 6 decimals. The WETH stub is not a token: `NonfungiblePositionManager.WETH9()` and `CLZap.WRAPPED_NATIVE()` return `0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f`, a placeholder whose every call reverts with `UnsupportedProtocolError()`, so native paths fail closed. Use token-only router paths; bridge messaging fees still use native USDC units.
 
 | Contract | Address | ABI |
 |---|---|---|
+| CLZap | `0xA3e7B9a8c3fb6b54381ECEfC2C3E1cBe991e9b8B` | [Interface ABI](abis/deployed/CLZap.json) |
 | SpokeBudgetComposer | `0x5DA6456fa2560071DD29871ca045908f98932865` | [JSON](abis/deployed/SpokeBudgetComposer-b6773a3c.json) |
 | SpokeStakeComposer | `0xbba1C3b415cF8212Cf3Ce11e726ab62125BDc6dB` | [JSON](abis/deployed/SpokeStakeComposer-54ed51ad.json) |
 | XTopazOFT | `0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6` | [JSON](abis/deployed/XTopazOFT-7f2afbed.json) |
