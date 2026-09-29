@@ -15,6 +15,7 @@ import {
   stakeSpoke,
   unstakeSpoke,
 } from "../write/spokePosition.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/position.ts <cmd> --chain <robinhood|base|ethereum|arc|id> [options]
@@ -152,7 +153,4 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+main().catch(exitWithError);

@@ -10,6 +10,7 @@ import {
 import { signer } from "../lib/client.js";
 import { v2StakedGaugesForAccount } from "../read/gauges.js";
 import { CHAIN_FLAG_HELP, selectChain } from "../lib/chainOption.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/claim.ts <cmd> [--chain <id|name>] [options]
@@ -108,7 +109,4 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(exitWithError);

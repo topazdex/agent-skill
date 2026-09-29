@@ -8,6 +8,7 @@ import {
 } from "../write/relay.js";
 import { requireHubChain } from "../config/deployments.js";
 import { parseChainOption } from "../lib/chainOption.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage:
@@ -79,7 +80,4 @@ async function main(): Promise<void> {
   }
 }
 
-main().catch((e) => {
-  console.error(e instanceof Error ? e.message : e);
-  process.exit(1);
-});
+main().catch(exitWithError);

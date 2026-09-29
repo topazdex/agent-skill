@@ -102,7 +102,7 @@ function positions(uint256 tokenId) external view returns (
 );
 ```
 
-`tokensOwed0/1` are fees that have been "settled" by a prior `collect()`. To see pending uncollected fees, you need to compute them from `feeGrowthInside0LastX128` vs current `pool.feeGrowthGlobal0X128` — `scripts/src/read/positions.ts:getPositionWithFees(tokenId)` does this for you.
+`tokensOwed0/1` are fees that have been "settled" by a prior `collect()`. To see pending uncollected fees, you need to compute them from `feeGrowthInside0LastX128` vs current `pool.feeGrowthGlobal0X128` — or simulate `NPM.collect({ tokenId, recipient: owner, amount0Max: 2^128-1, amount1Max: 2^128-1 })` as a `staticCall` from the owner, which returns the collectable amounts (unstaked positions; a staked position's NFT is held by the gauge).
 
 To list a user's positions: enumerate via `NonfungiblePositionManager.tokenOfOwnerByIndex(owner, i)` from `i = 0` to `balanceOf(owner) - 1`.
 
@@ -207,10 +207,10 @@ See `gauges.md` for `CLGauge` specifics and `examples/mint-v3-position.md` + `ex
 | Operation | Where |
 |---|---|
 | Compute ticks for range | `scripts/src/lib/tickMath.ts` |
-| Mint | `scripts/src/write/liquidityV3.ts` — `mintPosition({ token0, token1, tickSpacing, lowerPrice, upperPrice, amount0, amount1, slippageBps })` |
-| Increase | `increaseLiquidity({ tokenId, amount0, amount1, slippageBps })` |
-| Decrease | `decreaseLiquidity({ tokenId, liquidityPct, slippageBps })` |
-| Collect | `collectFees({ tokenId, recipient })` |
-| Burn | `burnPosition(tokenId)` |
-| Read position | `scripts/src/read/positions.ts` — `getPositionWithFees(tokenId)`, `listOwnerPositions(owner)` |
+| Mint | `scripts/src/write/liquidityV3.ts` — `mintPosition({ tokenA, tokenB, tickSpacing, rangeTicks? \| lowerPrice + upperPrice, amountA? , amountB?, slippageBps?, chainId? })` — give one amount and the other is derived from the range |
+| Increase | `increaseLiquidity({ tokenId, amount0Desired, amount1Desired, slippageBps?, chainId? })` (wei) |
+| Decrease | `decreaseLiquidity({ tokenId, liquidityPct? \| liquidity?, slippageBps?, chainId? })` |
+| Collect | `collectFees({ tokenId, recipient?, chainId? })` |
+| Burn | `burnPosition(tokenId, chainId?)` |
+| Read position | `scripts/src/read/positions.ts` — `getPosition(tokenId, chainId?)` (range, liquidity, `tokensOwed`, in-range), `listOwnerPositions(owner, chainId?)` |
 | CLI | `yarn tsx src/cli/lp.ts mint-v3 --t0 <addr> --t1 <addr> --ts 200 --lower-price 1.2 --upper-price 1.8 --amount0 100` etc. — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |

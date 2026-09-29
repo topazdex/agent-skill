@@ -11,6 +11,7 @@ import {
 } from "../write/lock.js";
 import { requireHubChain } from "../config/deployments.js";
 import { parseChainOption } from "../lib/chainOption.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/lock.ts <cmd> [options]      # BNB Chain (56) only
@@ -106,7 +107,4 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(exitWithError);

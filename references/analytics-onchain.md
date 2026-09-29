@@ -6,7 +6,7 @@ Read directly from the chain when you need block-accurate state for a transactio
 
 ## Multicall
 
-BSC has the canonical Multicall3 at `0xcA11bde05977b3631167028862bE2a173976CA11`. Use it to batch any of the read functions below into one RPC call. `scripts/src/lib/client.ts` exposes a multicall helper that wraps `ethers.Contract` calls.
+BSC has the canonical Multicall3 at `0xcA11bde05977b3631167028862bE2a173976CA11`. Use it to batch any of the read functions below into one RPC call. `scripts/src/lib/multicall.ts` exposes `aggregate3` / `aggregate3Chunked` (pass `{ chainId }` for another chain).
 
 ## v2 Pool reads
 
@@ -219,7 +219,7 @@ const activeVotes = allPools
   .filter(v => v.weight > 0n);
 ```
 
-`scripts/src/read/locks.ts:getLockFull(tokenId)` does this.
+`scripts/src/read/locks.ts:getLock(tokenId)` returns the lock half (amount, end, permanence, voting power, owner) and `scripts/src/read/votes.ts:getVote(tokenId)` the vote half (last vote, used weight, allocations).
 
 ### "What's my total claimable across all streams?"
 

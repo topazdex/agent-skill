@@ -678,6 +678,58 @@ const checkEvalAssertions = (): void => {
   }
 };
 
+// --- Documented helper names ---
+// Docs that point at `scripts/src/<file>.ts` and name a function, or import names from the
+// scripts package, must use names that exist. Catches invented helpers and stale renames.
+
+const SCRIPT_SRC_RE = /(?:scripts\/)?src\/((?:lib|read|write|config|cli)\/[\w]+)\.ts/g;
+const DOC_IMPORT_RE = /import\s*\{([^}]*)\}\s*from\s*["'][^"']*(?:\bsrc\b|scripts)[^"']*["']/g;
+const DECLARED_RE = (name: string): RegExp =>
+  new RegExp(`(?:function\\*?|const|let|class|interface|type|enum)\\s+${name}\\b`);
+
+const checkDocumentedHelpers = (): void => {
+  const srcRoot = path.join(SCRIPTS_DIR, "src");
+  const sources = new Map<string, string>();
+  for (const abs of walkDir(srcRoot, (f) => f.endsWith(".ts") && !f.endsWith(".test.ts"))) {
+    sources.set(path.relative(srcRoot, abs).replace(/\\/g, "/").replace(/\.ts$/, ""), readText(abs));
+  }
+  const all = Array.from(sources.values()).join("\n");
+  const exported = new Set(Array.from(all.matchAll(/export\s+(?:async\s+)?(?:function\*?|const|let|class|interface|type|enum)\s+(\w+)/g), (m) => m[1]));
+  for (const m of all.matchAll(/export\s*\{([^}]*)\}/g)) for (const n of m[1].matchAll(/\b(\w+)\b(?!\s+as\b)/g)) exported.add(n[1]);
+
+  for (const abs of MD_FILES_TO_LINK_CHECK()) {
+    const rel = repoRel(abs);
+    if (rel === "CHANGELOG.md" || rel.startsWith("docs/ai-wallet-agent-review")) continue;
+    const text = readText(abs);
+    for (const m of text.matchAll(DOC_IMPORT_RE)) {
+      for (const n of m[1].replace(/\/\/[^\n]*/g, "").matchAll(/\b([A-Za-z_]\w*)\b/g)) {
+        if (n[1] === "type" || exported.has(n[1])) continue;
+        error(rel, `imports \`${n[1]}\` from the scripts package, which exports no such name`, lineOf(text, m.index ?? 0));
+      }
+    }
+    text.split("\n").forEach((line, i) => {
+      for (const cell of line.split("|")) {
+        for (const pm of cell.matchAll(SCRIPT_SRC_RE)) {
+          const source = sources.get(pm[1]);
+          if (source === undefined) {
+            error(rel, `references scripts/src/${pm[1]}.ts, which does not exist`, i + 1);
+            continue;
+          }
+          const after = cell.slice((pm.index ?? 0) + pm[0].length);
+          const names = [
+            ...Array.from(after.matchAll(/^:([a-z][A-Za-z0-9]*)\(/g), (x) => x[1]),
+            ...Array.from(after.matchAll(/`([a-z][A-Za-z0-9]*)\(/g), (x) => x[1]),
+          ];
+          for (const name of names) {
+            if (DECLARED_RE(name).test(source)) continue;
+            error(rel, `names \`${name}\` in scripts/src/${pm[1]}.ts, which does not define it`, i + 1);
+          }
+        }
+      }
+    });
+  }
+};
+
 // --- Run ---
 const sectionHeader = (label: string): void => {
   console.log(`\n— ${label} —`);
@@ -705,6 +757,8 @@ sectionHeader("Brand URLs");
 checkBrandUrls();
 sectionHeader("Eval assertions");
 checkEvalAssertions();
+sectionHeader("Documented helper names");
+checkDocumentedHelpers();
 
 // --- Report ---
 const errors = FINDINGS.filter((f) => f.severity === "error");

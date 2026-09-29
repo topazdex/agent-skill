@@ -152,9 +152,9 @@ await voter.vote(tokenId, poolAddrs, weights);
 
 | Operation | Where |
 |---|---|
-| Read vote | `scripts/src/read/votes.ts` — `getVote(tokenId)` returns pools + weights + usedWeights + lastVoted |
+| Read vote | `scripts/src/read/votes.ts` — `getVote(tokenId, chainId?)` returns pools + weights + usedWeights + lastVoted |
 | List gauge pools | `scripts/src/read/gauges.ts` — `listAllPools(chainId?)`, then `getGaugeStateForPool(pool, chainId?)` |
-| Vote | `scripts/src/write/vote.ts` — `vote({ tokenId, allocations: [{pool, weight}, ...] })` |
+| Vote | `scripts/src/write/vote.ts` — `vote({ tokenId, allocations: [{pool, weight}, ...], chainId? })` |
 | Reset | `resetVote(tokenId, chainId?)` |
 | Poke | `pokeVote(tokenId, chainId?)` |
 | CLI | `yarn tsx src/cli/vote.ts cast --id 123 --pool 0xA --weight 60 --pool 0xB --weight 30 --pool 0xC --weight 10` |

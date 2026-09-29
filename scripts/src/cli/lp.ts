@@ -12,6 +12,7 @@ import {
 import { stakeLpV2, unstakeLpV2, stakePositionV3, unstakePositionV3 } from "../write/gauge.js";
 import { resolveTokenOnChain } from "../config/tokens.js";
 import { CHAIN_FLAG_HELP, selectChain } from "../lib/chainOption.js";
+import { exitWithError } from "../lib/revertReason.js";
 
 const USAGE = `
 Usage: yarn tsx src/cli/lp.ts <cmd> [--chain <id|name>] [options]
@@ -163,7 +164,4 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+main().catch(exitWithError);

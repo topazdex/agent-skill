@@ -47,11 +47,20 @@ export async function addLiquidityV2(args: AddLiquidityV2Args) {
       ? parseUnits(args.amountBDesired, decB)
       : args.amountBDesired;
 
-  const amountAMin = slip(amountADesired, slippageBps);
-  const amountBMin = slip(amountBDesired, slippageBps);
-
   const r = coreContract("Router", chainId, s);
   const routerAddress = contractAddress(chainId, "Router");
+  // The Router only takes the pool-ratio share of the desired amounts, so minima must come
+  // from that quote; slipping the desired amounts reverts whenever the ratio differs.
+  const [quotedA, quotedB] = (await r.quoteAddLiquidity(
+    args.tokenA,
+    args.tokenB,
+    args.stable,
+    contractAddress(chainId, "PoolFactory"),
+    amountADesired,
+    amountBDesired,
+  )) as [bigint, bigint, bigint];
+  const amountAMin = slip(quotedA, slippageBps);
+  const amountBMin = slip(quotedB, slippageBps);
   const useNative = args.useNative ?? args.useBnb ?? false;
 
   const aIsNative = useNative && isWrappedNative(args.tokenA, chainId);
