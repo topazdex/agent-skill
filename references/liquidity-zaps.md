@@ -18,7 +18,7 @@ For each needed leg, request a fresh firm 0x quote with zap as taker/recipient a
 
 ## 0x quotes for zaps
 
-Both CLZap and the [Auto Manage zap](auto-manage.md) take 0x AllowanceHolder swap legs. Integrators may get them from the Topaz website's public 0x proxy, which is what the website and the Topaz agent use:
+Both CLZap and the [Auto Manage zap](auto-manage.md#zap-in-and-zap-out) take 0x AllowanceHolder swap legs. Integrators may get them from the Topaz website's public 0x proxy, which is what the website and the Topaz agent use:
 
 ```text
 GET https://www.topazdex.com/api/0x?path=swap/allowance-holder/price&chainId=56&sellToken=0x…&buyToken=0x…&sellAmount=…&taker=<zap>

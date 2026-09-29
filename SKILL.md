@@ -35,7 +35,7 @@ Read [multichain architecture](references/multichain.md) for xTOPAZ or any spoke
 - **BNB entry/redeem:** [vault guide](references/xtopaz-vault.md). Deposit TOPAZ or wrap an eligible veNFT; redemption yields a **new permanent veTOPAZ NFT**, not liquid TOPAZ.
 - **xTOPAZ bridge:** [bridge guide](references/bridging.md). Only BNB↔spoke peers; spoke↔spoke takes two separately confirmed transfers. Track receive and optional compose/fallback independently.
 - **Spoke stake/vote/claim:** [position guide](references/spoke-voting.md). Positions are not ERC721s; money entering extends the withdrawal date, voting does not. No spoke managed-lock or rebase-claim flow. Spoke gauges emit xTOPAZ.
-- **Auto Manage (ALM) vaults:** [Auto Manage guide](references/auto-manage.md). Live on BNB, Robinhood and Arc. A position is ERC-20 vault shares (`kind: managed-cl-position`, `custody: vault` in the account API), not a CL NFT; gauge emissions accrue as a separate claimable balance and are never compounded. The skill has no Auto Manage ABIs or builders yet — do not invent deposit, withdraw or claim calldata.
+- **Auto Manage (ALM) vaults:** [Auto Manage guide](references/auto-manage.md). Live on BNB, Robinhood and Arc. A position is ERC-20 vault shares (`kind: managed-cl-position`, `custody: vault` in the account API), not a CL NFT; gauge emissions accrue as a separate claimable balance and are never compounded. Deposit, withdraw, claim and single-token zap builders plus `autoManage.ts` CLI cover BNB, Robinhood and Arc; find vaults through the lens, not a copied list.
 - **Arc:** no wrapped native. Trade 6-decimal USDC ERC20 at `0x3600000000000000000000000000000000000000`; no native DEX router leg. LayerZero fees still use native USDC in 18-decimal units.
 - **Data:** use the [public multichain API](references/analytics-multichain.md) at `https://api.topazdex.com/v1` first, on every chain. The BNB subgraphs below (v2, v3, ve) are for ad-hoc GraphQL and event history; anything outside `/v1/` (the `/api/stats` reports) is deprecated, BNB-only history.
 - **Website, product questions and links:** [website guide](references/website.md). Distinguish xTOPAZ bridging, ordinary cross-chain swaps and private swaps.
@@ -126,7 +126,7 @@ Use these when a user asks where to go or you need to direct them outside the ag
 | Mixed CL/v2 routes and legacy quoter diagnostics | `references/swapping-mixed.md` |
 | Add / remove v2 liquidity | `references/liquidity-v2.md` |
 | Single-token concentrated liquidity deposit (CL Zap) | `references/liquidity-zaps.md` |
-| Auto Manage (ALM) vaults: discover, read a vault, a user's managed position | `references/auto-manage.md` |
+| Auto Manage (ALM) vaults: discover, read, deposit, withdraw, claim, zap in/out | `references/auto-manage.md` |
 | Mint, modify, collect, or burn a v3 position | `references/liquidity-v3.md` |
 | Stake/unstake in a gauge, claim emissions | `references/gauges.md` |
 | Create / extend / withdraw / merge / split a veTOPAZ lock | `references/ve-locks.md` |
