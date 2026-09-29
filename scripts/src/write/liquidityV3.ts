@@ -1,9 +1,8 @@
-import { Contract, parseUnits, ZeroAddress, getAddress } from "ethers";
-
-const MAX_UINT128 = (1n << 128n) - 1n;
-import { ABIS } from "../lib/abis.js";
+import { parseUnits, ZeroAddress, getAddress } from "ethers";
 import { signer } from "../lib/client.js";
-import { ADDR } from "../config/addresses.js";
+import { coreContract } from "../lib/contracts.js";
+import { CHAIN_ID } from "../config/chain.js";
+import { contractAddress } from "../config/deployments.js";
 import { approveIfNeeded, getDecimals } from "../lib/erc20.js";
 import { findV3Pool, getPoolV3 } from "../read/pools.js";
 import { getPosition } from "../read/positions.js";
@@ -14,10 +13,12 @@ import {
   priceToTick,
 } from "../lib/tickMath.js";
 
+const MAX_UINT128 = (1n << 128n) - 1n;
 const DEFAULT_DEADLINE = () => Math.floor(Date.now() / 1000) + 60 * 20;
 const slip = (amount: bigint, bps: bigint) => (amount * (10_000n - bps)) / 10_000n;
 
-const npmC = () => new Contract(ADDR.NonfungiblePositionManager, ABIS.NonfungiblePositionManager, signer());
+const npmC = (chainId: number) => coreContract("NonfungiblePositionManager", chainId, signer(chainId));
+const npmAddress = (chainId: number) => contractAddress(chainId, "NonfungiblePositionManager");
 
 function sortTokens(
   a: string,
@@ -43,10 +44,13 @@ export interface MintPositionArgs {
   slippageBps?: bigint;          // default 50 for stable, 100 for volatile (caller decides)
   recipient?: string;
   deadline?: number;
+  /** Default BNB Chain (56). */
+  chainId?: number;
 }
 
 export async function mintPosition(args: MintPositionArgs) {
-  const s = signer();
+  const chainId = args.chainId ?? CHAIN_ID;
+  const s = signer(chainId);
   const recipient = args.recipient ?? (await s.getAddress());
   const slippageBps = args.slippageBps ?? 100n;
   const deadline = args.deadline ?? DEFAULT_DEADLINE();
@@ -54,10 +58,10 @@ export async function mintPosition(args: MintPositionArgs) {
   const { token0, token1, flipped } = sortTokens(args.tokenA, args.tokenB);
   const tickSpacing = args.tickSpacing;
 
-  const poolAddr = await findV3Pool(token0, token1, tickSpacing);
+  const poolAddr = await findV3Pool(token0, token1, tickSpacing, chainId);
   if (poolAddr === ZeroAddress)
     throw new Error("no v3 pool at that tick spacing — create via CLFactory first");
-  const poolInfo = await getPoolV3(poolAddr);
+  const poolInfo = await getPoolV3(poolAddr, chainId);
 
   // Decide ticks
   let tickLower: number, tickUpper: number;
@@ -81,8 +85,8 @@ export async function mintPosition(args: MintPositionArgs) {
   const sqrtUpper = getSqrtRatioAtTick(tickUpper);
   const sqrtPrice = poolInfo.sqrtPriceX96;
 
-  const decA = await getDecimals(args.tokenA);
-  const decB = await getDecimals(args.tokenB);
+  const decA = await getDecimals(args.tokenA, chainId);
+  const decB = await getDecimals(args.tokenB, chainId);
   const amountAWei =
     args.amountA !== undefined
       ? typeof args.amountA === "string"
@@ -121,10 +125,10 @@ export async function mintPosition(args: MintPositionArgs) {
   const amount0Min = slip(amount0Desired, slippageBps);
   const amount1Min = slip(amount1Desired, slippageBps);
 
-  await approveIfNeeded(token0, ADDR.NonfungiblePositionManager, amount0Desired);
-  await approveIfNeeded(token1, ADDR.NonfungiblePositionManager, amount1Desired);
+  await approveIfNeeded(token0, npmAddress(chainId), amount0Desired, { chainId });
+  await approveIfNeeded(token1, npmAddress(chainId), amount1Desired, { chainId });
 
-  return await npmC().mint({
+  return await npmC(chainId).mint({
     token0,
     token1,
     tickSpacing,
@@ -136,7 +140,8 @@ export async function mintPosition(args: MintPositionArgs) {
     amount1Min,
     recipient,
     deadline,
-    sqrtPriceX96: sqrtPrice,
+    // Nonzero asks NPM.mint to create the pool first, which reverts for an existing pool.
+    sqrtPriceX96: 0n,
   });
 }
 
@@ -146,15 +151,18 @@ export interface IncreaseLiquidityArgs {
   amount1Desired: bigint;
   slippageBps?: bigint;
   deadline?: number;
+  /** Default BNB Chain (56). */
+  chainId?: number;
 }
 
 export async function increaseLiquidity(args: IncreaseLiquidityArgs) {
+  const chainId = args.chainId ?? CHAIN_ID;
   const slippageBps = args.slippageBps ?? 100n;
   const deadline = args.deadline ?? DEFAULT_DEADLINE();
-  const pos = await getPosition(args.tokenId);
-  await approveIfNeeded(pos.token0, ADDR.NonfungiblePositionManager, args.amount0Desired);
-  await approveIfNeeded(pos.token1, ADDR.NonfungiblePositionManager, args.amount1Desired);
-  return await npmC().increaseLiquidity({
+  const pos = await getPosition(args.tokenId, chainId);
+  await approveIfNeeded(pos.token0, npmAddress(chainId), args.amount0Desired, { chainId });
+  await approveIfNeeded(pos.token1, npmAddress(chainId), args.amount1Desired, { chainId });
+  return await npmC(chainId).increaseLiquidity({
     tokenId: args.tokenId,
     amount0Desired: args.amount0Desired,
     amount1Desired: args.amount1Desired,
@@ -170,12 +178,15 @@ export interface DecreaseLiquidityArgs {
   liquidity?: bigint;       // exact (overrides pct)
   slippageBps?: bigint;
   deadline?: number;
+  /** Default BNB Chain (56). */
+  chainId?: number;
 }
 
 export async function decreaseLiquidity(args: DecreaseLiquidityArgs) {
+  const chainId = args.chainId ?? CHAIN_ID;
   const slippageBps = args.slippageBps ?? 100n;
   const deadline = args.deadline ?? DEFAULT_DEADLINE();
-  const pos = await getPosition(args.tokenId);
+  const pos = await getPosition(args.tokenId, chainId);
 
   let liquidity: bigint;
   if (args.liquidity !== undefined) liquidity = args.liquidity;
@@ -185,7 +196,8 @@ export async function decreaseLiquidity(args: DecreaseLiquidityArgs) {
   }
   if (liquidity === 0n) throw new Error("nothing to decrease");
 
-  const quoted = await npmC().decreaseLiquidity.staticCall({
+  const npm = npmC(chainId);
+  const quoted = await npm.decreaseLiquidity.staticCall({
     tokenId: args.tokenId,
     liquidity,
     amount0Min: 0n,
@@ -194,7 +206,7 @@ export async function decreaseLiquidity(args: DecreaseLiquidityArgs) {
   });
   const [amount0, amount1] = quoted as [bigint, bigint];
 
-  return await npmC().decreaseLiquidity({
+  return await npm.decreaseLiquidity({
     tokenId: args.tokenId,
     liquidity,
     amount0Min: slip(amount0, slippageBps),
@@ -208,12 +220,15 @@ export interface CollectArgs {
   recipient?: string;
   amount0Max?: bigint;
   amount1Max?: bigint;
+  /** Default BNB Chain (56). */
+  chainId?: number;
 }
 
 export async function collectFees(args: CollectArgs) {
-  const s = signer();
+  const chainId = args.chainId ?? CHAIN_ID;
+  const s = signer(chainId);
   const recipient = args.recipient ?? (await s.getAddress());
-  return await npmC().collect({
+  return await npmC(chainId).collect({
     tokenId: args.tokenId,
     recipient,
     amount0Max: args.amount0Max ?? MAX_UINT128,
@@ -221,6 +236,6 @@ export async function collectFees(args: CollectArgs) {
   });
 }
 
-export async function burnPosition(tokenId: bigint) {
-  return await npmC().burn(tokenId);
+export async function burnPosition(tokenId: bigint, chainId: number = CHAIN_ID) {
+  return await npmC(chainId).burn(tokenId);
 }

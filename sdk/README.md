@@ -1,6 +1,6 @@
 # Topaz SDK Layer
 
-This directory documents the SDK-facing layer for developers building on Topaz. Start with [multichain integration](../developers/multichain-integration.md) for all five chains. The older ADDR/TOKENS, human-unit builders and protocol read/write helpers below are BNB-only; low-level `fetchTopazQuote` / `buildTopazSwapBatch` and deployment helpers accept explicit chain IDs.
+This directory documents the SDK-facing layer for developers building on Topaz. Start with [multichain integration](../developers/multichain-integration.md) for all five chains. `ADDR` and `TOKENS` are the BNB address book and token list; every builder and read/write helper accepts an explicit `chainId` (default 56) and resolves that chain's contracts from the deployment catalog, and `resolveTokenOnChain` handles per-chain symbols.
 
 The current implementation lives in the existing scripts package to avoid duplicating protocol logic:
 

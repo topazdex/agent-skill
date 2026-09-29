@@ -4,7 +4,7 @@ This recipe is for browser dApps using wallet libraries such as wagmi, viem, eth
 
 ## Chain config
 
-Topaz's hub is BNB Chain (chain id 56):
+Topaz runs on BNB Chain (56, the hub), Robinhood Chain (4663), Base (8453), Ethereum (1) and Arc (5042). Use viem's chain objects, or the ones from `@topazdex/id-connect/chains` (viem's `arc` ships without RPC URLs). The BNB entry looks like:
 
 ```ts
 export const bnbChain = {
@@ -23,15 +23,17 @@ Use your own production RPC. Public RPCs can rate-limit and are not suitable for
 
 For Topaz API swaps:
 
-1. Validate chain 56 and resolve token metadata and decimals.
-2. Build a fresh `TopazSwapBatch` with `buildTopazSwapBatch` or `buildBestSwapTx`.
+1. Validate that the wallet is on the chain you are building for, and resolve token metadata and decimals on that chain.
+2. Build a fresh `TopazSwapBatch` with `buildTopazSwapBatch` or `buildBestSwapTx`, passing that `chainId`.
 3. Review and simulate the complete ordered `batch.transactions` from `batch.payer`.
 4. Submit every call in one atomic wallet/account batch when `batch.atomicRequired` is true.
 5. Confirm the receipt and refresh balances.
 
 ERC20 swaps include the direct-router allowance reset, token reset/grant to Permit2, Permit2 grant, swap and both cleanup calls. Never send only the router transaction, and never request a separate Permit2 signature for this path.
 
-## BNB vs WBNB
+## Native vs wrapped (BNB/WBNB, ETH/WETH)
+
+The rules below use BNB; they are identical for `ETH` / WETH on Robinhood, Base and Ethereum. Arc has no wrapped native and no native DEX leg: swap the USDC ERC20 `0x3600000000000000000000000000000000000000`.
 
 - `buildTopazSwapBatch` uses raw bigint amounts. Pass `BNB` explicitly for native input/output; a WBNB address means ERC20.
 - `buildBestSwapTx` accepts human units and WBNB addresses. WBNB is ERC20 by default; `useBnb: true` explicitly requests native BNB for the WBNB side.

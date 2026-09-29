@@ -1,11 +1,8 @@
-import { Contract } from "ethers";
-import { ABIS } from "../lib/abis.js";
-import { provider } from "../lib/client.js";
-import { ADDR } from "../config/addresses.js";
+import { coreContract } from "../lib/contracts.js";
+import { CHAIN_ID } from "../config/chain.js";
 import { findV3Pool, getPoolV3 } from "./pools.js";
 
-const npm = () =>
-  new Contract(ADDR.NonfungiblePositionManager, ABIS.NonfungiblePositionManager, provider());
+const npm = (chainId: number) => coreContract("NonfungiblePositionManager", chainId);
 
 export interface PositionInfo {
   tokenId: bigint;
@@ -22,8 +19,8 @@ export interface PositionInfo {
   currentTick: number | null;
 }
 
-export async function getPosition(tokenId: bigint): Promise<PositionInfo> {
-  const pos = await npm().positions(tokenId);
+export async function getPosition(tokenId: bigint, chainId: number = CHAIN_ID): Promise<PositionInfo> {
+  const pos = await npm(chainId).positions(tokenId);
   const [
     _nonce,
     _operator,
@@ -41,11 +38,11 @@ export async function getPosition(tokenId: bigint): Promise<PositionInfo> {
     bigint, string, string, string, bigint, bigint, bigint, bigint, bigint, bigint, bigint, bigint
   ];
 
-  const pool = await findV3Pool(token0, token1, Number(tickSpacing));
+  const pool = await findV3Pool(token0, token1, Number(tickSpacing), chainId);
   let inRange: boolean | null = null;
   let currentTick: number | null = null;
   if (pool !== "0x0000000000000000000000000000000000000000") {
-    const info = await getPoolV3(pool);
+    const info = await getPoolV3(pool, chainId);
     currentTick = info.tick;
     inRange = info.tick >= Number(tickLower) && info.tick < Number(tickUpper);
   }
@@ -66,11 +63,12 @@ export async function getPosition(tokenId: bigint): Promise<PositionInfo> {
   };
 }
 
-export async function listOwnerPositions(owner: string): Promise<bigint[]> {
-  const count: bigint = await npm().balanceOf(owner);
+export async function listOwnerPositions(owner: string, chainId: number = CHAIN_ID): Promise<bigint[]> {
+  const manager = npm(chainId);
+  const count: bigint = await manager.balanceOf(owner);
   return await Promise.all(
     Array.from({ length: Number(count) }, (_, i) =>
-      npm().tokenOfOwnerByIndex(owner, i) as Promise<bigint>
+      manager.tokenOfOwnerByIndex(owner, i) as Promise<bigint>
     )
   );
 }

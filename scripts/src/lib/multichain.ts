@@ -1,6 +1,14 @@
 import { Contract, FetchRequest, Interface, JsonRpcProvider, type ContractRunner } from "ethers";
 import { deployedContract, deployment } from "../config/deployments.js";
 import { DEPLOYED_ABIS } from "./deployedAbis.js";
+import { CHAIN_ID, DEFAULT_RPC } from "../config/chain.js";
+
+/** BNB keeps its historical `BSC_RPC_URL`; every chain also honours `TOPAZ_RPC_<chainId>`. */
+export function rpcUrl(chainId: number = CHAIN_ID): string {
+  const override = process.env[`TOPAZ_RPC_${chainId}`];
+  if (chainId === CHAIN_ID) return process.env.BSC_RPC_URL ?? override ?? DEFAULT_RPC;
+  return override ?? deployment(chainId).rpcUrl;
+}
 
 export function deploymentInterface(chainId: number, name: string): Interface {
   const entry = deployedContract(chainId, name);
@@ -11,9 +19,8 @@ export function deploymentInterface(chainId: number, name: string): Interface {
 }
 
 /** Dynamic network detection is intentional; never trust an RPC URL's name. */
-export async function chainProvider(chainId: number, rpcUrl?: string): Promise<JsonRpcProvider> {
-  const chain = deployment(chainId);
-  const request = new FetchRequest(rpcUrl ?? process.env[`TOPAZ_RPC_${chainId}`] ?? chain.rpcUrl);
+export async function chainProvider(chainId: number, url?: string): Promise<JsonRpcProvider> {
+  const request = new FetchRequest(url ?? rpcUrl(chainId));
   request.timeout = 15_000;
   const provider = new JsonRpcProvider(request, undefined, { batchMaxCount: 1 });
   try {

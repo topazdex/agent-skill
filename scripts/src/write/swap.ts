@@ -1,10 +1,12 @@
-import { Contract, parseUnits, ZeroAddress } from "ethers";
-import { ABIS } from "../lib/abis.js";
+import { ZeroAddress, parseUnits } from "ethers";
 import { signer } from "../lib/client.js";
-import { ADDR } from "../config/addresses.js";
+import { coreContract } from "../lib/contracts.js";
+import { CHAIN_ID } from "../config/chain.js";
+import { contractAddress } from "../config/deployments.js";
+import { isWrappedNative } from "../config/tokens.js";
 import { approveIfNeeded, getDecimals } from "../lib/erc20.js";
 import { findV2Pool, findV3Pool } from "../read/pools.js";
-import { quoteV2, quoteV3Single, v2Route, type V2Route } from "../read/quotes.js";
+import { quoteV2, quoteV3Path, quoteV3Single, v2Route, type V2Route } from "../read/quotes.js";
 import { encodePath } from "../lib/path.js";
 
 const DEFAULT_DEADLINE = () => Math.floor(Date.now() / 1000) + 60 * 20;
@@ -18,42 +20,50 @@ export interface SwapV2Args {
   slippageBps?: bigint;          // default 50 (0.50%)
   recipient?: string;
   deadline?: number;
-  useBnb?: boolean;              // route through swapExactETHForTokens / swapExactTokensForETH
+  /** Swap native in/out when one side is the chain's wrapped native (WBNB/WETH). Never on Arc. */
+  useNative?: boolean;
+  /** Original BNB-era name for `useNative`; still honoured. */
+  useBnb?: boolean;
+  /** Default BNB Chain (56). */
+  chainId?: number;
 }
 
 export async function swapV2(args: SwapV2Args) {
-  const s = signer();
+  const chainId = args.chainId ?? CHAIN_ID;
+  const s = signer(chainId);
   const recipient = args.recipient ?? (await s.getAddress());
   const slippageBps = args.slippageBps ?? 50n;
   const deadline = args.deadline ?? DEFAULT_DEADLINE();
+  const useNative = args.useNative ?? args.useBnb ?? false;
 
-  const decIn = await getDecimals(args.tokenIn);
+  const decIn = await getDecimals(args.tokenIn, chainId);
   const amountIn =
     typeof args.amountIn === "string" ? parseUnits(args.amountIn, decIn) : args.amountIn;
 
-  const pool = await findV2Pool(args.tokenIn, args.tokenOut, args.stable);
+  const pool = await findV2Pool(args.tokenIn, args.tokenOut, args.stable, chainId);
   if (pool === ZeroAddress) throw new Error("no v2 pool for that pair/stable flag");
 
-  const expected = await quoteV2(args.tokenIn, args.tokenOut, amountIn, args.stable);
+  const expected = await quoteV2(args.tokenIn, args.tokenOut, amountIn, args.stable, chainId);
   if (expected === 0n) throw new Error("quote returned 0; pool may be empty");
   const amountOutMin = slip(expected, slippageBps);
 
-  const routes: V2Route[] = [v2Route(args.tokenIn, args.tokenOut, args.stable)];
-  const r = new Contract(ADDR.Router, ABIS.Router, s);
+  const routes: V2Route[] = [v2Route(args.tokenIn, args.tokenOut, args.stable, chainId)];
+  const r = coreContract("Router", chainId, s);
+  const routerAddress = contractAddress(chainId, "Router");
 
-  const isBnbIn = args.useBnb && args.tokenIn.toLowerCase() === ADDR.WBNB.toLowerCase();
-  const isBnbOut = args.useBnb && args.tokenOut.toLowerCase() === ADDR.WBNB.toLowerCase();
+  const isNativeIn = useNative && isWrappedNative(args.tokenIn, chainId);
+  const isNativeOut = useNative && isWrappedNative(args.tokenOut, chainId);
 
-  if (isBnbIn) {
+  if (isNativeIn) {
     return await r.swapExactETHForTokens(amountOutMin, routes, recipient, deadline, {
       value: amountIn,
     });
   }
-  if (isBnbOut) {
-    await approveIfNeeded(args.tokenIn, ADDR.Router, amountIn);
+  if (isNativeOut) {
+    await approveIfNeeded(args.tokenIn, routerAddress, amountIn, { chainId });
     return await r.swapExactTokensForETH(amountIn, amountOutMin, routes, recipient, deadline);
   }
-  await approveIfNeeded(args.tokenIn, ADDR.Router, amountIn);
+  await approveIfNeeded(args.tokenIn, routerAddress, amountIn, { chainId });
   return await r.swapExactTokensForTokens(amountIn, amountOutMin, routes, recipient, deadline);
 }
 
@@ -66,19 +76,22 @@ export interface SwapV3SingleArgs {
   recipient?: string;
   deadline?: number;
   sqrtPriceLimitX96?: bigint;
+  /** Default BNB Chain (56). */
+  chainId?: number;
 }
 
 export async function swapV3Single(args: SwapV3SingleArgs) {
-  const s = signer();
+  const chainId = args.chainId ?? CHAIN_ID;
+  const s = signer(chainId);
   const recipient = args.recipient ?? (await s.getAddress());
   const slippageBps = args.slippageBps ?? 100n;
   const deadline = args.deadline ?? DEFAULT_DEADLINE();
 
-  const decIn = await getDecimals(args.tokenIn);
+  const decIn = await getDecimals(args.tokenIn, chainId);
   const amountIn =
     typeof args.amountIn === "string" ? parseUnits(args.amountIn, decIn) : args.amountIn;
 
-  const pool = await findV3Pool(args.tokenIn, args.tokenOut, args.tickSpacing);
+  const pool = await findV3Pool(args.tokenIn, args.tokenOut, args.tickSpacing, chainId);
   if (pool === ZeroAddress) throw new Error("no v3 pool at that tick spacing");
 
   const expected = await quoteV3Single(
@@ -86,13 +99,14 @@ export async function swapV3Single(args: SwapV3SingleArgs) {
     args.tokenOut,
     amountIn,
     args.tickSpacing,
-    args.sqrtPriceLimitX96 ?? 0n
+    args.sqrtPriceLimitX96 ?? 0n,
+    chainId,
   );
   if (expected === 0n) throw new Error("quote returned 0");
   const amountOutMin = slip(expected, slippageBps);
 
-  await approveIfNeeded(args.tokenIn, ADDR.SwapRouter, amountIn);
-  const r = new Contract(ADDR.SwapRouter, ABIS.SwapRouter, s);
+  await approveIfNeeded(args.tokenIn, contractAddress(chainId, "SwapRouter"), amountIn, { chainId });
+  const r = coreContract("SwapRouter", chainId, s);
   return await r.exactInputSingle({
     tokenIn: args.tokenIn,
     tokenOut: args.tokenOut,
@@ -112,10 +126,13 @@ export interface SwapV3PathArgs {
   slippageBps?: bigint;           // default 100
   recipient?: string;
   deadline?: number;
+  /** Default BNB Chain (56). */
+  chainId?: number;
 }
 
 export async function swapV3Path(args: SwapV3PathArgs) {
-  const s = signer();
+  const chainId = args.chainId ?? CHAIN_ID;
+  const s = signer(chainId);
   const recipient = args.recipient ?? (await s.getAddress());
   const slippageBps = args.slippageBps ?? 100n;
   const deadline = args.deadline ?? DEFAULT_DEADLINE();
@@ -123,18 +140,17 @@ export async function swapV3Path(args: SwapV3PathArgs) {
   if (args.tokens.length !== args.spacings.length + 1)
     throw new Error("tokens/spacings mismatch");
 
-  const decIn = await getDecimals(args.tokens[0]);
+  const decIn = await getDecimals(args.tokens[0], chainId);
   const amountIn =
     typeof args.amountIn === "string" ? parseUnits(args.amountIn, decIn) : args.amountIn;
 
   const path = encodePath(args.tokens, args.spacings);
-  const { quoteV3Path } = await import("../read/quotes.js");
-  const expected = await quoteV3Path(path, amountIn);
+  const expected = await quoteV3Path(path, amountIn, chainId);
   if (expected === 0n) throw new Error("quote returned 0");
   const amountOutMin = slip(expected, slippageBps);
 
-  await approveIfNeeded(args.tokens[0], ADDR.SwapRouter, amountIn);
-  const r = new Contract(ADDR.SwapRouter, ABIS.SwapRouter, s);
+  await approveIfNeeded(args.tokens[0], contractAddress(chainId, "SwapRouter"), amountIn, { chainId });
+  const r = coreContract("SwapRouter", chainId, s);
   return await r.exactInput({
     path,
     recipient,

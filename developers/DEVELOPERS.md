@@ -2,7 +2,7 @@
 
 This guide is the builder-facing entry point for the Topaz skill repository. `SKILL.md` teaches agents how to operate Topaz; this directory explains how developers can integrate Topaz into applications, dashboards, bots, and analytics pipelines.
 
-Topaz Dex runs on **BNB (56), Robinhood (4663), Base (8453), Ethereum (1) and Arc (5042)**. Start with [multichain integration](multichain-integration.md) for chain-specific contracts, ABIs, swaps, bridging and spoke voting. The older examples below use the BNB helper layer. The BNB core combines:
+Topaz Dex runs on **BNB (56), Robinhood (4663), Base (8453), Ethereum (1) and Arc (5042)**. Start with [multichain integration](multichain-integration.md) for chain-specific contracts, ABIs, swaps, bridging and spoke voting. The helpers and CLIs below default to BNB; pass `chainId` (or `--chain <id|name>`) to run them against any other Topaz chain. The BNB core combines:
 
 - **v2 pools**: Solidly-style volatile and stable AMMs.
 - **v3 / Slipstream pools**: concentrated liquidity pools keyed by tick spacing.
@@ -12,10 +12,13 @@ Topaz Dex runs on **BNB (56), Robinhood (4663), Base (8453), Ethereum (1) and Ar
 
 If you are building a partner dApp and want users to connect with the Topaz
 account layer, use the **Topaz ID Wallet Connector** via `@topazdex/id-connect`.
-Topaz ID is a BNB Chain global account — users sign in with their existing Topaz
-ID account (email/Google, no seed phrase) and your app connects to their Topaz ID
-**smart contract wallet** (ERC-4337) through a standard wagmi connector, plus
-their Topaz ID name and avatar.
+Topaz ID is a global account on all five Topaz chains — BNB Chain, Robinhood
+Chain, Base, Ethereum and Arc. Users sign in with their existing Topaz ID account
+(email/Google, no seed phrase) and your app connects to their Topaz ID **smart
+contract wallet** (ERC-4337, the same address on every chain) through a standard
+wagmi connector or a framework-free EIP-1193 provider, plus their Topaz ID name
+and avatar. Pass the chains you need (`chains` from `@topazdex/id-connect/chains`);
+omitting them defaults to BNB Chain only.
 
 This is **separate from the protocol calldata builders**: the connector handles
 account/login/identity, while the DEX builders handle swaps, liquidity, gauges,
@@ -26,8 +29,10 @@ transactions go through the Topaz ID action client (`useTopazIdClient`), not pla
 Two things trip up first-time integrators, both covered in that guide: **message
 signing** (SIWE/auth signatures are ERC-1271/6492, so verify with viem's
 `verifyMessage` — never `ecrecover` — and the one code path works for EOAs too),
-and a short list of **integration edge cases** (BNB-Chain-only, funding the fresh
-smart-wallet address, popup-gesture requirements).
+and a short list of **integration edge cases** (configuring chains, gas sponsored
+on BNB Chain only, funding the fresh smart-wallet address on each chain,
+popup-gesture requirements). Swap batches from `buildTopazSwapBatch` go through
+`sendCalls({ calls, atomicRequired })` on the chain the client is bound to.
 
 ## Choose the right integration surface
 
@@ -42,12 +47,12 @@ smart-wallet address, popup-gesture requirements).
 ```bash
 cd topaz-skill/scripts
 cp .env.example .env
-# edit .env and set BSC_RPC_URL; PRIVATE_KEY is only needed for broadcasting writes
+# optional: BSC_RPC_URL / TOPAZ_RPC_<chainId>; PRIVATE_KEY is only needed for broadcasting writes
 yarn install
 yarn smoke
 ```
 
-Read-only helpers work with only `BSC_RPC_URL`. Write executors require `PRIVATE_KEY`. Transaction builders do **not** require `PRIVATE_KEY` because they only construct calldata.
+Read-only helpers work with the public RPC defaults (override per chain with `BSC_RPC_URL` or `TOPAZ_RPC_<chainId>`). Write executors require `PRIVATE_KEY`. Transaction builders do **not** require `PRIVATE_KEY` because they only construct calldata.
 
 The package targets Node ≥ 20. Yarn 4 (via Corepack) is used in this repo; run `corepack enable` once if you do not already have Yarn on `PATH`, then use `yarn ...` normally.
 
@@ -66,8 +71,16 @@ import {
   buildBestSwapTx,
   buildV3SwapTx,
   getPoolV3,
+  // multichain
+  deployedContract,
+  coreContract,
+  resolveTokenOnChain,
+  getSpokePosition,
+  listSpokePositions,
 } from "./src/index.js";
 ```
+
+`ADDR` and `TOKENS` are the BNB address book and token list; for any other chain pass `chainId` to the helpers and use `coreContract(name, chainId)`, `deployedContract(chainId, name)` and `resolveTokenOnChain(query, chainId)`.
 
 For production apps, prefer importing from package exports once this repository is published as an npm package. Until then, use these files as reference implementations or vendor them into your app.
 
@@ -169,7 +182,7 @@ See `developers/user-positions.md` and `developers/subgraph-recipes.md`.
 - Never default swap protection to zero. Compute CL liquidity minima from the intended range and price tolerance; one side may legitimately reach zero at a boundary.
 - Verify a pool exists before suggesting a route.
 - Make approvals explicit and spender-specific.
-- For BNB-in v3 swaps, set `value = amountIn` and use WBNB as `tokenIn`.
+- For native-in v3 swaps (BNB, or ETH on Robinhood/Base/Ethereum), set `value = amountIn` and use the wrapped native as `tokenIn`. Arc has no native leg.
 - Warn users when liquidity is thin relative to trade size.
 - Use current on-chain reads for claimables, votes, and position ownership; subgraphs may lag.
 - Respect epoch timing: normal voting opens Thursday 01:00 UTC and closes one hour before the next epoch.

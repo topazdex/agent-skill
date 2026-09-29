@@ -121,7 +121,7 @@ describe("buildBribeDepositTx", () => {
     });
 
     expect(built.approval).toBeUndefined();
-    expect(mockAllowance).toHaveBeenCalledWith(token, payer, bribe);
+    expect(mockAllowance).toHaveBeenCalledWith(token, payer, bribe, 56);
   });
 
   it("accepts a token already registered as a reward even if whitelist is false", async () => {

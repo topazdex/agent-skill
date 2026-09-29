@@ -87,18 +87,19 @@ await gaugeContract.attach(gauge).deposit(lpBalance);
 
 You'll now accrue TOPAZ at `rewardRate` per second proportional to your share of `gauge.totalSupply()`.
 
-## CLI shortcut (combined add + stake)
+## CLI shortcut (add, then stake)
 
 ```bash
 yarn tsx src/cli/lp.ts add-v2 \
-  --a 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c \
+  --a BNB \
   --b 0x55d398326f99059fF775485246999027B3197955 \
   --amount-a 1 \
-  --slippage 100 \
-  --stake
+  --amount-b 600 \
+  --slippage 100
+yarn tsx src/cli/lp.ts stake --pool 0xPOOL --amount <lpWei>
 ```
 
-The CLI uses `addLiquidityETH` automatically if one side is WBNB and you didn't specify `--no-bnb`. `--stake` adds the gauge `deposit` as a follow-up transaction (or batched via multicall when available).
+Naming `BNB` uses `addLiquidityETH`; the WBNB address stays ERC20 unless you pass `--use-native`. Staking is a separate command (`lp.ts stake --pool … --amount …`, LP amount in wei). Add `--chain <id|name>` for another Topaz chain.
 
 ## Exiting
 
@@ -107,12 +108,10 @@ yarn tsx src/cli/lp.ts remove-v2 \
   --a 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c \
   --b 0x55d398326f99059fF775485246999027B3197955 \
   --pct 100 \
-  --slippage 100 \
-  --unstake \
-  --claim
+  --slippage 100
 ```
 
-Steps the CLI runs: `gauge.getReward(account)` → `gauge.withdraw(lp)` → `lp.approve(router, lp)` → `router.removeLiquidity[ETH](...)`.
+Unstake and claim first if the LP is in a gauge: `claim.ts gauge-v2`, then `lp.ts unstake --pool 0xPOOL --amount <lpWei>`. `remove-v2` then approves the LP to the Router and calls `removeLiquidity` (ERC20 output).
 
 ## Notes
 

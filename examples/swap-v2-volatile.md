@@ -64,13 +64,13 @@ await router.swapExactTokensForTokens(amountIn, amountOutMin, routes, recipient,
 ```bash
 cd ~/topaz/topaz-skill/scripts
 yarn tsx src/cli/swap.ts v2 \
-  --in 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c \
+  --in BNB \
   --out 0x55d398326f99059fF775485246999027B3197955 \
   --amount 0.5 \
   --slippage 50
 ```
 
-The CLI auto-routes BNB-in / BNB-out using the ETH variants when either side is WBNB and `--use-bnb` flag is present (default).
+Naming `BNB` routes native BNB through `swapExactETHForTokens` / `swapExactTokensForETH`. The WBNB address (`0xbb4C…095c`) or `WBNB` symbol spends ERC20 WBNB unless you also pass `--use-native`. On another chain add `--chain <id|name>` (`ETH` is native on Robinhood, Base and Ethereum; Arc has no native leg).
 
 ## Notes
 

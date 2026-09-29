@@ -2,12 +2,13 @@
 // collapse the v2/v3/mixed candidate-enumeration sweep into a single RPC round-trip.
 //
 // The contract is at the canonical address `0xcA11bde05977b3631167028862bE2a173976CA11`
-// on every EVM chain we care about (BSC included). See `MULTICALL3` in `config/chain.ts`.
+// on every Topaz chain; the per-chain entry in `references/deployments.json` is authoritative.
 
 import { Contract, Interface } from "ethers";
 import { ABIS } from "./abis.js";
 import { provider } from "./client.js";
-import { MULTICALL3 } from "../config/chain.js";
+import { CHAIN_ID } from "../config/chain.js";
+import { contractAddress } from "../config/deployments.js";
 
 export interface MulticallRequest {
   target: string;
@@ -21,6 +22,8 @@ export interface MulticallResult {
 }
 
 export interface Aggregate3Options {
+  /** Chain whose Multicall3 and RPC serve the batch. Default BNB Chain (56). */
+  chainId?: number;
   /**
    * Maximum total attempts on transient RPC errors. Default 2 (one retry).
    * The retry waits `retryBackoffMs` between attempts. Reverts inside the
@@ -39,10 +42,10 @@ export interface Aggregate3Options {
 
 const multicallIface = new Interface(ABIS.Multicall3);
 
-const defaultExec = async (
+const defaultExec = (chainId: number) => async (
   formatted: Array<{ target: string; allowFailure: boolean; callData: string }>,
 ): Promise<Array<[boolean, string]>> => {
-  const multicall = new Contract(MULTICALL3, ABIS.Multicall3, provider());
+  const multicall = new Contract(contractAddress(chainId, "Multicall3"), ABIS.Multicall3, provider(chainId));
   return (await multicall.aggregate3.staticCall(formatted)) as Array<[boolean, string]>;
 };
 
@@ -70,7 +73,7 @@ export async function aggregate3(
     allowFailure: c.allowFailure ?? true,
     callData: c.callData,
   }));
-  const exec = opts.exec ?? defaultExec;
+  const exec = opts.exec ?? defaultExec(opts.chainId ?? CHAIN_ID);
   const maxAttempts = Math.max(1, opts.retries ?? 2);
   const backoffMs = Math.max(0, opts.retryBackoffMs ?? 250);
 

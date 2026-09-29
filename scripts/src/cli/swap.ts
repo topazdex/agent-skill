@@ -1,77 +1,89 @@
-import { buildBestSwapTx } from "../lib/txBuilders.js";
-// CLI: yarn tsx src/cli/swap.ts <mode> [options]
+// CLI: yarn tsx src/cli/swap.ts <mode> [--chain <id|name>] [options]
 //   modes: v2 | v3 | best | quote
 //
 // Requires PRIVATE_KEY in .env for any actual swap; `quote` and `best` (without --execute) are read-only.
 
 import minimist from "minimist";
 import { parseUnits, formatUnits } from "ethers";
+import { buildBestSwapTx } from "../lib/txBuilders.js";
 import { swapV2, swapV3Single, swapV3Path } from "../write/swap.js";
 import { onchainQuoteBundle, bestQuoteBundle, type BestRoute } from "../read/quotes.js";
 import { getDecimals, getSymbol } from "../lib/erc20.js";
-import { findToken } from "../config/tokens.js";
+import { resolveTokenOnChain, type ResolvedToken } from "../config/tokens.js";
+import { CHAIN_FLAG_HELP, chainLabel, selectChain } from "../lib/chainOption.js";
 
 const USAGE = `
-Usage: yarn tsx src/cli/swap.ts <mode> [options]
+Usage: yarn tsx src/cli/swap.ts <mode> [--chain <id|name>] [options]
 
-  v2     --in <addr> --out <addr> --amount <human> [--stable] [--slippage 50] [--use-bnb=true]
-  v3     --in <addr> --out <addr> --amount <human> --ts <tickSpacing> [--slippage 100]
-  best   --in <addr> --out <addr> --amount <human> [--execute] [--prefer v2|v3]
-  quote  --in <addr> --out <addr> --amount <human>
+  v2     --in <token> --out <token> --amount <human> [--stable] [--slippage 50] [--use-native]
+  v3     --in <token> --out <token> --amount <human> --ts <tickSpacing> [--slippage 100]
+  best   --in <token> --out <token> --amount <human> [--payer <addr>] [--execute] [--prefer v2|v3]
+  quote  --in <token> --out <token> --amount <human>
 
-Default quote/best use quote.topazdex.com, including split and mixed CL/v2 routes.
-Pass --payer <executing-account> to best to print the complete signature-free
-Permit2 approval + swap batch. Submit every returned call atomically through your
-wallet/account adapter. This CLI does not broadcast API batches. Explicit
---prefer v2|v3 keeps the legacy direct-router execution path.
+  ${CHAIN_FLAG_HELP}
 
-Tokens accept either a 0x… address OR a symbol. Built-in symbols include
-  BNB / WBNB, TOPAZ, USDT, USDC, USD1, FDUSD, BTCB, ETH, SOL, XRP, CAKE, DOGE,
-  BLUE, gBLUE, BOOK, BUD, Broccoli, CaptainBNB, ClipX, EARN, $RISE, Trusty,
-  bibi, NianNian. See references/tokens.md for the canonical list.
+Default quote/best use quote.topazdex.com on the selected chain, including split
+and mixed CL/v2 routes. Pass --payer <executing-account> to best to print the
+complete signature-free Permit2 approval + swap batch. Submit every returned call
+atomically through your wallet/account adapter (e.g. Topaz ID sendCalls with
+atomicRequired). This CLI does not broadcast API batches. Explicit --prefer v2|v3
+keeps the legacy direct-router execution path.
+
+Tokens accept a 0x… address on every chain. Symbols:
+  BNB Chain: BNB (native) / WBNB, TOPAZ, USDT, USDC, USD1, FDUSD, BTCB, ETH, SOL,
+             XRP, CAKE, DOGE, BLUE, … (see references/tokens.md)
+  Robinhood / Base / Ethereum: ETH (native), WETH, xTOPAZ
+  Arc: USDC (the 6-decimal ERC20; Arc has no native DEX legs), xTOPAZ
+Native assets: in v2 and best --payer, naming the native symbol (BNB/ETH) swaps
+the native asset and the wrapped token stays an ERC20 unless --use-native is
+passed. v3 and best --execute trade ERC20s only: name WBNB/WETH there. Arc has no
+native DEX leg. Find other addresses with
+GET https://api.topazdex.com/v1/tokens?chainIds=<id>.
 `.trim();
 
-function resolveToken(query: string): string {
-  const t = findToken(query);
-  if (!t) {
-    if (query.startsWith("0x") && query.length === 42) return query;
-    throw new Error(`unknown token: ${query}`);
-  }
-  return t.address;
+function isTruthyFlag(value: unknown): boolean {
+  return value === true || value === "true";
 }
 
-async function cmdV2(argv: any) {
-  const tokenIn = resolveToken(argv.in);
-  const tokenOut = resolveToken(argv.out);
-  const stable = !!argv.stable;
-  const slippageBps = BigInt(argv.slippage ?? 50);
-  const useBnb = argv["use-bnb"] === false ? false : true;
+function requireErc20Legs(mode: string, ...tokens: ResolvedToken[]): void {
+  if (tokens.some((t) => t.native))
+    throw new Error(`${mode} trades ERC20s only; name the wrapped token (WBNB/WETH), or use v2 / best --payer for native`);
+}
 
+function useNative(argv: minimist.ParsedArgs, tokenIn: ResolvedToken, tokenOut: ResolvedToken): boolean {
+  const explicit = argv["use-native"] ?? argv["use-bnb"];
+  if (explicit !== undefined) return isTruthyFlag(explicit);
+  return tokenIn.native || tokenOut.native;
+}
+
+async function cmdV2(argv: minimist.ParsedArgs, chainId: number) {
+  const tokenIn = resolveTokenOnChain(argv.in, chainId);
+  const tokenOut = resolveTokenOnChain(argv.out, chainId);
   const tx = await swapV2({
-    tokenIn,
-    tokenOut,
+    chainId,
+    tokenIn: tokenIn.address,
+    tokenOut: tokenOut.address,
     amountIn: String(argv.amount),
-    stable,
-    slippageBps,
-    useBnb,
+    stable: !!argv.stable,
+    slippageBps: BigInt(argv.slippage ?? 50),
+    useNative: useNative(argv, tokenIn, tokenOut),
   });
   console.log("tx:", tx.hash);
   await tx.wait();
   console.log("mined");
 }
 
-async function cmdV3(argv: any) {
-  const tokenIn = resolveToken(argv.in);
-  const tokenOut = resolveToken(argv.out);
-  const tickSpacing = Number(argv.ts ?? 200);
-  const slippageBps = BigInt(argv.slippage ?? 100);
-
+async function cmdV3(argv: minimist.ParsedArgs, chainId: number) {
+  const tokenIn = resolveTokenOnChain(argv.in, chainId);
+  const tokenOut = resolveTokenOnChain(argv.out, chainId);
+  requireErc20Legs("swap v3", tokenIn, tokenOut);
   const tx = await swapV3Single({
-    tokenIn,
-    tokenOut,
+    chainId,
+    tokenIn: tokenIn.address,
+    tokenOut: tokenOut.address,
     amountIn: String(argv.amount),
-    tickSpacing,
-    slippageBps,
+    tickSpacing: Number(argv.ts ?? 200),
+    slippageBps: BigInt(argv.slippage ?? 100),
   });
   console.log("tx:", tx.hash);
   await tx.wait();
@@ -93,16 +105,24 @@ function formatRoute(
   return `  ${label}: ${best.route}\n    → ${human} ${symOut}${impact}`;
 }
 
-async function cmdQuote(argv: any) {
-  const tokenIn = resolveToken(argv.in);
-  const tokenOut = resolveToken(argv.out);
-  const decIn = await getDecimals(tokenIn);
-  const decOut = await getDecimals(tokenOut);
-  const [symIn, symOut] = await Promise.all([getSymbol(tokenIn), getSymbol(tokenOut)]);
+async function describePair(argv: minimist.ParsedArgs, chainId: number) {
+  const tokenIn = resolveTokenOnChain(argv.in, chainId);
+  const tokenOut = resolveTokenOnChain(argv.out, chainId);
+  const [decIn, decOut, symIn, symOut] = await Promise.all([
+    getDecimals(tokenIn.address, chainId),
+    getDecimals(tokenOut.address, chainId),
+    getSymbol(tokenIn.address, chainId),
+    getSymbol(tokenOut.address, chainId),
+  ]);
   const amountIn = parseUnits(String(argv.amount), decIn);
-  const bundle = await bestQuoteBundle(tokenIn, tokenOut, amountIn);
+  return { tokenIn, tokenOut, decOut, symIn, symOut, amountIn };
+}
 
-  console.log(`Quoting ${argv.amount} ${symIn} → ${symOut}\n`);
+async function cmdQuote(argv: minimist.ParsedArgs, chainId: number) {
+  const { tokenIn, tokenOut, decOut, symIn, symOut, amountIn } = await describePair(argv, chainId);
+  const bundle = await bestQuoteBundle(tokenIn.address, tokenOut.address, amountIn, chainId);
+
+  console.log(`Quoting ${argv.amount} ${symIn} → ${symOut} on ${chainLabel(chainId)}\n`);
   if (bundle.topaz) console.log(formatRoute("Topaz API", bundle.topaz, decOut, symOut));
   else {
     console.log(formatRoute("v2 (basic)", bundle.v2, decOut, symOut));
@@ -113,17 +133,14 @@ async function cmdQuote(argv: any) {
   }
 }
 
-async function cmdBest(argv: any) {
-  const tokenIn = resolveToken(argv.in);
-  const tokenOut = resolveToken(argv.out);
-  const decIn = await getDecimals(tokenIn);
-  const decOut = await getDecimals(tokenOut);
-  const [symIn, symOut] = await Promise.all([getSymbol(tokenIn), getSymbol(tokenOut)]);
-  const amount = parseUnits(String(argv.amount), decIn);
+async function cmdBest(argv: minimist.ParsedArgs, chainId: number) {
+  const { tokenIn, tokenOut, decOut, symIn, symOut, amountIn } = await describePair(argv, chainId);
   if (argv.prefer && !["v2", "v3"].includes(String(argv.prefer))) throw new Error("--prefer must be v2 or v3");
-  const bundle = argv.prefer ? await onchainQuoteBundle(tokenIn, tokenOut, amount) : await bestQuoteBundle(tokenIn, tokenOut, amount);
+  const bundle = argv.prefer
+    ? await onchainQuoteBundle(tokenIn.address, tokenOut.address, amountIn, { chainId })
+    : await bestQuoteBundle(tokenIn.address, tokenOut.address, amountIn, chainId);
 
-  console.log(`Routing ${argv.amount} ${symIn} → ${symOut}\n`);
+  console.log(`Routing ${argv.amount} ${symIn} → ${symOut} on ${chainLabel(chainId)}\n`);
   if (bundle.topaz) console.log(formatRoute("Topaz API", bundle.topaz, decOut, symOut));
   else {
     console.log(formatRoute("v2 (basic)", bundle.v2, decOut, symOut));
@@ -141,44 +158,46 @@ async function cmdBest(argv: any) {
   }
   console.log(`\nChosen: ${chosen.route}`);
   console.log(`  amountOut: ${formatUnits(chosen.amountOut, decOut)} ${symOut}`);
-  console.log(`  exec: ${JSON.stringify(chosen.exec)}`);
+  console.log(`  exec: ${JSON.stringify(chosen.exec, (_k, v) => (typeof v === "bigint" ? v.toString() : v))}`);
 
+  const slippageBps = BigInt(argv.slippage ?? 100);
   if (chosen.exec.type === "topaz-api") {
     if (argv.execute) throw new Error("API swaps require an atomic wallet/account batch; use --payer to build its calls, then submit with your wallet adapter.");
     if (argv.payer) {
-      const batch = await buildBestSwapTx({ tokenIn, tokenOut, amountIn: amount,
-        recipient: String(argv.payer), slippageBps: BigInt(argv.slippage ?? 100), useBnb: argv["use-bnb"] === true || argv["use-bnb"] === "true" || String(argv.in).toUpperCase() === "BNB" || String(argv.out).toUpperCase() === "BNB" });
+      const batch = await buildBestSwapTx({ chainId, tokenIn: tokenIn.address, tokenOut: tokenOut.address,
+        amountIn, recipient: String(argv.payer), slippageBps, useBnb: useNative(argv, tokenIn, tokenOut) });
       console.log(JSON.stringify(batch, null, 2));
     }
     return;
   }
   if (!argv.execute) return;
+  requireErc20Legs("best --execute", tokenIn, tokenOut);
 
-  const slippageBps = BigInt(argv.slippage ?? 100);
   if (chosen.exec.type === "v2") {
-    const { Contract } = await import("ethers");
+    const { coreContract } = await import("../lib/contracts.js");
+    const { contractAddress } = await import("../config/deployments.js");
     const { signer } = await import("../lib/client.js");
-    const { ADDR } = await import("../config/addresses.js");
-    const { ABIS } = await import("../lib/abis.js");
     const { approveIfNeeded } = await import("../lib/erc20.js");
-    const r = new Contract(ADDR.Router, ABIS.Router, signer());
+    const s = signer(chainId);
+    const r = coreContract("Router", chainId, s);
     const amountOutMin = (chosen.amountOut * (10_000n - slippageBps)) / 10_000n;
     const deadline = Math.floor(Date.now() / 1000) + 60 * 20;
-    await approveIfNeeded(tokenIn, ADDR.Router, amount);
+    await approveIfNeeded(tokenIn.address, contractAddress(chainId, "Router"), amountIn, { chainId });
     const tx = await r.swapExactTokensForTokens(
-      amount,
+      amountIn,
       amountOutMin,
       chosen.exec.route,
-      await signer().getAddress(),
+      await s.getAddress(),
       deadline
     );
     console.log("tx:", tx.hash);
     await tx.wait();
   } else if (chosen.exec.type === "v3-single") {
     const tx = await swapV3Single({
+      chainId,
       tokenIn: chosen.exec.tokenIn,
       tokenOut: chosen.exec.tokenOut,
-      amountIn: amount,
+      amountIn,
       tickSpacing: chosen.exec.tickSpacing,
       slippageBps,
     });
@@ -186,9 +205,10 @@ async function cmdBest(argv: any) {
     await tx.wait();
   } else if (chosen.exec.type === "v3-path") {
     const tx = await swapV3Path({
+      chainId,
       tokens: chosen.exec.tokens,
       spacings: chosen.exec.spacings,
-      amountIn: amount,
+      amountIn,
       slippageBps,
     });
     console.log("tx:", tx.hash);
@@ -201,17 +221,18 @@ async function cmdBest(argv: any) {
 }
 
 async function main() {
-  const argv = minimist(process.argv.slice(2), { string: ["_", "in", "out", "pool", "gauge", "address", "amount", "amount-a", "amount-b", "amount0", "amount1", "id", "tokenId", "token", "a", "b", "t0", "t1", "from", "to", "lower-price", "upper-price", "duration", "prefer", "payer"] });
+  const argv = minimist(process.argv.slice(2), { string: ["_", "chain", "in", "out", "pool", "gauge", "address", "amount", "amount-a", "amount-b", "amount0", "amount1", "id", "tokenId", "token", "a", "b", "t0", "t1", "from", "to", "lower-price", "upper-price", "duration", "prefer", "payer"] });
   const mode = argv._[0];
   if (!mode || mode === "help" || argv.h || argv.help) {
     console.log(USAGE);
     return;
   }
+  const chainId = await selectChain(argv.chain);
   switch (mode) {
-    case "v2": return await cmdV2(argv);
-    case "v3": return await cmdV3(argv);
-    case "best": return await cmdBest(argv);
-    case "quote": return await cmdQuote(argv);
+    case "v2": return await cmdV2(argv, chainId);
+    case "v3": return await cmdV3(argv, chainId);
+    case "best": return await cmdBest(argv, chainId);
+    case "quote": return await cmdQuote(argv, chainId);
     default:
       console.error(`unknown mode: ${mode}\n\n${USAGE}`);
       process.exit(1);

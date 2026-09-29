@@ -104,7 +104,7 @@ if command -v yarn >/dev/null 2>&1 && [ -f scripts/package.json ]; then
     say "running smoke test (yarn smoke)"
     ( cd scripts && yarn smoke ) || warn "smoke test reported issues — review output above"
   else
-    warn "skipping yarn smoke — no scripts/.env and no BSC_RPC_URL in env. Run \`cd $DEST/scripts && cp .env.example .env\`, set BSC_RPC_URL, then \`yarn smoke\`."
+    warn "skipping yarn smoke — no scripts/.env and no BSC_RPC_URL in env. Run \`cd $DEST/scripts && cp .env.example .env\` (RPC overrides are optional; public RPCs are the default), then \`yarn smoke\`."
   fi
 else
   warn "yarn not found or scripts/package.json missing — skipping JS install + smoke. The agent will still be able to read SKILL.md and references/."

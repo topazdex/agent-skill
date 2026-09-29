@@ -50,3 +50,27 @@ export function bridgeRoute(sourceChainId: number, destinationChainId: number) {
   }
   return { source, destination };
 }
+
+export const HUB_CHAIN_ID = 56;
+
+export function contractAddress(chainId: number, name: string): string {
+  return deployedContract(chainId, name).address;
+}
+
+export function isHubChain(chainId: number): boolean {
+  return deployment(chainId).role === "hub";
+}
+
+/** veTOPAZ locks, relays, rebases and the xTOPAZ vault exist only on the hub. */
+export function requireHubChain(chainId: number, feature: string): void {
+  if (isHubChain(chainId)) return;
+  throw new Error(
+    `${feature} exists only on BNB Chain (56); ${deployment(chainId).name} (${chainId}) uses xTOPAZ positions in XTopazVotingVault instead`,
+  );
+}
+
+/** Rejected on spokes: stake/vote/claim there are keyed by XTopazVotingVault position ids. */
+export function requireSpokeChain(chainId: number, feature: string): void {
+  if (!isHubChain(chainId)) return;
+  throw new Error(`${feature} is a spoke XTopazVotingVault action; BNB Chain (56) uses veTOPAZ NFTs instead`);
+}

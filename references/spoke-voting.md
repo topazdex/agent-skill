@@ -17,6 +17,8 @@ Applies to Robinhood 4663, Base 8453, Ethereum 1 and Arc 5042. Select that chain
 | Claim bribes | `claimBribes(id,bribeContracts,tokenLists)` | Owner/operator; rewards pay position owner |
 | Delegate | `setVoteOperator(operator)` | One operator for caller's positions; can add, vote, merge, claim, not withdraw |
 
+Scripts: `yarn tsx src/cli/position.ts <vault|list|show|stake|add|unstake|merge|operator> --chain <spoke>`, then `vote.ts` / `claim.ts` with the same `--chain` and the position id; library equivalents live in `scripts/src/read/spokePositions.ts` and `scripts/src/write/spokePosition.ts`. Walkthrough: [`examples/spoke-stake-vote-claim.md`](../examples/spoke-stake-vote-claim.md).
+
 ## Read positions and timing
 
 `positionsOf(owner)` then `position(id)` gives the amount, owner and unlock timestamp. `stakedBalance(owner)` gives remaining principal. Historical enumeration grows without bound; for large accounts use indexed `PositionOpened` events plus individual reads. Keep closed IDs because rewards remain claimable and owner information persists.
@@ -31,6 +33,6 @@ Normal voting is after Thursday 01:00 UTC through Wednesday 23:00 UTC; exact bou
 
 Resolve each voted pool's gauge with local `Voter.gauges(pool)` and its `gaugeToFees(gauge)` / `gaugeToBribe(gauge)`. Reward contracts expose `rewardsListLength()`, `rewards(i)` and `earned(token,id)`. Use paired outer arrays and token lists; the ID is the local position ID. Include historical reward contracts and closed positions. Fees/bribes for an epoch become claimable after it ends. There is no spoke `RewardsDistributor.claim` rebase: backing appreciation is already in each xTOPAZ share.
 
-LP gauge rewards are separate from voting rewards: approve/deposit v2 LP tokens or CL NFTs to the local gauge and use its deployed `getReward` signature. Read its reward token and current rate/period; budget delivery alone does not prove it is streaming. `SpokeEmissionReceiver.received(epoch)`, `pending()`, `latestEpoch()` and `exchangeRate()` explain local funding. The last delivered exchangeRate is display evidence, not a fresh hub quote.
+LP gauge rewards are separate from voting rewards: approve/deposit v2 LP tokens or CL NFTs to the local gauge and use its deployed `getReward` signature (scripts: `lp.ts stake|unstake --chain <spoke>`, `claim.ts gauge|gauge-v2 --chain <spoke>`). Read its reward token and current rate/period; budget delivery alone does not prove it is streaming. `SpokeEmissionReceiver.received(epoch)`, `pending()`, `latestEpoch()` and `exchangeRate()` explain local funding. The last delivered exchangeRate is display evidence, not a fresh hub quote.
 
 To bridge staked principal, first withdraw it under these rules. A bridge cannot pull from a voting position. Bridge-and-stake opens a **new** destination position and can instead deliver liquid xTOPAZ on failure; inspect destination events.

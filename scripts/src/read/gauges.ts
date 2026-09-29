@@ -1,13 +1,15 @@
 import { Contract, ZeroAddress, getAddress } from "ethers";
 import { ABIS } from "../lib/abis.js";
 import { provider } from "../lib/client.js";
-import { ADDR, TICK_SPACINGS } from "../config/addresses.js";
+import { coreContract } from "../lib/contracts.js";
+import { TICK_SPACINGS } from "../config/addresses.js";
+import { CHAIN_ID } from "../config/chain.js";
 import { detectPoolType } from "./pools.js";
 
-const voter = () => new Contract(ADDR.Voter, ABIS.Voter, provider());
-const gaugeC = (addr: string) => new Contract(addr, ABIS.Gauge, provider());
-const clGaugeC = (addr: string) => new Contract(addr, ABIS.CLGauge, provider());
-const rewardC = (addr: string) => new Contract(addr, ABIS.Reward, provider());
+const voter = (chainId: number) => coreContract("Voter", chainId);
+const gaugeC = (addr: string, chainId: number) => new Contract(addr, ABIS.Gauge, provider(chainId));
+const clGaugeC = (addr: string, chainId: number) => new Contract(addr, ABIS.CLGauge, provider(chainId));
+const rewardC = (addr: string, chainId: number) => new Contract(addr, ABIS.Reward, provider(chainId));
 
 export interface GaugeState {
   pool: string;
@@ -67,6 +69,7 @@ export interface PairGaugeEntry {
 export async function listGaugesForPair(
   tokenA: string,
   tokenB: string,
+  chainId: number = CHAIN_ID,
 ): Promise<PairGaugeEntry[]> {
   const a = getAddress(tokenA);
   const b = getAddress(tokenB);
@@ -74,9 +77,9 @@ export async function listGaugesForPair(
     throw new Error("tokenA and tokenB must differ");
   }
 
-  const poolFactory = new Contract(ADDR.PoolFactory, ABIS.PoolFactory, provider());
-  const clFactory = new Contract(ADDR.CLFactory, ABIS.CLFactory, provider());
-  const v = voter();
+  const poolFactory = coreContract("PoolFactory", chainId);
+  const clFactory = coreContract("CLFactory", chainId);
+  const v = voter(chainId);
 
   const variants: Array<{ kind: string; type: "v2" | "v3"; poolP: Promise<string> }> = [
     { kind: "v2-volatile", type: "v2", poolP: poolFactory.getPool(a, b, false) as Promise<string> },
@@ -110,11 +113,14 @@ export async function listGaugesForPair(
   return out;
 }
 
-export async function getGaugeStateForPool(pool: string): Promise<GaugeState | null> {
-  const v = voter();
+export async function getGaugeStateForPool(
+  pool: string,
+  chainId: number = CHAIN_ID,
+): Promise<GaugeState | null> {
+  const v = voter(chainId);
   const gauge: string = await v.gauges(pool);
   if (gauge === ZeroAddress) return null;
-  const type = await detectPoolType(pool);
+  const type = await detectPoolType(pool, chainId);
 
   const [alive, feesVotingReward, bribeVotingReward, weight] = await Promise.all([
     v.isAlive(gauge),
@@ -125,7 +131,7 @@ export async function getGaugeStateForPool(pool: string): Promise<GaugeState | n
 
   let rewardRate: bigint, periodFinish: bigint, left: bigint, totalSupplyOrStaked: bigint;
   if (type === "v2") {
-    const g = gaugeC(gauge);
+    const g = gaugeC(gauge, chainId);
     [rewardRate, periodFinish, left, totalSupplyOrStaked] = await Promise.all([
       g.rewardRate(),
       g.periodFinish(),
@@ -133,13 +139,13 @@ export async function getGaugeStateForPool(pool: string): Promise<GaugeState | n
       g.totalSupply(),
     ]);
   } else {
-    const g = clGaugeC(gauge);
+    const g = clGaugeC(gauge, chainId);
     [rewardRate, periodFinish, left, totalSupplyOrStaked] = await Promise.all([
       g.rewardRate(),
       g.periodFinish(),
       g.left(),
       // For CLGauge there is no "totalSupply" — use the pool's stakedLiquidity instead
-      new Contract(pool, ABIS.CLPool, provider()).stakedLiquidity(),
+      new Contract(pool, ABIS.CLPool, provider(chainId)).stakedLiquidity(),
     ]);
   }
 
@@ -158,24 +164,29 @@ export async function getGaugeStateForPool(pool: string): Promise<GaugeState | n
   };
 }
 
-export async function listAllPools(): Promise<string[]> {
-  const v = voter();
+export async function listAllPools(chainId: number = CHAIN_ID): Promise<string[]> {
+  const v = voter(chainId);
   const len: bigint = await v.length();
   return await Promise.all(
     Array.from({ length: Number(len) }, (_, i) => v.pools(i) as Promise<string>)
   );
 }
 
-export async function getEarnedV2(gauge: string, account: string): Promise<bigint> {
-  return await gaugeC(gauge).earned(account);
+export async function getEarnedV2(
+  gauge: string,
+  account: string,
+  chainId: number = CHAIN_ID,
+): Promise<bigint> {
+  return await gaugeC(gauge, chainId).earned(account);
 }
 
 export async function getEarnedV3(
   gauge: string,
   account: string,
-  tokenId: bigint
+  tokenId: bigint,
+  chainId: number = CHAIN_ID,
 ): Promise<bigint> {
-  return await clGaugeC(gauge).earned(account, tokenId);
+  return await clGaugeC(gauge, chainId).earned(account, tokenId);
 }
 
 export interface BribeInfo {
@@ -184,12 +195,12 @@ export interface BribeInfo {
   perEpochAmounts: bigint[]; // for current epoch
 }
 
-export async function getBribeInfo(pool: string): Promise<BribeInfo | null> {
-  const v = voter();
+export async function getBribeInfo(pool: string, chainId: number = CHAIN_ID): Promise<BribeInfo | null> {
+  const v = voter(chainId);
   const gauge: string = await v.gauges(pool);
   if (gauge === ZeroAddress) return null;
   const bribeAddr: string = await v.gaugeToBribe(gauge);
-  const bribe = rewardC(bribeAddr);
+  const bribe = rewardC(bribeAddr, chainId);
   const epoch: bigint = await v.epochStart(BigInt(Math.floor(Date.now() / 1000)));
   const len: bigint = await bribe.rewardsListLength();
   const tokens = await Promise.all(
@@ -205,8 +216,11 @@ export async function getBribeInfo(pool: string): Promise<BribeInfo | null> {
  * Split active pools into v2 and v3 sets in one pass.
  * detectPoolType makes 2 RPC calls per pool; batch them all in parallel.
  */
-async function partitionPoolsByType(pools: string[]): Promise<{ v2: string[]; v3: string[] }> {
-  const types = await Promise.all(pools.map((p) => detectPoolType(p).catch(() => null)));
+async function partitionPoolsByType(
+  pools: string[],
+  chainId: number,
+): Promise<{ v2: string[]; v3: string[] }> {
+  const types = await Promise.all(pools.map((p) => detectPoolType(p, chainId).catch(() => null)));
   const v2: string[] = [];
   const v3: string[] = [];
   pools.forEach((p, i) => {
@@ -216,32 +230,36 @@ async function partitionPoolsByType(pools: string[]): Promise<{ v2: string[]; v3
   return { v2, v3 };
 }
 
-export async function v2StakedGaugesForAccount(account: string): Promise<string[]> {
-  const allPools = await listAllPools();
-  const { v2: v2Pools } = await partitionPoolsByType(allPools);
-  const v = voter();
+export async function v2StakedGaugesForAccount(
+  account: string,
+  chainId: number = CHAIN_ID,
+): Promise<string[]> {
+  const allPools = await listAllPools(chainId);
+  const { v2: v2Pools } = await partitionPoolsByType(allPools, chainId);
+  const v = voter(chainId);
   const gauges = await Promise.all(v2Pools.map((p) => v.gauges(p) as Promise<string>));
   const balances = await Promise.all(
     gauges.map((g) =>
       g === ZeroAddress
         ? Promise.resolve(0n)
-        : (gaugeC(g).balanceOf(account) as Promise<bigint>).catch(() => 0n)
+        : (gaugeC(g, chainId).balanceOf(account) as Promise<bigint>).catch(() => 0n)
     )
   );
   return gauges.filter((_, i) => balances[i] > 0n);
 }
 
 export async function v3StakedGaugesForAccount(
-  account: string
+  account: string,
+  chainId: number = CHAIN_ID,
 ): Promise<{ gauge: string; tokenIds: bigint[] }[]> {
-  const allPools = await listAllPools();
-  const { v3: v3Pools } = await partitionPoolsByType(allPools);
-  const v = voter();
+  const allPools = await listAllPools(chainId);
+  const { v3: v3Pools } = await partitionPoolsByType(allPools, chainId);
+  const v = voter(chainId);
   const gauges = await Promise.all(v3Pools.map((p) => v.gauges(p) as Promise<string>));
   const v3Gauges = gauges.filter((g) => g !== ZeroAddress);
   const result = await Promise.all(
     v3Gauges.map(async (g) => {
-      const ids: bigint[] = await clGaugeC(g).stakedValues(account).catch(() => []);
+      const ids: bigint[] = await clGaugeC(g, chainId).stakedValues(account).catch(() => []);
       return { gauge: g, tokenIds: ids };
     })
   );

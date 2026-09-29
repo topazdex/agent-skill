@@ -162,6 +162,6 @@ To exit and collect everything:
 | Add | `scripts/src/write/liquidityV2.ts` — `addLiquidityV2({ tokenA, tokenB, stable, amounts, slippageBps })` |
 | Remove | `removeLiquidityV2({ tokenA, tokenB, stable, liquidity, slippageBps })` |
 | Quote add | `scripts/src/read/quotes.ts` — `quoteAddLiquidityV2(...)` |
-| CLI | `yarn tsx src/cli/lp.ts add-v2 --a <addr> --b <addr> --amount-a <n> --amount-b <n> [--stable] [--slippage 100]` |
+| CLI | `yarn tsx src/cli/lp.ts add-v2 --a <addr> --b <addr> --amount-a <n> --amount-b <n> [--stable] [--slippage 100]` — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |
 
 See `examples/add-liquidity-v2.md`.

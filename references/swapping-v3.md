@@ -183,6 +183,6 @@ To programmatically pick the better venue, see `references/swapping-mixed.md` �
 | Build calldata | `scripts/src/lib/txBuilders.ts` — `buildV3SwapTx(...)`, `buildV3PathSwapTx(...)` for explicit CL; `buildBestSwapTx(...)` for the complete API/Permit2 batch |
 | Execute single | `scripts/src/write/swap.ts` — `swapV3Single({ tokenIn, tokenOut, amountIn, tickSpacing, slippageBps })` |
 | Execute multi-hop | `swapV3Path({ tokens, spacings, amountIn, slippageBps })` |
-| CLI | `yarn tsx src/cli/swap.ts v3 --in <addr> --out <addr> --amount <n> [--ts 200] [--slippage 100]` |
+| CLI | `yarn tsx src/cli/swap.ts v3 --in <addr> --out <addr> --amount <n> [--ts 200] [--slippage 100]` — add `--chain <id\|name>` for Robinhood, Base, Ethereum or Arc |
 
 See `examples/swap-v3-single-hop.md`.

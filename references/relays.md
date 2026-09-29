@@ -95,7 +95,7 @@ yarn tsx src/cli/relay.ts withdraw --id <veTokenId>
 yarn tsx src/cli/relay.ts claim    --id <veTokenId>
 ```
 
-`deposit` / `withdraw` / `claim` broadcast and require `PRIVATE_KEY`. Use them only after the user explicitly authorizes execution; otherwise hand back the builder calldata above. `list` is a read and needs only `BSC_RPC_URL`.
+`deposit` / `withdraw` / `claim` broadcast and require `PRIVATE_KEY`. Use them only after the user explicitly authorizes execution; otherwise hand back the builder calldata above. `list` is a read and needs no key (optional `BSC_RPC_URL` override). Relays exist on BNB Chain only; `relay.ts --chain <spoke>` refuses.
 
 ## Reading relay state
 

@@ -83,7 +83,7 @@ const tx = await npm.mint({
   amount1Min,
   recipient,
   deadline,
-  sqrtPriceX96,    // ignored if pool already initialized; required if creating a new pool
+  0n,              // sqrtPriceX96: MUST be 0 for an existing pool — nonzero makes NPM.mint call CLFactory.createPool, which reverts if the pool exists
 });
 const receipt = await tx.wait();
 
@@ -114,11 +114,11 @@ yarn tsx src/cli/lp.ts mint-v3 \
   --ts 1 \
   --range-ticks 10 \
   --amount0 1000 \
-  --slippage 50 \
-  --stake
+  --slippage 50
+yarn tsx src/cli/lp.ts stake --tokenId <tokenId>
 ```
 
-`--range-ticks 10` produces `[currentTick-10, currentTick+10]` (you can override with explicit `--tick-lower / --tick-upper`). If you'd rather specify range as a percentage, use `--range-pct 0.10`.
+`--range-ticks 10` produces `[currentTick-10, currentTick+10]`, rounded to the tick spacing; use `--lower-price <p> --upper-price <p>` for an explicit price range. mint-v3 is ERC20-only (name WBNB/WETH, not BNB/ETH). Add `--chain <id|name>` for another Topaz chain.
 
 ## Inspecting the position
 
@@ -126,12 +126,15 @@ yarn tsx src/cli/lp.ts mint-v3 \
 yarn tsx src/cli/stats.ts position --id <tokenId>
 ```
 
-Prints: pool, tickLower/tickUpper, current price/tick, in-range yes/no, liquidity, principal (amount0/amount1 in tokens), pending fees, gauge status (staked or not), pending TOPAZ rewards, current emission APR / fee APR.
+Prints the `positions()` data plus pool, current tick and in-range yes/no (`tokensOwed0/1` are fees already credited). For pending gauge rewards use `stats.ts claimable`; for APRs use `stats.ts apr --pool` (BNB) or `stats.ts v1 /pools/<chainId>/<pool>`.
 
 ## Closing out
 
 ```bash
-yarn tsx src/cli/lp.ts close-v3 --id <tokenId>
+yarn tsx src/cli/lp.ts unstake     --tokenId <tokenId>   # if staked
+yarn tsx src/cli/lp.ts decrease-v3 --id <tokenId> --pct 100
+yarn tsx src/cli/lp.ts collect-v3  --id <tokenId>
+yarn tsx src/cli/lp.ts burn-v3     --id <tokenId>
 ```
 
-Runs (in order): `CLGauge.withdraw(tokenId)` if staked → `NPM.decreaseLiquidity({ liquidity: full, ... })` → `NPM.collect({ amountMax: max, ... })` → `NPM.burn(tokenId)`.
+That is `CLGauge.withdraw(tokenId)` → `NPM.decreaseLiquidity({ liquidity: full, ... })` → `NPM.collect({ amountMax: max, ... })` → `NPM.burn(tokenId)`, one transaction each.
