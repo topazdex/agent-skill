@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [3.5.0] — 2026-09-30
+
 - Catalog the Arc CL Zap (`0xA3e7…9b8B`, verified on-chain). `liquidity-zaps.md` and `website.md` now say single-token zaps are live on the website on all five chains, for regular CL (full or custom ranges) and for Topaz Auto vaults; the old "Arc pending" note is gone. Arc zaps take ERC20s only: its `WRAPPED_NATIVE()` is a placeholder that always reverts with `UnsupportedProtocolError()`.
 - Auto Manage writes. The `TopazManagedCL*` ABIs are vendored from topaz-alm `main`, and each chain's `AutoManageFactory` / `AutoManageZap` / `AutoManageLens` is in the catalog for BNB, Robinhood and Arc. `verify:deployments` checks their wiring, and that every lens vault is registered with the factory. `read/autoManage.ts` finds vaults through `lens.getVaults(factory)`. `lib/autoManageBuilders.ts` and the new `autoManage.ts` CLI build deposit, redeem, claim, zap-in and zap-out calls, checking the deposit gates and taking deadlines from chain time. All six flows were run end to end on a BNB fork with live 0x quotes.
 - `lib/zeroX.ts`: validated 0x AllowanceHolder legs from the public Topaz proxy (`www.topazdex.com/api/0x`, 0.6% Topaz integrator fee included), with closed-form split sizing. 0x charges fees in the sell or the buy token depending on the pair, and both cases are accepted and capped. Arc's Settler registry has no previous Settler (`prev(2)` reverts), so only the current Settler is accepted there. `liquidity-zaps.md` documents the proxy, the fees, the rate limit, the split formula and the validation checklist. `skill.json` lists the proxy under `zap_quotes`.
@@ -611,7 +614,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.4.1...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.5.0...HEAD
+[3.5.0]: https://github.com/topazdex/agent-skill/compare/v3.4.1...v3.5.0
 [3.4.1]: https://github.com/topazdex/agent-skill/compare/v3.4.0...v3.4.1
 [3.4.0]: https://github.com/topazdex/agent-skill/compare/v3.3.0...v3.4.0
 [3.3.0]: https://github.com/topazdex/agent-skill/compare/v3.2.1...v3.3.0
