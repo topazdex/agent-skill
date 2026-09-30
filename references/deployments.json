@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "reviewedAt": "2026-09-20",
+  "reviewedAt": "2026-09-29",
   "sources": [
     "https://www.topazdex.com/docs/contracts",
     "https://api.topazdex.com/v1/deployments",
@@ -373,6 +373,22 @@
         "Multicall3": {
           "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
           "abi": "abis/Multicall3.json"
+        },
+        "AutoManageFactory": {
+          "address": "0x7bec70E961370385d73B209c95a893e102f6b27a",
+          "abi": "abis/deployed/TopazManagedCLFactory-bb79e797.json",
+          "abiSha256": "bb79e797e59842dd9a39c0ec4dc1cff2e79c97c4363a979570b611cbd03234f4",
+          "blockNumber": 123914617
+        },
+        "AutoManageZap": {
+          "address": "0xAC5707dF3A26A67E37995A03ED2255C95B57CE33",
+          "abi": "abis/deployed/TopazManagedCLZap-82800bad.json",
+          "abiSha256": "82800bad7c165b05f400a4190e2de4cd525af75e392fcb6973f4e34238ce8d0b"
+        },
+        "AutoManageLens": {
+          "address": "0x50e6a11e2BdF48a8bcb9Fa9b505dfCb10c4C2BBF",
+          "abi": "abis/deployed/TopazManagedCLLens-52d003d1.json",
+          "abiSha256": "52d003d1f8354c3cf31aff389ecdbb72822d5724b93523c15b1e06ab728f12ad"
         }
       }
     },
@@ -630,6 +646,22 @@
         "Multicall3": {
           "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
           "abi": "abis/Multicall3.json"
+        },
+        "AutoManageFactory": {
+          "address": "0x94765515D5b86FC46585055790ca17cb3252C079",
+          "abi": "abis/deployed/TopazManagedCLFactory-bb79e797.json",
+          "abiSha256": "bb79e797e59842dd9a39c0ec4dc1cff2e79c97c4363a979570b611cbd03234f4",
+          "blockNumber": 72083910
+        },
+        "AutoManageZap": {
+          "address": "0x765Ac48e102ebb31F33F82cf9b9C660639E54B9f",
+          "abi": "abis/deployed/TopazManagedCLZap-82800bad.json",
+          "abiSha256": "82800bad7c165b05f400a4190e2de4cd525af75e392fcb6973f4e34238ce8d0b"
+        },
+        "AutoManageLens": {
+          "address": "0x8fA5f9e073DACa98b0020FC27e13C7c0f959FFC8",
+          "abi": "abis/deployed/TopazManagedCLLens-52d003d1.json",
+          "abiSha256": "52d003d1f8354c3cf31aff389ecdbb72822d5724b93523c15b1e06ab728f12ad"
         }
       }
     },
@@ -1164,6 +1196,12 @@
       },
       "nativeRouterLegs": false,
       "contracts": {
+        "CLZap": {
+          "address": "0xA3e7B9a8c3fb6b54381ECEfC2C3E1cBe991e9b8B",
+          "abi": "abis/deployed/CLZap.json",
+          "transactionHash": "0x368b309eecdc5d36928621365b59329fba9c9d622e9a94b3fcf75d692ac15bc5",
+          "blockNumber": 22548605
+        },
         "SpokeBudgetComposer": {
           "address": "0x5DA6456fa2560071DD29871ca045908f98932865",
           "abi": "abis/deployed/SpokeBudgetComposer-b6773a3c.json",
@@ -1401,6 +1439,22 @@
         "Multicall3": {
           "address": "0xcA11bde05977b3631167028862bE2a173976CA11",
           "abi": "abis/Multicall3.json"
+        },
+        "AutoManageFactory": {
+          "address": "0xd791ED4A795F4A8F774cB42873963dd2906E2591",
+          "abi": "abis/deployed/TopazManagedCLFactory-bb79e797.json",
+          "abiSha256": "bb79e797e59842dd9a39c0ec4dc1cff2e79c97c4363a979570b611cbd03234f4",
+          "blockNumber": 22661078
+        },
+        "AutoManageZap": {
+          "address": "0xb95CaaCCb808a4d276c2dC32E8B89cC15A10D703",
+          "abi": "abis/deployed/TopazManagedCLZap-82800bad.json",
+          "abiSha256": "82800bad7c165b05f400a4190e2de4cd525af75e392fcb6973f4e34238ce8d0b"
+        },
+        "AutoManageLens": {
+          "address": "0x92582B0cAC1b36a1d6d66B521cF6Bc9a827b95ce",
+          "abi": "abis/deployed/TopazManagedCLLens-52d003d1.json",
+          "abiSha256": "52d003d1f8354c3cf31aff389ecdbb72822d5724b93523c15b1e06ab728f12ad"
         }
       }
     }

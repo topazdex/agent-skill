@@ -1,5 +1,5 @@
 // Read-only deployment checks. No signer, approvals, or financial transactions.
-import { keccak256, zeroPadValue } from "ethers";
+import { ZeroAddress, keccak256, zeroPadValue } from "ethers";
 import { DEPLOYMENTS, deployedContract } from "../config/deployments.js";
 import { chainProvider, contractOnChain, assertChain } from "../lib/multichain.js";
 
@@ -69,6 +69,26 @@ for (const chain of DEPLOYMENTS.filter((c) => !ids.length || ids.includes(c.chai
       await check("CLZap", "CL_FACTORY", addr("CLFactory"));
       await check("CLZap", "NPM", addr("NonfungiblePositionManager"));
       await check("CLZap", "WRAPPED_NATIVE", weth);
+      await check("CLZap", "ALLOWANCE_HOLDER", "0x0000000000001fF3684f28c67538d4D072C22734");
+    }
+    if (chain.contracts.AutoManageFactory) {
+      const factory = addr("AutoManageFactory");
+      await check("AutoManageFactory", "clFactory", addr("CLFactory"));
+      await check("AutoManageFactory", "nfpm", addr("NonfungiblePositionManager"));
+      await check("AutoManageFactory", "voter", addr("Voter"));
+      await check("AutoManageZap", "factory", factory);
+      await check("AutoManageZap", "allowanceHolder", "0x0000000000001fF3684f28c67538d4D072C22734");
+      await check("AutoManageZap", "wrappedNative", chain.wrappedNative ?? ZeroAddress);
+      try {
+        const lens = contractOnChain(chain.chainId, "AutoManageLens", provider);
+        const registry = contractOnChain(chain.chainId, "AutoManageFactory", provider);
+        const vaults = (await readWithRetry(() => lens.getVaults(factory, { blockTag: block }))) as Array<{ vault: string }>;
+        const count = (await readWithRetry(() => registry.vaultCount({ blockTag: block }))) as bigint;
+        if (BigInt(vaults.length) !== count) issues.push(`AutoManageLens.getVaults: ${vaults.length} vaults, factory vaultCount ${count}`);
+        for (const { vault } of vaults) {
+          if (!(await readWithRetry(() => registry.isVault(vault, { blockTag: block })))) issues.push(`AutoManageFactory.isVault(${vault}) is false`);
+        }
+      } catch (error) { issues.push(`AutoManageLens.getVaults: ${String(error)}`); }
     }
     await assertChain(provider, chain.chainId);
     failures += issues.length;

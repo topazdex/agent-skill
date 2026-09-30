@@ -39,6 +39,8 @@ src/
 │   ├── pricing.ts      # Token USD price (subgraph or DexScreener)
 │   ├── topazApi.ts     # fetchV1 / fetchV1Pages for the public multichain API (/v1)
 │   ├── statsApi.ts     # DEPRECATED client for the legacy BNB-only /api/stats reports
+│   ├── zeroX.ts        # validated 0x swap legs for the zaps (Topaz website proxy) + split sizing
+│   ├── autoManageBuilders.ts # Auto Manage deposit / redeem / claim / zap-in / zap-out calldata
 │   └── epoch.ts        # WEEK / epochStart / vote window helpers
 ├── read/               # No-signer reads (RPC + subgraph)
 │   ├── pools.ts        # v2/v3 unified pool info
@@ -47,6 +49,7 @@ src/
 │   ├── locks.ts        # veTOPAZ locks
 │   ├── votes.ts        # current vote per veNFT / spoke position
 │   ├── spokePositions.ts # XTopazVotingVault positions and vault state
+│   ├── autoManage.ts   # Auto Manage vaults via the lens, a wallet's shares and rewards
 │   ├── claimable.ts    # gauge, fee, bribe (+ BNB rebase) rewards
 │   ├── apr.ts          # gauge / fee / voting / rebase APR
 │   ├── quotes.ts       # v2 / v3 / mixed quoting + best-route search
@@ -70,6 +73,7 @@ src/
     ├── claim.ts
     ├── bribe.ts
     ├── position.ts     # spoke xTOPAZ positions (XTopazVotingVault)
+    ├── autoManage.ts   # Auto Manage vaults on BNB, Robinhood and Arc
     └── relay.ts        # BNB relays (managed veTOPAZ)
 ```
 
@@ -166,6 +170,8 @@ yarn tsx src/cli/stats.ts gauges --chain robinhood --limit 10
 yarn tsx src/cli/stats.ts vote   --chain robinhood --id 66                  # spoke position id
 yarn tsx src/cli/position.ts vault --chain ethereum
 yarn tsx src/cli/position.ts list  --chain base --address 0xYOUR_WALLET
+yarn tsx src/cli/autoManage.ts vaults    --chain robinhood
+yarn tsx src/cli/autoManage.ts zap-in    --chain bnb --vault 0xVAULT --token USDT --amount 200 --from 0xYOUR_WALLET   # builds + simulates; --execute sends
 
 # Writes — PRIVATE_KEY required; the wallet pays gas in that chain's native asset
 yarn tsx src/cli/position.ts stake   --chain base --amount 100 [--pool 0xPOOL --weight 100]

@@ -1,6 +1,6 @@
 # Five-chain deployment catalog
 
-Reviewed 2026-09-20 UTC. [deployments.json](deployments.json) is the machine-readable catalog: every contract is keyed by EVM chain ID and role, with deployed ABI variant, deployment transaction/block and ABI digest where recorded. Entries without a bundled ABI are address references, not callable through the ABI helper. ABI paths are relative to this reference directory. The deployed ABIs are plain arrays; older ABI files may wrap the array in `abi`.
+Reviewed 2026-09-29 UTC. [deployments.json](deployments.json) is the machine-readable catalog: every contract is keyed by EVM chain ID and role, with deployed ABI variant, deployment transaction/block and ABI digest where recorded. Entries without a bundled ABI are address references, not callable through the ABI helper. ABI paths are relative to this reference directory. The deployed ABIs are plain arrays; older ABI files may wrap the array in `abi`.
 
 Use [multichain.md](multichain.md) for architecture, [bridging.md](bridging.md) for sends, and [multichain-integration.md](../developers/multichain-integration.md) for executable examples. The older [BNB address book](addresses.md) retains relay and token detail. Matching addresses on different chains do not imply matching roles.
 
@@ -76,6 +76,9 @@ Wrapped native: `0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c`.
 | RelayKeeperRegistry | `0xDB93DCfd7a560fB0757857787b6B3c2dBF6E56aA` | Standard token/infrastructure or legacy BNB reference |
 | RelayMaxi | `0xC3b3d7037DA1216A1770b3aC5cB8e2D4241AF251` | Standard token/infrastructure or legacy BNB reference |
 | RelayRewardDistribute | `0xb30d44B5E6Ab16494EA2B8455BB430926A935b84` | Standard token/infrastructure or legacy BNB reference |
+| AutoManageFactory | `0x7bec70E961370385d73B209c95a893e102f6b27a` | [JSON](abis/deployed/TopazManagedCLFactory-bb79e797.json) |
+| AutoManageZap | `0xAC5707dF3A26A67E37995A03ED2255C95B57CE33` | [JSON](abis/deployed/TopazManagedCLZap-82800bad.json) |
+| AutoManageLens | `0x50e6a11e2BdF48a8bcb9Fa9b505dfCb10c4C2BBF` | [JSON](abis/deployed/TopazManagedCLLens-52d003d1.json) |
 
 ## Robinhood Chain
 
@@ -121,6 +124,9 @@ Wrapped native: `0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73`.
 | UniversalRouter | `0x268d1C8a538Ecf6628838C11d581e1EABD13D6A4` | [JSON](abis/deployed/UniversalRouter.json) |
 | Permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` | Standard token/infrastructure or legacy BNB reference |
 | Multicall3 | `0xcA11bde05977b3631167028862bE2a173976CA11` | [JSON](abis/Multicall3.json) |
+| AutoManageFactory | `0x94765515D5b86FC46585055790ca17cb3252C079` | [JSON](abis/deployed/TopazManagedCLFactory-bb79e797.json) |
+| AutoManageZap | `0x765Ac48e102ebb31F33F82cf9b9C660639E54B9f` | [JSON](abis/deployed/TopazManagedCLZap-82800bad.json) |
+| AutoManageLens | `0x8fA5f9e073DACa98b0020FC27e13C7c0f959FFC8` | [JSON](abis/deployed/TopazManagedCLLens-52d003d1.json) |
 
 ## Base
 
@@ -216,10 +222,11 @@ Wrapped native: `0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2`.
 
 EVM ID **5042**; LayerZero EID **30417**; spoke. Gas: USDC, 18 native decimals. RPC: https://rpc.mainnet.arc.io. Explorer: https://arcscan.app.
 
-No wrapped native. USDC ERC20 is `0x3600000000000000000000000000000000000000`, 6 decimals. The WETH stub is not a token. Use token-only router paths; bridge messaging fees still use native USDC units.
+No wrapped native. USDC ERC20 is `0x3600000000000000000000000000000000000000`, 6 decimals. The WETH stub is not a token: `NonfungiblePositionManager.WETH9()` and `CLZap.WRAPPED_NATIVE()` return `0x8bcEaA40B9AcdfAedF85AdF4FF01F5Ad6517937f`, a placeholder whose every call reverts with `UnsupportedProtocolError()`, so native paths fail closed. Use token-only router paths; bridge messaging fees still use native USDC units.
 
 | Contract | Address | ABI |
 |---|---|---|
+| CLZap | `0xA3e7B9a8c3fb6b54381ECEfC2C3E1cBe991e9b8B` | [Interface ABI](abis/deployed/CLZap.json) |
 | SpokeBudgetComposer | `0x5DA6456fa2560071DD29871ca045908f98932865` | [JSON](abis/deployed/SpokeBudgetComposer-b6773a3c.json) |
 | SpokeStakeComposer | `0xbba1C3b415cF8212Cf3Ce11e726ab62125BDc6dB` | [JSON](abis/deployed/SpokeStakeComposer-54ed51ad.json) |
 | XTopazOFT | `0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6` | [JSON](abis/deployed/XTopazOFT-7f2afbed.json) |
@@ -255,6 +262,9 @@ No wrapped native. USDC ERC20 is `0x3600000000000000000000000000000000000000`, 6
 | UniversalRouter | `0x7B1d8745079C85af80Ff7A7eA7C2C4769Eab5348` | [JSON](abis/deployed/UniversalRouter.json) |
 | Permit2 | `0x000000000022D473030F116dDEE9F6B43aC78BA3` | Standard token/infrastructure or legacy BNB reference |
 | Multicall3 | `0xcA11bde05977b3631167028862bE2a173976CA11` | [JSON](abis/Multicall3.json) |
+| AutoManageFactory | `0xd791ED4A795F4A8F774cB42873963dd2906E2591` | [JSON](abis/deployed/TopazManagedCLFactory-bb79e797.json) |
+| AutoManageZap | `0xb95CaaCCb808a4d276c2dC32E8B89cC15A10D703` | [JSON](abis/deployed/TopazManagedCLZap-82800bad.json) |
+| AutoManageLens | `0x92582B0cAC1b36a1d6d66B521cF6Bc9a827b95ce` | [JSON](abis/deployed/TopazManagedCLLens-52d003d1.json) |
 
 ## Dynamic instances
 

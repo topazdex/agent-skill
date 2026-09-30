@@ -1,0 +1,734 @@
+[
+  {
+    "type": "function",
+    "name": "getUser",
+    "inputs": [
+      {
+        "name": "vault",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "u",
+        "type": "tuple",
+        "internalType": "struct TopazManagedCLLens.UserState",
+        "components": [
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "shares",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "amount0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "amount1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "earned",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "allowance0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "allowance1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "balance0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "balance1",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getUserPositions",
+    "inputs": [
+      {
+        "name": "factory",
+        "type": "address",
+        "internalType": "address"
+      },
+      {
+        "name": "user",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out",
+        "type": "tuple[]",
+        "internalType": "struct TopazManagedCLLens.UserState[]",
+        "components": [
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "shares",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "amount0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "amount1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "earned",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "allowance0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "allowance1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "balance0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "balance1",
+            "type": "uint256",
+            "internalType": "uint256"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVault",
+    "inputs": [
+      {
+        "name": "vault",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "s",
+        "type": "tuple",
+        "internalType": "struct TopazManagedCLLens.VaultState",
+        "components": [
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "strategy",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "pool",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "gauge",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token0",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token1",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "rewardToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "decimals0",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "decimals1",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "symbol0",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "symbol1",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "tickSpacing",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "poolFee",
+            "type": "uint24",
+            "internalType": "uint24"
+          },
+          {
+            "name": "totalSupply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "eligibleSupply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "total0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "total1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "idle0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "idle1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sqrtPriceX96",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "tick",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "twapTick",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "price1e36",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "isCalm",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "depositsEnabled",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "paused",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "globalPause",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "gaugeAlive",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "staked",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "inRange",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "main",
+            "type": "tuple",
+            "internalType": "struct ITopazManagedCLStrategy.Position",
+            "components": [
+              {
+                "name": "tokenId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "tickLower",
+                "type": "int24",
+                "internalType": "int24"
+              },
+              {
+                "name": "tickUpper",
+                "type": "int24",
+                "internalType": "int24"
+              }
+            ]
+          },
+          {
+            "name": "alt",
+            "type": "tuple",
+            "internalType": "struct ITopazManagedCLStrategy.Position",
+            "components": [
+              {
+                "name": "tokenId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "tickLower",
+                "type": "int24",
+                "internalType": "int24"
+              },
+              {
+                "name": "tickUpper",
+                "type": "int24",
+                "internalType": "int24"
+              }
+            ]
+          },
+          {
+            "name": "mainLiquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "altLiquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "rebalanceNonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "lastRebalance",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "positionWidth",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "maxTickDeviation",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "twapInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "minRebalanceInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxSwapBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "gaugeRewardRate",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "gaugePeriodFinish",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "pendingGaugeRewards",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "cumulativeGaugeRewards",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "rewardPerShare",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "rewardLiability",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "rewardFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  },
+  {
+    "type": "function",
+    "name": "getVaults",
+    "inputs": [
+      {
+        "name": "factory",
+        "type": "address",
+        "internalType": "address"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "states",
+        "type": "tuple[]",
+        "internalType": "struct TopazManagedCLLens.VaultState[]",
+        "components": [
+          {
+            "name": "vault",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "strategy",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "pool",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "gauge",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token0",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "token1",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "rewardToken",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
+            "name": "decimals0",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "decimals1",
+            "type": "uint8",
+            "internalType": "uint8"
+          },
+          {
+            "name": "symbol0",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "symbol1",
+            "type": "string",
+            "internalType": "string"
+          },
+          {
+            "name": "tickSpacing",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "poolFee",
+            "type": "uint24",
+            "internalType": "uint24"
+          },
+          {
+            "name": "totalSupply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "eligibleSupply",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "total0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "total1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "idle0",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "idle1",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "sqrtPriceX96",
+            "type": "uint160",
+            "internalType": "uint160"
+          },
+          {
+            "name": "tick",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "twapTick",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "price1e36",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "isCalm",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "depositsEnabled",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "paused",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "globalPause",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "gaugeAlive",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "staked",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "inRange",
+            "type": "bool",
+            "internalType": "bool"
+          },
+          {
+            "name": "main",
+            "type": "tuple",
+            "internalType": "struct ITopazManagedCLStrategy.Position",
+            "components": [
+              {
+                "name": "tokenId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "tickLower",
+                "type": "int24",
+                "internalType": "int24"
+              },
+              {
+                "name": "tickUpper",
+                "type": "int24",
+                "internalType": "int24"
+              }
+            ]
+          },
+          {
+            "name": "alt",
+            "type": "tuple",
+            "internalType": "struct ITopazManagedCLStrategy.Position",
+            "components": [
+              {
+                "name": "tokenId",
+                "type": "uint256",
+                "internalType": "uint256"
+              },
+              {
+                "name": "tickLower",
+                "type": "int24",
+                "internalType": "int24"
+              },
+              {
+                "name": "tickUpper",
+                "type": "int24",
+                "internalType": "int24"
+              }
+            ]
+          },
+          {
+            "name": "mainLiquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "altLiquidity",
+            "type": "uint128",
+            "internalType": "uint128"
+          },
+          {
+            "name": "rebalanceNonce",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "lastRebalance",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "positionWidth",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "maxTickDeviation",
+            "type": "int24",
+            "internalType": "int24"
+          },
+          {
+            "name": "twapInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "minRebalanceInterval",
+            "type": "uint32",
+            "internalType": "uint32"
+          },
+          {
+            "name": "maxSwapBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          },
+          {
+            "name": "gaugeRewardRate",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "gaugePeriodFinish",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "pendingGaugeRewards",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "cumulativeGaugeRewards",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "rewardPerShare",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "rewardLiability",
+            "type": "uint256",
+            "internalType": "uint256"
+          },
+          {
+            "name": "rewardFeeBps",
+            "type": "uint16",
+            "internalType": "uint16"
+          }
+        ]
+      }
+    ],
+    "stateMutability": "view"
+  }
+]

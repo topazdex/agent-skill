@@ -133,11 +133,18 @@ If you encounter a revert that isn't here, open an issue against [topazdex/agent
 - **UI string**: "Transaction took too long to confirm — rebuild and try again."
 - **Next step**: Rebuild with a fresh deadline.
 
+### `NG`
+
+- **Where**: `NonfungiblePositionManager.increaseLiquidity` when the position is staked (its owner is the pool's gauge).
+- **Means**: Only the gauge may add to a staked position, and `CLGauge` has no function that does.
+- **UI string**: "Unstake this position before adding to it."
+- **Next step**: `CLGauge.withdraw(tokenId)` (also claims emissions), increase, then restake with `NPM.approve(gauge, tokenId)` + `CLGauge.deposit(tokenId)`. See `references/liquidity-v3.md` → Position lifecycle.
+
 ### `Not approved`
 
 - **Where**: `NonfungiblePositionManager._isApprovedOrOwner` on every position-modifying method.
 - **Means**: The caller isn't the position's owner and doesn't have token-level or operator-level approval.
-- **Why**: Trying to manage a position you don't own — common when a contract tries to operate on a user's NFT without `setApprovalForAll`.
+- **Why**: Trying to manage a position you don't own — common when a contract tries to operate on a user's NFT without `setApprovalForAll`. Also seen on a **staked** position: the gauge owns the NFT, so the user must `CLGauge.withdraw(tokenId)` before decreasing, collecting or burning.
 - **UI string**: "Wallet isn't authorized to manage this position."
 - **Next step**: Surface an "Approve" CTA targeting `NonfungiblePositionManager.setApprovalForAll(<your contract>, true)`. Don't try to work around this by changing `recipient` — that's a different code path.
 

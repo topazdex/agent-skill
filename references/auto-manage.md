@@ -2,9 +2,15 @@
 
 Topaz **Auto Manage** is keeper-managed concentrated liquidity. A user picks a Slipstream (CL) pool, chooses Auto Manage instead of setting a price range, deposits both tokens in the vault's current ratio and receives a **transferable ERC-20 share** (18 decimals). The vault's strategy holds a MAIN Slipstream NFT around the live price plus a one-sided ALT NFT for leftover inventory, both staked in the pool's `CLGauge`. A Topaz-operated keeper re-ranges within on-chain bounds (optional swap capped and price-limited). Gauge emissions — **TOPAZ on BNB, xTOPAZ on spokes** — are forwarded to the vault and accrue to depositors as a **separate claimable balance**; they are never sold or compounded, so this is not an autocompounder. Withdrawals are always available in kind (token0 + token1 for your share of every position and idle balance) and never pause. Deposits are blocked while the vault or factory is paused, when the gauge is dead, or when the price sits outside the TWAP calm band.
 
-Live on **BNB (56), Robinhood (4663) and Arc (5042)** as of 2026-09-28 (15 listed vaults: 11 / 2 / 2). No Auto Manage deployment exists on Base or Ethereum in this snapshot. Discover the inventory through the API on every request; counts and vault addresses are not configuration.
+Live on **BNB (56), Robinhood (4663) and Arc (5042)** as of 2026-09-29 (15 vaults: 11 / 2 / 2). No Auto Manage deployment exists on Base or Ethereum in this snapshot. Discover the inventory on every request; counts and vault addresses are not configuration.
 
-**Scope of this skill.** Everything below is read-side: discovery, vault metrics, a user's managed position. The skill does **not** yet carry Auto Manage ABIs, addresses or transaction builders. Do not invent deposit, withdraw or claim calldata; resolve the vault, strategy and factory from the API, verify them on-chain, and use the project's published ABI before building anything (see [Transactions](#transactions)).
+## Contracts and ABIs
+
+The [deployment catalog](deployments.md) lists each chain's `AutoManageFactory`, `AutoManageZap` and `AutoManageLens`, with ABIs in `abis/deployed/`. Vaults and strategies are per-pool clones of one implementation each, so they are not in the catalog; use [`TopazManagedCLVault`](abis/deployed/TopazManagedCLVault-95f2825b.json) and [`TopazManagedCLStrategy`](abis/deployed/TopazManagedCLStrategy-21f8fbf1.json) for any vault address.
+
+Find vaults on-chain with `lens.getVaults(factory)`, which returns every vault the factory registered with its live state (tokens, decimals, totals, `isCalm`, `depositsEnabled`, `paused`, `globalPause`, `gaugeAlive`, range). Before acting on a vault address from anywhere else, confirm `factory.isVault(vault)` on that chain. Deployment manifests in the ALM repo list only some vaults; the factory is the source of truth. Use `/v1/auto-manage` (below) for APR, TVL and history, which the lens does not compute.
+
+From `scripts/`: `listAutoManageVaults(chainId)`, `getAutoManageVault(chainId, vault)`, `getAutoManagePositions(chainId, owner)` and `depositBlocker(state)` in `src/read/autoManage.ts`.
 
 ## Discover vaults
 
@@ -28,6 +34,8 @@ curl 'https://api.topazdex.com/v1/auto-manage/vaults/56/0x1fa7b23ff3ebb0fee2450a
 curl 'https://api.topazdex.com/v1/auto-manage/vaults/56/0x1fa7b23ff3ebb0fee2450a9db1cce5bcf6d8e8c2/history?interval=1d&limit=30'
 yarn tsx src/cli/stats.ts v1 /auto-manage/vaults --listed true --limit 200
 ```
+
+Counts from the API and the lens can differ briefly after a new vault is created: the lens is live, the API is indexed.
 
 ## Reading a vault
 
@@ -82,7 +90,57 @@ On BNB the `topaz-ve` subgraph indexes the same ledger for GraphQL: `almVaults`,
 
 ## Transactions
 
-Deposits, withdrawals and reward claims are calls on the vault contract (with an optional single-token zap contract), payable by the share owner after ERC-20 approvals to the vault. **This skill has no Auto Manage ABI, address catalog or builder yet**, so treat any such request the way `SKILL.md` treats other uncatalogued writes: explain the flow, read the gates (`live.depositsEnabled`, `live.isCalm`, `paused`, `globalPause`, gauge alive), confirm the vault / strategy / factory addresses from the API and on-chain (`strategy`, `factory` on the vault), obtain the exact deployed ABI from the project's published artifacts, simulate from the payer, and only then produce calldata with the user's explicit authorization. Withdrawals return token0 + token1 in kind — never promise a single-token exit without the zap. Never send native value to a vault on Arc; Arc uses ERC20 USDC only.
+All calls go to the vault or the chain's `AutoManageZap`, from the share owner. Resolve the vault through the lens and confirm `factory.isVault(vault)` first. Build and simulate by default; broadcast only with the user's explicit instruction.
+
+**Gates.** Deposits and zap-ins need `depositsEnabled()` on the vault, no `globalPause` on the factory, and the lens's `isCalm` (the price is inside the TWAP calm band). The lens's `getVault` returns all three. **Withdrawals and claims never pause.**
+
+### Deposit, withdraw, claim
+
+| Action | Call | Approvals and minimums |
+|---|---|---|
+| Deposit both tokens | `vault.deposit(amount0Max, amount1Max, minShares, receiver, deadline)` → `(shares, used0, used1)` | Approve **both tokens to the vault**. `previewDeposit(amount0Max, amount1Max)` returns `(shares, used0, used1)`; take `minShares` from its shares minus slippage. Unused amounts stay in the wallet. |
+| Withdraw in kind | `vault.redeem(shares, minAmount0, minAmount1, receiver, owner, deadline)` → `(amount0, amount1)` | No approval when the owner calls. Take the minimums from `previewRedeem(shares)` minus slippage. Returns both tokens, never a single token. |
+| Claim rewards | `vault.claimRewards(receiver)` → `amount` | `earned(account)` is the claimable balance: TOPAZ on BNB, xTOPAZ on spokes. Principal is separate, and claims stay available after all shares are redeemed. |
+
+Shares are 18-decimal ERC-20s. To deposit one amount, match the other side to the vault's current `total0 : total1` ratio.
+
+### Zap in and zap out
+
+The zap takes one token in or pays one token out, swapping through 0x AllowanceHolder legs ([how to get and validate them](liquidity-zaps.md#0x-quotes-for-zaps)):
+
+```text
+zapIn(ZapIn z) / zapInNative(ZapIn z) payable
+ZapIn  = { vault, tokenIn, amountIn, swap0, swap1, minShares, receiver, refundTo, deadline }
+
+zapOut(ZapOut z) / zapOutNative(ZapOut z)
+ZapOut = { vault, shares, tokenOut, swap0, swap1, minOut, receiver, deadline }
+
+Swap   = { sellToken, sellAmount, data }   // data = the firm quote's AllowanceHolder exec() calldata
+```
+
+- `swap0` produces token0 and `swap1` token1 (zap in), or `swap0` sells token0 and `swap1` sells token1 (zap out). Request each firm quote with **the zap as taker and recipient** and the user as `txOrigin`. An empty leg is `{ sellToken: address(0), sellAmount: 0, data: 0x }`, for example when the input already is that pool token.
+- **Zap in:** approve `tokenIn` to the zap, or use `zapInNative` with `value = amountIn` and `tokenIn` = the chain's wrapped native. Size the split with the closed-form formula, using the vault's `total0` / `total1` as capacity. Set `minShares` from `previewDeposit(min0, min1)`, where `min0/min1` are the firm legs' `minBuyAmount` plus any input kept as a pool token, minus slippage. Leftovers go to `refundTo`.
+- **Zap out:** approve **the vault shares to the zap**. Take the amounts from `previewRedeem(shares)` and sell slightly less on each non-output leg (the scripts use 0.3% less). A leg that sells more than the redeem returns reverts, and the unsold remainder comes back as dust. `minOut` = the output token's direct amount minus slippage, plus each leg's `minBuyAmount`. `zapOutNative` pays the wrapped native out as the native coin.
+- **Arc:** `wrappedNative()` is `address(0)`, so the native entry points revert. Zap in and out with ERC20s such as USDC.
+- Zap errors: `Expired`, `SlippageTooHigh`, `InsufficientInput`, `InvalidSwap`, `SwapFailed`, `UnknownVault`, `NativeUnsupported`, `ZeroAmount`.
+
+Quotes are short-lived: build, simulate from the owner, and send within a few minutes. Take deadlines from the chain's latest block time, because the contracts check `block.timestamp`.
+
+### Scripts
+
+`src/lib/autoManageBuilders.ts` has `buildAutoManageDepositTx`, `buildAutoManageRedeemTx`, `buildAutoManageClaimTx`, `buildAutoManageZapInTx`, `buildAutoManageZapOutTx` and `simulateBuiltTx`. Each checks the gates and balances, then returns the approvals still missing and the call, without broadcasting. The CLI wraps them:
+
+```bash
+yarn tsx src/cli/autoManage.ts vaults --chain arc
+yarn tsx src/cli/autoManage.ts positions --chain bnb --address 0xYOU
+yarn tsx src/cli/autoManage.ts deposit --chain robinhood --vault 0xVAULT --amount0 0.5 --from 0xYOU
+yarn tsx src/cli/autoManage.ts zap-in --chain bnb --vault 0xVAULT --token USDT --amount 200 --from 0xYOU
+yarn tsx src/cli/autoManage.ts zap-out --chain bnb --vault 0xVAULT --token BNB --percent 50 --from 0xYOU
+yarn tsx src/cli/autoManage.ts withdraw --chain bnb --vault 0xVAULT --percent 100 --from 0xYOU
+yarn tsx src/cli/autoManage.ts claim --chain bnb --vault 0xVAULT --from 0xYOU
+```
+
+Every flow was run end to end on a BNB fork on 2026-09-29 with live 0x quotes: zap in from USDT and from native BNB, two-token deposit, zap out to USDT, in-kind redeem and reward claim.
 
 ## Pitfalls
 
