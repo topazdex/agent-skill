@@ -133,7 +133,7 @@
     "zaps": "references/liquidity-zaps.md"
   },
   "zap_quotes": {
-    "description": "Public 0x AllowanceHolder proxy for CLZap and Auto Manage zap swap legs. Includes the 0.6% Topaz integrator fee; 0x adds its own fee. Fees are netted from buyAmount. Rate-limited; no Arc liquidity. Validate every firm quote (see references/liquidity-zaps.md).",
+    "description": "Public 0x AllowanceHolder proxy for CLZap and Auto Manage zap swap legs on all five chains. Includes the 0.6% Topaz integrator fee; 0x adds its own fee. Fees are netted from buyAmount. Rate-limited. Validate every firm quote (see references/liquidity-zaps.md).",
     "proxy": "https://www.topazdex.com/api/0x",
     "paths": ["swap/allowance-holder/price", "swap/allowance-holder/quote"],
     "integrator_fee_bps": 60

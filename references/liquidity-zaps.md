@@ -4,9 +4,9 @@ CL Zap creates a **new, initially unstaked NFT in an existing CL pool** from one
 
 The [deployment catalog](deployments.md) includes CLZap on all five chains, with the [integration ABI](abis/deployed/CLZap.json). The ABI is the user-facing function/event/error surface, not a claim that admin functions are included.
 
-**Rollout.** The contract is deployed and unpaused on every chain, but as of 2026-09-29 the website enables the zap on **BNB only**. Robinhood, Base, Ethereum and Arc are deployed from unchanged source and wait on full zap simulation and canary deposits. On those chains, a zap built from this guide is outside the website's tested path: simulate the complete transaction and tell the user it is a new rollout.
+**Live on all five chains.** The website offers single-token zaps on BNB, Robinhood, Base, Ethereum and Arc. It covers regular CL positions with full or custom ranges through CLZap, and Topaz Auto vaults through the separate [Auto Manage zap](auto-manage.md#zap-in-and-zap-out) on the chains where Auto Manage runs (BNB, Robinhood, Arc). Native and one-sided inputs are supported except on Arc.
 
-**Arc.** Input is the USDC ERC20 (`0x3600…0000`, 6 decimals) only. `WRAPPED_NATIVE()` returns a placeholder that always reverts, so native input and `unwrapNativeRefund` fail. 0x currently has no Arc liquidity, so an Arc zap works only when no swap leg is needed: USDC into a USDC pair where the range needs only USDC, or a one-sided out-of-range mint funded in USDC.
+**Arc.** Fund zaps with ERC20s such as the USDC ERC20 (`0x3600…0000`, 6 decimals), never native value. `WRAPPED_NATIVE()` returns a placeholder that always reverts, so native input and `unwrapNativeRefund` fail. Arc's Settler registry has no previous Settler: `prev(2)` reverts, so accept only the current `ownerOf(2)` Settler there.
 
 ## Prepare and verify
 
@@ -33,7 +33,7 @@ GET https://www.topazdex.com/api/0x?path=swap/allowance-holder/quote&chainId=56&
 **Fees.** The proxy includes Topaz's **0.6% integrator fee** (`fees.integratorFee`, 60 bps), and 0x adds its own (`fees.zeroExFee`, 15 bps observed on 2026-09-29). 0x charges both in **either the sell token or the buy token**, depending on the pair. `buyAmount` and `minBuyAmount` are already net of both, so never subtract them again. `fees.integratorFees` repeats `integratorFee` as a list; count it once. Disclose the fees to the user.
 
 **Constraints.**
-- 0x currently has no liquidity on Arc (`liquidityAvailable: false`). An Arc zap works only when no swap leg is needed.
+- `liquidityAvailable: false` means 0x has no route for that pair and size right now. Treat it as "no zap route", not as a chain-wide outage.
 - The proxy is rate-limited and answers `429` under load. Back off and retry. Size splits in closed form (below), never with an iterative search.
 - Quotes are firm for a short time. Build, simulate and submit promptly, and rebuild rather than reuse a stale quote.
 
@@ -53,7 +53,7 @@ If the input is one of the pool tokens, its "rate" is 1:1 and it needs no quote.
 - `issues.simulationIncomplete` is `false` and `invalidSourcesPassed` is empty
 - no buy, sell or transfer tax in `tokenMetadata`
 - each fee is a known kind, charged in the sell or buy token, and within its cap against that token's gross amount
-- the `exec(operator, token, amount, target, data)` envelope sells exactly the requested token and amount, with `operator == target` equal to the SettlerRegistry's current `ownerOf(2)` or previous `prev(2)` Settler on that chain
+- the `exec(operator, token, amount, target, data)` envelope sells exactly the requested token and amount, with `operator == target` equal to the SettlerRegistry's current `ownerOf(2)` Settler, or its previous `prev(2)` Settler where one exists (not on Arc, where `prev(2)` reverts). Never fall back to `prev` when `ownerOf` fails
 
 Then simulate the whole zap from the user's wallet. From `scripts/`: `indicativeBuyAmount`, `firmSwapLeg`, `validateFirmQuote`, `acceptedSettlers` and `findSplit` in `src/lib/zeroX.ts` implement all of this; set `TOPAZ_ZEROX_PROXY_URL` to use another proxy.
 

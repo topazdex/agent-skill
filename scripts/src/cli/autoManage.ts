@@ -48,8 +48,8 @@ the owner once approvals are in place. Add --execute to send them with PRIVATE_K
   ${CHAIN_FLAG_HELP}
 
 Vaults exist on BNB (56), Robinhood (4663) and Arc (5042). Zaps swap through 0x
-via the Topaz website proxy (0.6% Topaz fee plus the 0x fee, disclosed per leg);
-0x has no Arc liquidity, and Arc has no native input. Rewards (TOPAZ on BNB,
+via the Topaz website proxy (0.6% Topaz fee plus the 0x fee, disclosed per leg).
+Arc has no native input; zap with ERC20s such as USDC there. Rewards (TOPAZ on BNB,
 xTOPAZ on spokes) are claimed separately and never compounded.
 `.trim();
 

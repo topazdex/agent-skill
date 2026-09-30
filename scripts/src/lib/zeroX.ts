@@ -110,12 +110,19 @@ export async function indicativeBuyAmount(
   return out;
 }
 
-/** Current and previous AllowanceHolder Settlers; a quote must target one of them. */
-export async function acceptedSettlers(chainId: number): Promise<[string, string]> {
+/**
+ * Current and previous AllowanceHolder Settlers; a quote must target one of them.
+ * `ownerOf` is the trust anchor and its failure is fatal. `prev` reverts on a chain
+ * that never had an earlier Settler (Arc), which means there is no previous one.
+ */
+export async function acceptedSettlers(chainId: number): Promise<[string, string | null]> {
   const registry = new Contract(SETTLER_REGISTRY, registryAbi, provider(chainId));
   const [current, previous] = await Promise.all([
     registry.ownerOf(SETTLER_FEATURE_ID) as Promise<string>,
-    registry.prev(SETTLER_FEATURE_ID) as Promise<string>,
+    (registry.prev(SETTLER_FEATURE_ID) as Promise<string>).then(
+      (address) => address,
+      () => null,
+    ),
   ]);
   return [current, previous];
 }
@@ -183,7 +190,7 @@ function validateFees(q: ZeroXQuote, sellToken: string, buyToken: string, sellAm
 /** Trust-boundary checks on a firm quote (ported from cl-zap `validateFirmQuote`). */
 export function validateFirmQuote(
   q: ZeroXQuote,
-  ctx: { sellToken: string; buyToken: string; sellAmount: bigint; currentSettler: string; previousSettler: string },
+  ctx: { sellToken: string; buyToken: string; sellAmount: bigint; currentSettler: string; previousSettler: string | null },
 ): SwapLeg {
   const { sellToken, buyToken, sellAmount, currentSettler, previousSettler } = ctx;
   if (
@@ -213,9 +220,11 @@ export function validateFirmQuote(
   const [operator, token, amount, target, nested] = allowanceHolder.decodeFunctionData("exec", tx.data) as unknown as [
     string, string, bigint, string, string,
   ];
+  const isZero = (address: string) => /^0x0{40}$/i.test(address);
+  const knownSettler = same(target, currentSettler) || (previousSettler !== null && !isZero(previousSettler) && same(target, previousSettler));
   if (
-    /^0x0{40}$/i.test(currentSettler) || !same(operator, target) || !same(token, sellToken) || amount !== sellAmount
-    || nested.length < 22 || (!same(target, currentSettler) && !same(target, previousSettler))
+    isZero(currentSettler) || isZero(target) || !same(operator, target) || !same(token, sellToken) || amount !== sellAmount
+    || nested.length < 22 || !knownSettler
   ) {
     throw new Error("0x quote has an invalid AllowanceHolder envelope or an unregistered Settler");
   }

@@ -40,4 +40,4 @@ A chain supported by an aggregator or privacy service does not necessarily have 
 
 ## CL Zap versus xTOPAZ Zap
 
-CL Zap creates a new concentrated liquidity NFT from one input token. It is deployed on BNB, Robinhood, Base and Ethereum, with Arc pending. Use the [CL Zap call guide and ABI](liquidity-zaps.md). XTopazZap is the BNB vault entry path producing xTOPAZ shares. They have different spenders, ABIs, outputs and slippage constraints. Do not encode one using the other.
+CL Zap creates a new concentrated liquidity NFT from one input token. The website offers it on all five chains (BNB, Robinhood, Base, Ethereum and Arc) for full or custom ranges; Topaz Auto vaults have their own single-token zap ([Auto Manage](auto-manage.md#zap-in-and-zap-out)). Use the [CL Zap call guide and ABI](liquidity-zaps.md). XTopazZap is the BNB vault entry path producing xTOPAZ shares. They have different spenders, ABIs, outputs and slippage constraints. Do not encode one using the other.

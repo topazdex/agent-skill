@@ -86,6 +86,14 @@ describe("validateFirmQuote", () => {
     expect(() => validateFirmQuote(quote({}, [rogue, SELL, SELL_AMOUNT, rogue]), ctx)).toThrow(/unregistered Settler/);
     expect(() => validateFirmQuote(quote({}, [SETTLER, SELL, SELL_AMOUNT - 1n, SETTLER]), ctx)).toThrow(/envelope/);
   });
+
+  it("accepts only the current Settler where the registry has no previous one (Arc)", () => {
+    const arc = { ...ctx, previousSettler: null };
+    expect(() => validateFirmQuote(quote(), arc)).not.toThrow();
+    expect(() => validateFirmQuote(quote({}, [OLD_SETTLER, SELL, SELL_AMOUNT, OLD_SETTLER]), arc)).toThrow(/unregistered Settler/);
+    const zero = "0x" + "00".repeat(20);
+    expect(() => validateFirmQuote(quote({}, [zero, SELL, SELL_AMOUNT, zero]), { ...ctx, previousSettler: zero })).toThrow(/unregistered Settler/);
+  });
 });
 
 describe("findSplit", () => {
