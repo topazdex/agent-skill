@@ -21,6 +21,10 @@
     "stateMutability": "nonpayable"
   },
   {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
     "type": "function",
     "name": "escrow",
     "inputs": [],
@@ -205,12 +209,32 @@
   },
   {
     "type": "error",
+    "name": "Expired",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "InsufficientOutput",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidPath",
     "inputs": []
   },
   {
     "type": "error",
+    "name": "NativeTransferFailed",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "NativeUnsupported",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnexpectedNativeSender",
     "inputs": []
   },
   {

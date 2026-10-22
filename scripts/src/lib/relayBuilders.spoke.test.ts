@@ -199,6 +199,16 @@ describe("buildSpokeRelayZapTx", () => {
     expect(decoded?.args[2]).toBe((quote.out * 9_900n) / 10_000n);
   });
 
+  it("zaps xTOPAZ itself with an empty path, minOut = amount and a live deadline", async () => {
+    wire(FIX.rhEscrow);
+    const built = await buildSpokeRelayZapTx({ chainId: 4663, relay: "maxi", owner: OWNER, tokenIn: XTOPAZ, amountIn: 3n * E18 });
+
+    expect(built.approvals.map((a) => a.to)).toEqual([XTOPAZ]);
+    const decoded = new Interface(spokeRelayAbi("RelayEntryZap")).parseTransaction({ data: built.tx.data });
+    expect(decoded?.name).toBe("zapInToken");
+    expect(decoded?.args.toArray()).toEqual([1n, XTOPAZ, 3n * E18, "0x", 3n * E18, BigInt(clock.now + 600)]);
+  });
+
   it("never offers a native zap on Arc", async () => {
     wire(FIX.arcEscrow);
     await expect(buildSpokeRelayZapTx({ chainId: 5042, relay: "maxi", owner: OWNER, tokenIn: null, amountIn: E18 }))

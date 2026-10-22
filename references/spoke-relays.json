@@ -4,12 +4,12 @@
   "sync": "cd scripts && yarn sync:spoke-relays <path-to-xtopaz-relay>",
   "abis": {
     "ManagedEscrow": {
-      "abi": "abis/deployed/ManagedEscrow-91654266.json",
-      "abiSha256": "91654266784d7e4ce4e0e89913149e9efd27226fefe74402e5db40a511707cbf"
+      "abi": "abis/deployed/ManagedEscrow-82d730b7.json",
+      "abiSha256": "82d730b7a859b4388d715134b9fc5919714fc3169efa22181c80f58398dd5139"
     },
     "RelayEntryZap": {
-      "abi": "abis/deployed/RelayEntryZap-5d29c93a.json",
-      "abiSha256": "5d29c93a0c272944a8950dc3a3e0f319c02740122a3b77c501972b23f6085465"
+      "abi": "abis/deployed/RelayEntryZap-bd8f6f49.json",
+      "abiSha256": "bd8f6f490fe092796b0174070579173ac6341b63b21d0a43b6befd8c360487bc"
     },
     "AutoCompounderFactory": {
       "abi": "abis/deployed/AutoCompounderFactory-ca571bac.json",
@@ -20,12 +20,12 @@
       "abiSha256": "f91c1e69a982f32ebcb3bea8c90c881d63eafbb55765c9e9e7c6f5a5e3e7f97d"
     },
     "AutoCompounder": {
-      "abi": "abis/deployed/AutoCompounder-3ec08631.json",
-      "abiSha256": "3ec086313ea7171a8eb455ac4d0144ed1446140101c570fec767fc6ab077a92b"
+      "abi": "abis/deployed/AutoCompounder-2586a209.json",
+      "abiSha256": "2586a20918e64b4cac69e9c395026a6bf748f86a3be10eb730780261c31fdf95"
     },
     "CompoundConverter": {
-      "abi": "abis/deployed/CompoundConverter-bd84a952.json",
-      "abiSha256": "bd84a9526612073d59a66df7567ebd475d6ad3ed7d84fcc6178fbea6c2b10508"
+      "abi": "abis/deployed/CompoundConverter-65f8ee83.json",
+      "abiSha256": "65f8ee83dc17df23d425d55fcd727edc94571e8aa648212d6231642129f7a88f"
     },
     "LockedManagedReward": {
       "abi": "abis/deployed/LockedManagedReward-bc093862.json",

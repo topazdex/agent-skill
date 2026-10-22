@@ -41,6 +41,10 @@
     "stateMutability": "nonpayable"
   },
   {
+    "type": "receive",
+    "stateMutability": "payable"
+  },
+  {
     "type": "function",
     "name": "ALLOWED_CALLER",
     "inputs": [],
@@ -943,6 +947,11 @@
   {
     "type": "error",
     "name": "NotKeeper",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "NotSwapRouter",
     "inputs": []
   },
   {

@@ -1515,6 +1515,22 @@
   },
   {
     "type": "error",
+    "name": "GaugeNotAlive",
+    "inputs": [
+      {
+        "name": "pool",
+        "type": "address",
+        "internalType": "address"
+      }
+    ]
+  },
+  {
+    "type": "error",
+    "name": "InsufficientGas",
+    "inputs": []
+  },
+  {
+    "type": "error",
     "name": "InvalidLot",
     "inputs": []
   },
@@ -1572,6 +1588,11 @@
   {
     "type": "error",
     "name": "TransferRejected",
+    "inputs": []
+  },
+  {
+    "type": "error",
+    "name": "UnequalLengths",
     "inputs": []
   },
   {

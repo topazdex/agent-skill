@@ -421,7 +421,8 @@ function zapRoute(
 /**
  * RelayEntryZap.zapInETH(mTokenId, path, minOut, deadline) with value, or
  * zapInToken(mTokenId, tokenIn, amountIn, path, minOut, deadline) after approving tokenIn
- * to the zap. minOut is the QuoterV2 quote less slippage.
+ * to the zap. minOut is the QuoterV2 quote less slippage; xTOPAZ itself goes in with an
+ * empty path and minOut = amountIn. Every zap carries a deadline from chain time.
  */
 export async function buildSpokeRelayZapTx(args: SpokeRelayZapArgs): Promise<BuiltSpokeRelayAction> {
   const relay = openSpokeRelay(args.chainId, args.relay);
@@ -431,12 +432,16 @@ export async function buildSpokeRelayZapTx(args: SpokeRelayZapArgs): Promise<Bui
   if (args.amountIn <= 0n) throw new Error("amountIn must be positive");
   if (!relay.zap) throw new Error(`${deployment(relay.chainId).name} has no RelayEntryZap recorded`);
   const native = args.tokenIn === null;
-  const route = zapRoute(relay, args.tokenIn, args.path);
-  const path = encodePath(route.tokens, route.tickSpacings);
+  // xTOPAZ in takes no swap: the zap requires an empty path and a nonzero minimum no larger than the amount.
+  const direct = args.tokenIn !== null && getAddress(args.tokenIn) === relay.xTopaz;
+  const route: ResolvedZapRoute = direct
+    ? { tokens: [relay.xTopaz], tickSpacings: [], symbol: "xTOPAZ" }
+    : zapRoute(relay, args.tokenIn, args.path);
+  const path = direct ? "0x" : encodePath(route.tokens, route.tickSpacings);
 
-  const quoted = await quoteV3Path(path, args.amountIn, relay.chainId);
+  const quoted = direct ? args.amountIn : await quoteV3Path(path, args.amountIn, relay.chainId);
   if (quoted === 0n) throw new Error("the zap route returned no quote; the pool may be missing or too shallow");
-  const minOut = (quoted * (BPS - BigInt(bps))) / BPS;
+  const minOut = direct ? args.amountIn : (quoted * (BPS - BigInt(bps))) / BPS;
   const { now, unlockAt } = await spokeDepositGates(relay);
 
   let approvals: BuiltSpokeRelayTx[] = [];
