@@ -4,6 +4,8 @@ A **Relay** is an automated reward manager for a **managed veTOPAZ lock (mveTOPA
 
 Deposit once and the relay handles the weekly grind — claim fees + bribes + rebase, swap, vote, compound — instead of you doing it by hand every epoch.
 
+Everything up to [xTOPAZ spoke relays](#xtopaz-spoke-relays-robinhood-arc-base-ethereum) is BNB Chain (veTOPAZ). The same two products also exist for **xTOPAZ on the spokes**, with different mechanics: no veNFT, a deposit is liquid xTOPAZ, and exit returns liquid xTOPAZ. Read that section before building anything with `--chain` other than BNB.
+
 ## The two live relays (BNB Chain)
 
 | Relay | Type / contract | Address | Managed veNFT | What a depositor gets |
@@ -95,7 +97,7 @@ yarn tsx src/cli/relay.ts withdraw --id <veTokenId>
 yarn tsx src/cli/relay.ts claim    --id <veTokenId>
 ```
 
-`deposit` / `withdraw` / `claim` broadcast and require `PRIVATE_KEY`. Use them only after the user explicitly authorizes execution; otherwise hand back the builder calldata above. `list` is a read and needs no key (optional `BSC_RPC_URL` override). Relays exist on BNB Chain only; `relay.ts --chain <spoke>` refuses.
+`deposit` / `withdraw` / `claim` broadcast and require `PRIVATE_KEY`. Use them only after the user explicitly authorizes execution; otherwise hand back the builder calldata above. `list` is a read and needs no key (optional `BSC_RPC_URL` override). Without `--chain`, `list` prints the BNB relays and then every spoke relay; with `--chain <spoke>` the commands are the spoke ones below.
 
 ## Reading relay state
 
@@ -107,6 +109,108 @@ yarn tsx src/cli/relay.ts claim    --id <veTokenId>
 - **Reward & Distribute** — partial compounding plus a weekly USDT stream you can claim. Best for users who want some yield in stable form without fully unwinding.
 
 Compare against **manual** veTOPAZ management (vote + claim fees/bribes/rebase yourself, `voting.md` + `rewards-claiming.md`): manual keeps your own vote and full control but costs gas and attention every epoch; relays trade that control for automation.
+
+## xTOPAZ spoke relays (Robinhood, Arc, Base, Ethereum)
+
+The same two products run on the spokes, built for xTOPAZ and the spoke `XTopazVotingVault` instead of veTOPAZ. Contracts come from the `xtopaz-relay` repository; ABIs are bundled under `abis/deployed/` and listed in [spoke-relays.json](spoke-relays.json).
+
+### Deployment status
+
+**None are deployed yet.** [spoke-relays.json](spoke-relays.json) records every address as `null` and `status: "pending"`. Every reader, builder and CLI command then says "<relay> on <chain> is not yet deployed" and makes no RPC call. Never fill an address from the xtopaz-relay `deployments/dry-run/` files: those are simulated fork addresses.
+
+| Chain | Stage | Relays | Stable payout | Zap entry |
+|---|---|---|---|---|
+| Robinhood (4663) | launch | Topaz Maxi, Topaz Compound + USDG | USDG `0x5fc5…d168` (6 dp) | native ETH via WETH → xTOPAZ (ts 2000); WETH; USDG via USDG → WETH (ts 50) → xTOPAZ |
+| Arc (5042) | launch | Topaz Maxi, Topaz Compound + USDC | USDC `0x3600…0000` (6 dp) | USDC → xTOPAZ (ts 2000) with `zapInToken`. **No native zap on Arc** |
+| Base (8453) | staged | Topaz Maxi, Topaz Compound + USDC | USDC `0x8335…2913` | none until an xTOPAZ pool exists |
+| Ethereum (1) | staged | Topaz Maxi, Topaz Compound + USDC | USDC `0xA0b8…eB48` | none until an xTOPAZ pool exists |
+
+Staged chains wait for a Topaz Slipstream xTOPAZ pool before anything is deployed. After a broadcast, run `cd scripts && yarn sync:spoke-relays <path-to-xtopaz-relay>`. It reads `deployments/<network>.json` (never `dry-run/`), checks it against the vault, voter, xTOPAZ and stable recorded in the manifest, and fills the addresses. Then run `yarn verify:deployments <chainId>`, which checks the escrow, relay, factory and zap wiring.
+
+### Mental model
+
+| BNB | Spoke |
+|---|---|
+| `VotingEscrow` managed veNFT `mTokenId` | per-chain `ManagedEscrow`, managed id `mTokenId` (ids are per escrow and start at 1; read `relay.mTokenId()`) |
+| your veNFT is deposited | you deposit **liquid xTOPAZ**; the escrow gives you one non-transferable **deposit id** per relay, reused on re-entry |
+| `Voter.depositManaged(tokenId, mTokenId)` | `ManagedEscrow.depositManaged(mTokenId, amount)` after approving xTOPAZ to the escrow |
+| `Voter.withdrawManaged(tokenId)` → veNFT relocked 4 years | `ManagedEscrow.withdrawManaged(depositId)` → **liquid xTOPAZ** (principal + compounded xTOPAZ) |
+| rebase + fees + bribes | fees + bribes only; spokes have no rebase |
+
+- The escrow stakes the pooled xTOPAZ in `XTopazVotingVault` positions it owns (lots). The relay votes them, and the keeper harvests, swaps and compounds weekly, like on BNB.
+- **Maxi** (`AutoCompounder`): rewards become xTOPAZ and are booked to depositors by weight in `LockedManagedReward`. That xTOPAZ stays staked and voting, and is paid out on exit. There is nothing to claim along the way.
+- **Compound + Stable** (`CompoundConverter`): rewards that arrive as xTOPAZ compound the same way, and everything else is swapped to the chain's stable and sent to `FreeManagedReward`. Depositors claim the stable with `FreeManagedReward.getReward(depositId, tokens)`, before or after exit.
+- `managedToLocked(mTokenId)` / `managedToFree(mTokenId)` resolve the reward contracts, as on BNB (they are also recorded in the manifest).
+
+### Timing (UTC)
+
+| Window | Deposit / zap | Exit (once unlocked) / claimDeferred | Claim stable |
+|---|---|---|---|
+| Thu 00:00–01:00 | closed (`DistributeWindow`) | closed (`DistributeWindow`) | open |
+| Thu 01:00–Wed 23:00 | open | open | open |
+| Wed 23:00–Thu 00:00 | closed (`SpecialVotingWindow`) | open | open |
+
+- **Unlock.** Every deposit moves the deposit id's `unlockAt` to `XTopazVotingVault.lockUntil()`, which with `lockEpochs = 1` (live on Robinhood and Arc) is **the start of epoch N+2**. A top-up relocks the whole deposit. `withdrawManaged` reverts `Locked(unlockAt)` before then.
+- **Exit is all or nothing.** It pays weight + `LockedManagedReward.earned(xTOPAZ, id)` + anything previously deferred, from matured lots.
+- **Deferred.** Any shortfall goes to `deferred(depositId)`, for example when last epoch's compounds are still in an immature lot, or a lot's slate has a killed gauge. `claimDeferred(depositId)` pays it later. It is permissionless, always pays the owner, and pays 0 until matured xTOPAZ is available (`withdrawable(mTokenId)`).
+- **Any positive amount.** As on BNB there is no deposit minimum. Amounts too small to open a vault lot are buffered (`buffered(mTokenId)`) until the next deposit opens one; they count toward the depositor's weight right away.
+- **Deactivated** managed ids (`deactivated(mTokenId)`) take no deposits. Exits stay open.
+
+### Reads
+
+```ts
+import { getSpokeRelays, getSpokeRelayPositions } from "../scripts/src/index.js";
+
+await getSpokeRelays(4663);      // pending: { deployed: false, unavailable: "… is not yet deployed" }
+// deployed: managedBalance (escrow.balanceOfNFT(mTokenId)), deferredTotal, buffered, liveLots,
+// deactivated, keeperLastRun, compoundedThisEpoch, distributedThisEpoch (converter)
+
+await getSpokeRelayPositions(4663, owner);
+// per relay: depositId (escrow.depositIdOf(owner, mTokenId)), active (escrowType LOCKED),
+// weight (weights(id, mTokenId)), unlockAt, deferred, earnedXTopaz (LockedManagedReward.earned(xTOPAZ, id)),
+// freeRewards (FreeManagedReward.earned(token, id) for every reward token with earned > 0)
+```
+
+Static metadata (chain, stage, addresses, `mTokenId`, payout token, zap routes) is `SPOKE_RELAYS` in `scripts/src/config/relays.ts`. Look one up with `resolveSpokeRelay("maxi" | "converter" | name | address, chainId)`. `"reward-distribute"` is a BNB name and does not resolve on a spoke.
+
+### Builders (no broadcast)
+
+Each builder returns `{ kind, chainId, relay, approvals, tx, details, builtAt }`. Confirm `approvals` first, then send `tx`. Gates use chain time. Simulate with `simulateSpokeRelayTx(tx, owner)` once the approvals are in place.
+
+| Builder | Call | Notes |
+|---|---|---|
+| `buildSpokeRelayDepositTx({ chainId, relay, owner, amount })` | approve xTOPAZ → escrow; `ManagedEscrow.depositManaged(mTokenId, amount)` | `amount` is raw xTOPAZ (18 dp). Checks window, `deactivated` and balance. Returns `unlockAt`. |
+| `buildSpokeRelayZapTx({ chainId, relay, owner, tokenIn: null, amountIn })` | `RelayEntryZap.zapInETH(mTokenId, path, minOut, deadline)` with `value` | Native ETH via the WETH → xTOPAZ route. **Refused on Arc.** |
+| `buildSpokeRelayZapTx({ chainId, relay, owner, tokenIn, amountIn })` | approve tokenIn → zap; `zapInToken(mTokenId, tokenIn, amountIn, path, minOut, deadline)` | Configured routes: USDC on Arc; WETH and USDG on Robinhood. Pass `path: { tokens, tickSpacings }` for any other route; it must start at tokenIn and end at xTOPAZ. `minOut` is the QuoterV2 quote less `slippageBps` (default 100). With `tokenIn` = xTOPAZ there is no swap: the path is empty and `minOut` = `amountIn`, as the zap requires. Every zap carries a chain-time deadline, and unspent input comes back to the caller. |
+| `buildSpokeRelayWithdrawTx({ chainId, relay, owner, caller? })` | `ManagedEscrow.withdrawManaged(depositId)` | Sent by the owner or an `isApprovedForAll` operator (`caller`); the owner is always paid. Refuses before `unlockAt` and in the first hour. `details.expectedDeferred` estimates the part that would be deferred. |
+| `buildSpokeRelayClaimDeferredTx({ chainId, relay, owner })` | `ManagedEscrow.claimDeferred(depositId)` | Refuses with nothing deferred, or when nothing has matured to pay it. |
+| `buildSpokeRelayClaimTx({ chainId, relay, owner, tokens? })` | `FreeManagedReward.getReward(depositId, tokens)` | Claims every reward token with `earned > 0` (the stable for Compound + Stable). Never window-gated. Maxi has nothing here. |
+
+The zap always credits `msg.sender`. Its deposit uses the caller's existing deposit id and relocks it like a direct deposit.
+
+### CLI
+
+```bash
+yarn tsx src/cli/relay.ts list     --chain robinhood                 # status, managed balance, epoch activity
+yarn tsx src/cli/relay.ts position --chain arc [--address 0x…]        # deposit id, weight, unlockAt, earned, deferred
+yarn tsx src/cli/relay.ts deposit  --chain robinhood --relay maxi --amount 25
+yarn tsx src/cli/relay.ts zap      --chain robinhood --relay converter --token native --amount 0.05
+yarn tsx src/cli/relay.ts zap      --chain arc --relay maxi --token USDC --amount 100
+yarn tsx src/cli/relay.ts withdraw       --chain robinhood --relay maxi [--owner 0x…]   # --owner: exit as an approved operator
+yarn tsx src/cli/relay.ts claim-deferred --chain robinhood --relay maxi
+yarn tsx src/cli/relay.ts claim          --chain arc --relay converter
+```
+
+Spoke commands build and simulate from `--from` (default: the `PRIVATE_KEY` address) and print JSON. They send only with `--execute`, after the user explicitly asked to broadcast. Until a chain is deployed they print "… is not yet deployed" and exit 1 without touching the RPC.
+
+### Spoke gotchas
+
+- **Not veTOPAZ.** Spoke relays never take a veNFT or an `XTopazVotingVault` position id. The user deposits liquid xTOPAZ, or zaps ETH/USDC/USDG. Their own vault positions are separate, and depositing does not move them.
+- **The deposit id is not a vault position id.** Read it with `depositIdOf(owner, mTokenId)`. `vote.ts` and `claim.ts` do not take it.
+- **Locked to the start of epoch N+2**, and topping up relocks everything. Quote `unlockAt` before a deposit.
+- **Exit returns liquid xTOPAZ**, possibly in two steps (exit, then `claimDeferred`). The stable stays claimable after exit.
+- **Arc has no native leg.** Never build `zapInETH` on Arc. Use `zapInToken` with USDC `0x3600000000000000000000000000000000000000` (6 dp).
+- **Pending means pending.** If `spoke-relays.json` has no address, the relay does not exist on that chain yet. Do not substitute dry-run, factory-predicted or guessed addresses.
 
 ## Gotchas
 
