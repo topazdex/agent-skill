@@ -61,6 +61,14 @@ import abi55 from "../../../references/abis/deployed/TopazManagedCLZap-82800bad.
 import abi56 from "../../../references/abis/deployed/TopazManagedCLLens-52d003d1.json" with { type: "json" };
 import abi57 from "../../../references/abis/deployed/TopazManagedCLVault-95f2825b.json" with { type: "json" };
 import abi58 from "../../../references/abis/deployed/TopazManagedCLStrategy-21f8fbf1.json" with { type: "json" };
+import abi59 from "../../../references/abis/deployed/ManagedEscrow-91654266.json" with { type: "json" };
+import abi60 from "../../../references/abis/deployed/RelayEntryZap-5d29c93a.json" with { type: "json" };
+import abi61 from "../../../references/abis/deployed/AutoCompounderFactory-ca571bac.json" with { type: "json" };
+import abi62 from "../../../references/abis/deployed/CompoundConverterFactory-f91c1e69.json" with { type: "json" };
+import abi63 from "../../../references/abis/deployed/AutoCompounder-3ec08631.json" with { type: "json" };
+import abi64 from "../../../references/abis/deployed/CompoundConverter-bd84a952.json" with { type: "json" };
+import abi65 from "../../../references/abis/deployed/LockedManagedReward-bc093862.json" with { type: "json" };
+import abi66 from "../../../references/abis/deployed/FreeManagedReward-bbac6a61.json" with { type: "json" };
 
 export const DEPLOYED_ABIS: Record<string, InterfaceAbi> = {
   "abis/deployed/RelayManager.json": relayManagerAbi,
@@ -124,4 +132,12 @@ export const DEPLOYED_ABIS: Record<string, InterfaceAbi> = {
   "abis/deployed/TopazManagedCLLens-52d003d1.json": abi56,
   "abis/deployed/TopazManagedCLVault-95f2825b.json": abi57,
   "abis/deployed/TopazManagedCLStrategy-21f8fbf1.json": abi58,
+  "abis/deployed/ManagedEscrow-91654266.json": abi59,
+  "abis/deployed/RelayEntryZap-5d29c93a.json": abi60,
+  "abis/deployed/AutoCompounderFactory-ca571bac.json": abi61,
+  "abis/deployed/CompoundConverterFactory-f91c1e69.json": abi62,
+  "abis/deployed/AutoCompounder-3ec08631.json": abi63,
+  "abis/deployed/CompoundConverter-bd84a952.json": abi64,
+  "abis/deployed/LockedManagedReward-bc093862.json": abi65,
+  "abis/deployed/FreeManagedReward-bbac6a61.json": abi66,
 };

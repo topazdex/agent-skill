@@ -12,6 +12,10 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+- xTOPAZ spoke relays. `references/spoke-relays.json` catalogs Topaz Maxi and Topaz Compound + Stable on Robinhood and Arc (launch) and Base and Ethereum (staged), with the payout stable, zap routes and deployment fields. Nothing is deployed yet: every address is `null` with `status: "pending"`, and readers, builders and the CLI answer "not yet deployed" without touching the RPC. The `ManagedEscrow`, `RelayEntryZap`, `AutoCompounder`, `CompoundConverter`, both factories, `LockedManagedReward` and `FreeManagedReward` ABIs are vendored from xtopaz-relay under `abis/deployed/`, with pinned digests.
+- `config/relays.ts` adds the chain-aware `SPOKE_RELAYS` registry and `resolveSpokeRelay`. The BNB `RELAYS` entries are unchanged. `read/relays.ts` adds `getSpokeRelays` (managed balance, deferred total, lots, epoch compounding) and `getSpokeRelayPositions` (deposit id, weight, `unlockAt`, compounded xTOPAZ, deferred, claimable stable). `lib/relayBuilders.ts` adds deposit (approve xTOPAZ + `depositManaged`), zap (`zapInETH`, refused on Arc; `zapInToken` with a QuoterV2 minimum), `withdrawManaged`, `claimDeferred` and `FreeManagedReward.getReward` builders. They enforce the Thu 00:00–01:00 and Wed 23:00–Thu 00:00 UTC deposit windows and `unlockAt` against chain time. As on BNB there is no deposit minimum, and an `isApprovedForAll` operator can build an exit for the owner.
+- `relay.ts list` prints the BNB relays and then every spoke relay. With `--chain <spoke>`, `relay.ts` runs `position`, `deposit`, `zap`, `withdraw`, `claim-deferred` and `claim` (build and simulate; `--execute` sends). `yarn sync:spoke-relays <xtopaz-relay>` fills the catalog from broadcast manifests (never `dry-run/`), checking them against the vault, voter, xTOPAZ and stable. `verify:deployments` checks spoke relay wiring once a chain is deployed. `relays.md` documents the spoke mechanics: windows, the N+2 unlock, exit to liquid xTOPAZ, and deferred payouts.
+
 
 ## [3.5.0] — 2026-09-30
 

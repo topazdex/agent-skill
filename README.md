@@ -2,7 +2,7 @@
 
 Agent skill package for **Topaz Dex** on **BNB Chain, Robinhood Chain, Base, Ethereum and Arc**. Covers v2/Slipstream markets, chain-specific deployments and ABIs, swaps, liquidity, gauges, BNB veTOPAZ, xTOPAZ entry/redemption and bridging, spoke voting, rewards, analytics and website navigation.
 
-Everything here targets the live networks only; there are no testnet deployments. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Every read/write helper, builder and operator CLI takes an explicit chain (`chainId` / `--chain`); veTOPAZ locks, relays and rebases are BNB-only by protocol. Governance information is linked; privileged changes are not ordinary user actions.
+Everything here targets the live networks only; there are no testnet deployments. Start with the [xTOPAZ plain-language FAQ](references/xtopaz-faq.md), [multichain architecture](references/multichain.md), [five-chain addresses and ABIs](references/deployments.md), [builder examples](developers/multichain-integration.md) and [website navigation](references/website.md). Every read/write helper, builder and operator CLI takes an explicit chain (`chainId` / `--chain`); veTOPAZ locks, veTOPAZ relays and rebases are BNB-only by protocol; xTOPAZ spoke relays (Robinhood, Arc; Base and Ethereum staged; not yet deployed) are catalogued in `references/spoke-relays.json`. Governance information is linked; privileged changes are not ordinary user actions.
 
 **Current version:** `3.5.0` — see [`CHANGELOG.md`](./CHANGELOG.md). Machine-readable manifest: [`skill.json`](./skill.json).
 
@@ -252,7 +252,7 @@ Voting:
 
 Epochs are weekly, starting **Thursday 00:00:00 UTC**. Voting window opens at +1h and closes at the next epoch boundary -1h. See `references/epoch-timing.md`.
 
-**Relays (managed veTOPAZ).** Depositors can hand a veTOPAZ lock to a **Relay** (`Voter.depositManaged`) that aggregates voting power into a managed veNFT and auto-claims/swaps/votes/compounds each epoch. Two are live: **veTOPAZ Maxi** (compounds into TOPAZ in-place) and **Reward & Distribute** (also streams USDT to depositors). See `references/relays.md`.
+**Relays (managed veTOPAZ).** Depositors can hand a veTOPAZ lock to a **Relay** (`Voter.depositManaged`) that aggregates voting power into a managed veNFT and auto-claims/swaps/votes/compounds each epoch. Two are live: **veTOPAZ Maxi** (compounds into TOPAZ in-place) and **Reward & Distribute** (also streams USDT to depositors). The same two products for xTOPAZ on the spokes (**Topaz Maxi** and **Topaz Compound + USDG/USDC**, liquid xTOPAZ in and out) are wired into the registry, readers, builders and `relay.ts --chain <spoke>` but not yet deployed. See `references/relays.md`.
 
 ## Repository layout
 
@@ -301,7 +301,7 @@ yarn tsx src/cli/stats.ts pool 0x<pool-address>                     # BNB (defau
 yarn tsx src/cli/swap.ts quote --chain base --in ETH --out 0x<token> --amount 0.01
 ```
 
-`swap`, `lp`, `vote`, `claim`, `bribe` and the on-chain `stats` reads take `--chain <id|name>` for any of the five networks; `position` manages spoke xTOPAZ positions; `lock` and `relay` are BNB-only by protocol. Full env + per-CLI usage in `scripts/README.md`.
+`swap`, `lp`, `vote`, `claim`, `bribe` and the on-chain `stats` reads take `--chain <id|name>` for any of the five networks; `position` manages spoke xTOPAZ positions; `lock` is BNB-only by protocol; `relay` covers veTOPAZ relays on BNB and xTOPAZ spoke relays with `--chain <spoke>`. Full env + per-CLI usage in `scripts/README.md`.
 
 ## Developer guides
 
