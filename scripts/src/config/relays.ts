@@ -61,11 +61,13 @@ export const RELAYS: readonly RelayConfig[] = [
 const ALIASES: Record<string, RelayType> = {
   "maxi": "maxi",
   "vetopaz maxi": "maxi",
+  "topaz maxi": "maxi",
   "autocompounder": "maxi",
   "compounder": "maxi",
   "reward-distribute": "reward-distribute",
   "reward & distribute": "reward-distribute",
   "reward and distribute": "reward-distribute",
+  "topaz compound + usdt": "reward-distribute",
   "compoundconverter": "reward-distribute",
   "converter": "reward-distribute",
 };
@@ -284,7 +286,7 @@ const SPOKE_ALIASES: Record<string, SpokeRelayType> = {
 
 /**
  * Resolve a spoke relay on one chain by alias ("maxi" / "converter" / on-chain name) or relay
- * address. The BNB aliases "reward-distribute" do not apply: spokes have no Reward & Distribute.
+ * address. The BNB alias "reward-distribute" does not resolve on a spoke; its spoke counterpart is "converter".
  */
 export function resolveSpokeRelay(selector: string, chainId: number): SpokeRelayConfig | undefined {
   const s = selector.trim().toLowerCase();

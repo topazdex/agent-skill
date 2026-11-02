@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Interface, getAddress, type InterfaceAbi } from "ethers";
 
-// Fixture addresses only; the real manifest stays pending until a broadcast is synced.
+// Fixture addresses, independent of the synced manifest.
 const RAW = vi.hoisted(() => {
   const a = (byte: string) => "0x" + byte.repeat(20);
   return {

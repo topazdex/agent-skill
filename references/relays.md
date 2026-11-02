@@ -97,9 +97,11 @@ yarn tsx src/cli/relay.ts withdraw --id <veTokenId>
 yarn tsx src/cli/relay.ts claim    --id <veTokenId>
 ```
 
-`deposit` / `withdraw` / `claim` broadcast and require `PRIVATE_KEY`. Use them only after the user explicitly authorizes execution; otherwise hand back the builder calldata above. `list` is a read and needs no key (optional `BSC_RPC_URL` override). Without `--chain`, `list` prints the BNB relays and then every spoke relay; with `--chain <spoke>` the commands are the spoke ones below.
+`deposit` / `withdraw` / `claim` broadcast and require `PRIVATE_KEY`. Use them only after the user explicitly authorizes execution; otherwise hand back the builder calldata above. `list` is a read and needs no key (optional `BSC_RPC_URL`, `TOPAZ_RPC_4663` and `TOPAZ_RPC_5042` overrides). Without `--chain`, `list` prints the BNB relays and then every spoke relay; with `--chain <spoke>` the commands are the spoke ones below.
 
 ## Reading relay state
+
+For listing, APR and TVL on every chain, use `GET https://api.topazdex.com/v1/relays` (optional `?chainId=`). It returns the BNB, Robinhood and Arc relays together. Each row has `name`, `kind`, `mTokenId` (a string), `escrow`, `rewardToken` and `payoutToken` (with `priceUsd`), `aprEstimate` (an annual fraction: 0.40 is 40%, not APY), `aprInputs`, `tvlUsd`, `depositorCount` (null on BNB), `isActive` (null means stale: do not offer deposits) and `observation`. Use the RPC readers below for pre-transaction checks.
 
 `scripts/src/read/relays.ts` exposes `getRelays()` → for each relay: managed-veNFT voting power (`ve.balanceOfNFT(mTokenId)`) and the TOPAZ `compoundedThisEpoch` / USDT `distributedThisEpoch` (`amountCompounded` / `amountDistributed` keyed by the current epoch start). Static metadata (type, payout token, claim semantics, `mTokenId`) lives in `scripts/src/config/relays.ts` as `RELAYS`.
 
@@ -116,7 +118,7 @@ The same two products run on the spokes, built for xTOPAZ and the spoke `XTopazV
 
 ### Deployment status
 
-**None are deployed yet.** [spoke-relays.json](spoke-relays.json) records every address as `null` and `status: "pending"`. Every reader, builder and CLI command then says "<relay> on <chain> is not yet deployed" and makes no RPC call. Never fill an address from the xtopaz-relay `deployments/dry-run/` files: those are simulated fork addresses.
+**Robinhood and Arc are live** (deployed 2026-10-22; Robinhood block 95400253, Arc block 27342776). Base and Ethereum are staged: [spoke-relays.json](spoke-relays.json) records their addresses as `null` and `status: "pending"`, and every reader, builder and CLI command says "<relay> on <chain> is not yet deployed" without an RPC call. Never fill an address from the xtopaz-relay `deployments/dry-run/` files: those are simulated fork addresses.
 
 | Chain | Stage | Relays | Stable payout | Zap entry |
 |---|---|---|---|---|
@@ -138,6 +140,7 @@ Staged chains wait for a Topaz Slipstream xTOPAZ pool before anything is deploye
 | rebase + fees + bribes | fees + bribes only; spokes have no rebase |
 
 - The escrow stakes the pooled xTOPAZ in `XTopazVotingVault` positions it owns (lots). The relay votes them, and the keeper harvests, swaps and compounds weekly, like on BNB.
+- One keeper (`0x98e62D4C65fa5392DEd5b9B08DE90Bf6C4706ab6`) runs the BNB, Robinhood and Arc relays every 10 minutes. From Thu 01:05 UTC its first tick harvests each relay (claim → consolidate → swap → compound) and then votes in the same tick, in proportion to each pool's eligible reward value (at most 10 pools). Later ticks only retry leftover rewards, and a failed vote retries until Wed 22:45 UTC. Anyone may process leftover rewards in the epoch's final 24 hours.
 - **Maxi** (`AutoCompounder`): rewards become xTOPAZ and are booked to depositors by weight in `LockedManagedReward`. That xTOPAZ stays staked and voting, and is paid out on exit. There is nothing to claim along the way.
 - **Compound + Stable** (`CompoundConverter`): rewards that arrive as xTOPAZ compound the same way, and everything else is swapped to the chain's stable and sent to `FreeManagedReward`. Depositors claim the stable with `FreeManagedReward.getReward(depositId, tokens)`, before or after exit.
 - `managedToLocked(mTokenId)` / `managedToFree(mTokenId)` resolve the reward contracts, as on BNB (they are also recorded in the manifest).
@@ -152,8 +155,8 @@ Staged chains wait for a Topaz Slipstream xTOPAZ pool before anything is deploye
 
 - **Unlock.** Every deposit moves the deposit id's `unlockAt` to `XTopazVotingVault.lockUntil()`, which with `lockEpochs = 1` (live on Robinhood and Arc) is **the start of epoch N+2**. A top-up relocks the whole deposit. `withdrawManaged` reverts `Locked(unlockAt)` before then.
 - **Exit is all or nothing.** It pays weight + `LockedManagedReward.earned(xTOPAZ, id)` + anything previously deferred, from matured lots.
-- **Deferred.** Any shortfall goes to `deferred(depositId)`, for example when last epoch's compounds are still in an immature lot, or a lot's slate has a killed gauge. `claimDeferred(depositId)` pays it later. It is permissionless, always pays the owner, and pays 0 until matured xTOPAZ is available (`withdrawable(mTokenId)`).
-- **Any positive amount.** As on BNB there is no deposit minimum. Amounts too small to open a vault lot are buffered (`buffered(mTokenId)`) until the next deposit opens one; they count toward the depositor's weight right away.
+- **Deferred.** Any shortfall goes to `deferred(depositId)`, for example when last epoch's compounds are still in an immature lot, or a lot's slate has a killed gauge. `claimDeferred(depositId)` pays it later. It is permissionless, always pays the owner, and pays 0 until matured xTOPAZ is available (`withdrawable(mTokenId)`). The keeper never calls it: the depositor, or anyone on their behalf, must.
+- **Any positive amount.** As on BNB there is no deposit minimum. Amounts below the vault minimum (1 xTOPAZ) wait in `buffered(mTokenId)` until that epoch's lot opens; buffer left from an earlier epoch stays liquid and is never staked into a newer lot. Exits draw from the buffer first. Buffered xTOPAZ counts toward the depositor's weight right away.
 - **Deactivated** managed ids (`deactivated(mTokenId)`) take no deposits. Exits stay open.
 
 ### Reads
@@ -161,8 +164,8 @@ Staged chains wait for a Topaz Slipstream xTOPAZ pool before anything is deploye
 ```ts
 import { getSpokeRelays, getSpokeRelayPositions } from "../scripts/src/index.js";
 
-await getSpokeRelays(4663);      // pending: { deployed: false, unavailable: "… is not yet deployed" }
-// deployed: managedBalance (escrow.balanceOfNFT(mTokenId)), deferredTotal, buffered, liveLots,
+await getSpokeRelays(8453);      // staged: { deployed: false, unavailable: "… is not yet deployed (staged: …)" }
+await getSpokeRelays(4663);      // live: managedBalance (escrow.balanceOfNFT(mTokenId)), deferredTotal, buffered, liveLots,
 // deactivated, keeperLastRun, compoundedThisEpoch, distributedThisEpoch (converter)
 
 await getSpokeRelayPositions(4663, owner);
@@ -175,7 +178,7 @@ Static metadata (chain, stage, addresses, `mTokenId`, payout token, zap routes) 
 
 ### Builders (no broadcast)
 
-Each builder returns `{ kind, chainId, relay, approvals, tx, details, builtAt }`. Confirm `approvals` first, then send `tx`. Gates use chain time. Simulate with `simulateSpokeRelayTx(tx, owner)` once the approvals are in place.
+Each builder returns `{ kind, chainId, relay, approvals, tx, details, builtAt }`. Confirm `approvals` first, then send `tx`. Gates use chain time. Simulate with `simulateSpokeRelayTx(tx, owner)` once the approvals are in place. Pad gas estimates by about 30% for `depositManaged`, both zaps, `withdrawManaged` and `claimDeferred`: the escrow re-weights vault lots and checkpoints rewards, which costs more in the mined block than in the estimate. An under-gassed call reverts `InsufficientGas()`; resend it with more gas. `--execute` pads by 30%.
 
 | Builder | Call | Notes |
 |---|---|---|
@@ -201,15 +204,16 @@ yarn tsx src/cli/relay.ts claim-deferred --chain robinhood --relay maxi
 yarn tsx src/cli/relay.ts claim          --chain arc --relay converter
 ```
 
-Spoke commands build and simulate from `--from` (default: the `PRIVATE_KEY` address) and print JSON. They send only with `--execute`, after the user explicitly asked to broadcast. Until a chain is deployed they print "… is not yet deployed" and exit 1 without touching the RPC.
+Spoke commands build and simulate from `--from` (default: the `PRIVATE_KEY` address) and print JSON. They send only with `--execute`, after the user explicitly asked to broadcast. On Base and Ethereum (staged) they print "… is not yet deployed" and exit 1 without touching the RPC.
 
 ### Spoke gotchas
 
 - **Not veTOPAZ.** Spoke relays never take a veNFT or an `XTopazVotingVault` position id. The user deposits liquid xTOPAZ, or zaps ETH/USDC/USDG. Their own vault positions are separate, and depositing does not move them.
-- **The deposit id is not a vault position id.** Read it with `depositIdOf(owner, mTokenId)`. `vote.ts` and `claim.ts` do not take it.
+- **The deposit id is not a vault position id.** Read it with `depositIdOf(owner, mTokenId)`. `vote.ts`, `claim.ts` and `position.ts` do not take it. A depositor's relay deposits also appear in `/v1/accounts/{address}/voting-positions` and `/portfolio` as `kind: "spoke-managed-position"`, whose `localTokenId` is this deposit id.
 - **Locked to the start of epoch N+2**, and topping up relocks everything. Quote `unlockAt` before a deposit.
 - **Exit returns liquid xTOPAZ**, possibly in two steps (exit, then `claimDeferred`). The stable stays claimable after exit.
 - **Arc has no native leg.** Never build `zapInETH` on Arc. Use `zapInToken` with USDC `0x3600000000000000000000000000000000000000` (6 dp).
+- **The xTOPAZ pools are shallow.** A zap swaps through the chain's xTOPAZ pool, and `minOut` is set off a quote that already includes price impact. Show `quotedXTopaz` before a large zap; above a few hundred dollars, suggest buying xTOPAZ in smaller swaps and depositing it directly.
 - **Pending means pending.** If `spoke-relays.json` has no address, the relay does not exist on that chain yet. Do not substitute dry-run, factory-predicted or guessed addresses.
 
 ## Gotchas

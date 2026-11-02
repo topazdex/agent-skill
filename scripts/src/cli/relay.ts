@@ -117,7 +117,10 @@ async function outputSpoke(built: BuiltSpokeRelayAction, owner: string, execute:
   const wallet = signer(built.chainId);
   if (getAddress(await wallet.getAddress()) !== getAddress(owner)) throw new Error("--execute sends from PRIVATE_KEY; --from must match it");
   for (const step of [...built.approvals, built.tx]) {
-    const sent = await wallet.sendTransaction({ to: step.to, data: step.data, value: step.value });
+    // The escrow re-weights vault lots and checkpoints rewards, which costs more mined than estimated;
+    // an under-gassed call reverts InsufficientGas().
+    const estimate = await wallet.estimateGas({ to: step.to, data: step.data, value: step.value });
+    const sent = await wallet.sendTransaction({ to: step.to, data: step.data, value: step.value, gasLimit: (estimate * 13n) / 10n });
     const receipt = await sent.wait();
     console.log(`${step.label}: ${receipt?.hash} (status ${receipt?.status})`);
     if (receipt?.status !== 1) throw new Error(`${step.label} reverted`);

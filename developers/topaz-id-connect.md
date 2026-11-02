@@ -667,7 +667,8 @@ const receipt = await topazClient.waitForReceipt(hash);
   the action into one `sendCalls`, and confirm with `waitForReceipt`. veTOPAZ
   locks, veTOPAZ relays and xTOPAZ vault entry/redemption exist on BNB Chain only —
   that is a protocol fact, not a Topaz ID limit. xTOPAZ spoke relays follow the
-  same pattern (approval plus deposit or zap) once deployed; see
+  same pattern (approval plus deposit or zap) on Robinhood and Arc, with the gas
+  limit padded ~30%; see
   [`relays.md`](../references/relays.md). The skill's private-key CLIs are for
   operators; partner apps sign through Topaz ID instead.
 
