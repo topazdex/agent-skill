@@ -27,6 +27,7 @@
     "build": "tsc --noEmit",
     "validate": "tsx src/cli/validate.ts",
     "verify:deployments": "tsx src/cli/verify-deployments.ts",
+    "sync:spoke-relays": "tsx src/cli/sync-spoke-relays.ts",
     "smoke": "tsx src/cli/stats.ts smoke",
     "test": "vitest run",
     "test:watch": "vitest",

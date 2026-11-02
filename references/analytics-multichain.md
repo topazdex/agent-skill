@@ -21,6 +21,7 @@ Chain-qualified identities are `{chainId}/{address}` in paths and `chainId:addre
 | xTOPAZ | `/v1/xtopaz`, `/v1/xtopaz/epochs`, `/v1/xtopaz/rate-history` |
 | Bridge | `/v1/bridge?address=…`, `/v1/bridge/{guid}` |
 | Curation | `/v1/categories`, `/v1/curation`, `/v1/token-lists`, `/v1/token-lists/{chainId}` |
+| Relays | `/v1/relays` (optional `chainId`) — BNB and spoke relays with `aprEstimate` (annual fraction), `tvlUsd`, `isActive`, payout token; see [relays.md](relays.md) |
 | Auto Manage | `/v1/auto-manage/vaults`, `/v1/auto-manage/vaults/{chainId}/{vault}` (+ `/activity`, `/history`, `/rebalances`) |
 | Quotes | `/v1/quote-providers` — capabilities only; executable quotes come from `quote.topazdex.com` via [swapping-api.md](swapping-api.md) |
 

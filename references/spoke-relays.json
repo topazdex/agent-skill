@@ -1,0 +1,307 @@
+{
+  "schemaVersion": 1,
+  "source": "topazdex/xtopaz-relay deployments/<network>.json, written by script/Deploy.s.sol on broadcast. Static fields (stage, stable symbol, zapRoutes) mirror config/<network>.json. Null addresses mean not yet deployed.",
+  "sync": "cd scripts && yarn sync:spoke-relays <path-to-xtopaz-relay>",
+  "abis": {
+    "ManagedEscrow": {
+      "abi": "abis/deployed/ManagedEscrow-82d730b7.json",
+      "abiSha256": "82d730b7a859b4388d715134b9fc5919714fc3169efa22181c80f58398dd5139"
+    },
+    "RelayEntryZap": {
+      "abi": "abis/deployed/RelayEntryZap-bd8f6f49.json",
+      "abiSha256": "bd8f6f490fe092796b0174070579173ac6341b63b21d0a43b6befd8c360487bc"
+    },
+    "AutoCompounderFactory": {
+      "abi": "abis/deployed/AutoCompounderFactory-ca571bac.json",
+      "abiSha256": "ca571bac23414528a9476ad8a7aaa9879f570d3cc40ac78aeb23512e1aa2f42d"
+    },
+    "CompoundConverterFactory": {
+      "abi": "abis/deployed/CompoundConverterFactory-f91c1e69.json",
+      "abiSha256": "f91c1e69a982f32ebcb3bea8c90c881d63eafbb55765c9e9e7c6f5a5e3e7f97d"
+    },
+    "AutoCompounder": {
+      "abi": "abis/deployed/AutoCompounder-2586a209.json",
+      "abiSha256": "2586a20918e64b4cac69e9c395026a6bf748f86a3be10eb730780261c31fdf95"
+    },
+    "CompoundConverter": {
+      "abi": "abis/deployed/CompoundConverter-65f8ee83.json",
+      "abiSha256": "65f8ee83dc17df23d425d55fcd727edc94571e8aa648212d6231642129f7a88f"
+    },
+    "LockedManagedReward": {
+      "abi": "abis/deployed/LockedManagedReward-bc093862.json",
+      "abiSha256": "bc0938626ee4dd833a85087fbd145ce3fd09291ea2881a3e7bb9f58d76c82364"
+    },
+    "FreeManagedReward": {
+      "abi": "abis/deployed/FreeManagedReward-bbac6a61.json",
+      "abiSha256": "bbac6a6141bea3a8932302a1c18388fddfed56e4bd1dc66fc853dfe6097e3f98"
+    }
+  },
+  "chains": [
+    {
+      "chainId": 4663,
+      "network": "robinhood",
+      "stage": "launch",
+      "status": "deployed",
+      "deployBlock": 95400253,
+      "protocol": {
+        "vault": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+        "voter": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+        "xTopaz": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+        "swapRouter": "0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572",
+        "weth": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+        "stable": {
+          "address": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+          "symbol": "USDG",
+          "decimals": 6
+        }
+      },
+      "contracts": {
+        "ManagedEscrow": "0x06A62d9D13ef7080A9582feB11FB68A67ae260B5",
+        "RelayEntryZap": "0x438a5432Bae64feb54634F3D5290E76d88b481ae",
+        "AutoCompounderFactory": "0xe6EF9CB33eeE48B48Dd1D0d99c30bd38cfeb90Ed",
+        "CompoundConverterFactory": "0x66c1e63193149FA4DF2E19DCc5950c165D7eb43E",
+        "ManagedRewardsFactory": "0xC17b9737F4790D9c30295dBff1813c25988E2116",
+        "Optimizer": "0xD67B18297769524F72366E1E7cFc40AFb2B39E14",
+        "OptimizerRegistry": "0x5FeFF87F2B9359dB2C26005Cb04120706492B1D8",
+        "KeeperRegistry": "0x9868563bfc8B670D8bBDAF6c658822771dB7b334",
+        "RelayFactoryRegistry": "0x28186B18c6d899Df3f32f39464f5ED2c6ec8f479"
+      },
+      "relays": {
+        "maxi": {
+          "name": "Topaz Maxi",
+          "kind": "AUTO_COMPOUNDER",
+          "address": "0x90AE9E7cC506fFDEd79d85797EDD7417285c1a16",
+          "factory": "0xe6EF9CB33eeE48B48Dd1D0d99c30bd38cfeb90Ed",
+          "mTokenId": 1,
+          "token": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "lockedManagedReward": "0xAEe852f05c812a12d886669fA7eA86fe26DE4764",
+          "freeManagedReward": "0xF7163d463e3558C6A1f69A0Ec0D0979f08E9C1f9"
+        },
+        "converter": {
+          "name": "Topaz Compound + USDG",
+          "kind": "COMPOUND_CONVERTER",
+          "address": "0x1c6f2EB38910174b3a0B1038A8C921dcF98b0B5c",
+          "factory": "0x66c1e63193149FA4DF2E19DCc5950c165D7eb43E",
+          "mTokenId": 2,
+          "token": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+          "lockedManagedReward": "0x4286Ba3B23052dc7F9eb43c1fc405560574CDFbD",
+          "freeManagedReward": "0xC3a6826cBEF2Ab3cAcc146Af2D482B85937c65c8"
+        }
+      },
+      "zapRoutes": [
+        {
+          "tokenIn": "native",
+          "symbol": "ETH",
+          "decimals": 18,
+          "tokens": [
+            "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+            "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6"
+          ],
+          "tickSpacings": [
+            2000
+          ]
+        },
+        {
+          "tokenIn": "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+          "symbol": "WETH",
+          "decimals": 18,
+          "tokens": [
+            "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+            "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6"
+          ],
+          "tickSpacings": [
+            2000
+          ]
+        },
+        {
+          "tokenIn": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+          "symbol": "USDG",
+          "decimals": 6,
+          "tokens": [
+            "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
+            "0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73",
+            "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6"
+          ],
+          "tickSpacings": [
+            50,
+            2000
+          ]
+        }
+      ]
+    },
+    {
+      "chainId": 5042,
+      "network": "arc",
+      "stage": "launch",
+      "status": "deployed",
+      "deployBlock": 27342776,
+      "protocol": {
+        "vault": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+        "voter": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+        "xTopaz": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+        "swapRouter": "0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572",
+        "weth": null,
+        "stable": {
+          "address": "0x3600000000000000000000000000000000000000",
+          "symbol": "USDC",
+          "decimals": 6
+        }
+      },
+      "contracts": {
+        "ManagedEscrow": "0x51848a39a4D34159b99395fb6C83c69972ad94b0",
+        "RelayEntryZap": "0xDdE6731415d38FeA28Bf125d0fD33CBA612Edacb",
+        "AutoCompounderFactory": "0xB1793287EA5C1b7015C6C5579fc6c2f04A115c81",
+        "CompoundConverterFactory": "0x8D4acFbB5d5f8384C73F371B63d9Fa10BB51262b",
+        "ManagedRewardsFactory": "0x1a7EA5fF96b87E4f376Ef625F5E8D87a33b41259",
+        "Optimizer": "0xF21094c8ECEb56106A0DC7ecEf207d79A459d47A",
+        "OptimizerRegistry": "0xc8E5Fee29A79a1E10b6F5d27E564dbeD01058bD7",
+        "KeeperRegistry": "0xe44bcf0D6650a81363546195A317f810CF8Fcc27",
+        "RelayFactoryRegistry": "0x2a7fF737E0674299Edd40B68309d358CcA4db0B6"
+      },
+      "relays": {
+        "maxi": {
+          "name": "Topaz Maxi",
+          "kind": "AUTO_COMPOUNDER",
+          "address": "0x41d107eB88b33cABa4bfb83D6a1B45093b1629Ce",
+          "factory": "0xB1793287EA5C1b7015C6C5579fc6c2f04A115c81",
+          "mTokenId": 1,
+          "token": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "lockedManagedReward": "0x9793280440e1AFb600A5993CfFF1Df40a2d55dDb",
+          "freeManagedReward": "0x69E1F3fa19ba8EC8Fb9584a26CC63CF1c7077306"
+        },
+        "converter": {
+          "name": "Topaz Compound + USDC",
+          "kind": "COMPOUND_CONVERTER",
+          "address": "0x396C5AD5BfA69eAE32c7Af6b109819A06C3cb61a",
+          "factory": "0x8D4acFbB5d5f8384C73F371B63d9Fa10BB51262b",
+          "mTokenId": 2,
+          "token": "0x3600000000000000000000000000000000000000",
+          "lockedManagedReward": "0xA786BBd12B503bEdaFBD50D0767B5A4eE39f6ba7",
+          "freeManagedReward": "0x1772D58590E52fd7A6e016f88858d22deeA28e1B"
+        }
+      },
+      "zapRoutes": [
+        {
+          "tokenIn": "0x3600000000000000000000000000000000000000",
+          "symbol": "USDC",
+          "decimals": 6,
+          "tokens": [
+            "0x3600000000000000000000000000000000000000",
+            "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6"
+          ],
+          "tickSpacings": [
+            2000
+          ]
+        }
+      ]
+    },
+    {
+      "chainId": 8453,
+      "network": "base",
+      "stage": "staged",
+      "stageNote": "Deploy once xTOPAZ has a Topaz Slipstream pool with liquidity on this chain (no WETH/xTOPAZ or USDC/xTOPAZ pool yet); add its route to routes before deploying.",
+      "status": "pending",
+      "deployBlock": null,
+      "protocol": {
+        "vault": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+        "voter": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+        "xTopaz": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+        "swapRouter": "0x5DA6456fa2560071DD29871ca045908f98932865",
+        "weth": "0x4200000000000000000000000000000000000006",
+        "stable": {
+          "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "symbol": "USDC",
+          "decimals": 6
+        }
+      },
+      "contracts": {
+        "ManagedEscrow": null,
+        "RelayEntryZap": null,
+        "AutoCompounderFactory": null,
+        "CompoundConverterFactory": null,
+        "ManagedRewardsFactory": null,
+        "Optimizer": null,
+        "OptimizerRegistry": null,
+        "KeeperRegistry": null,
+        "RelayFactoryRegistry": null
+      },
+      "relays": {
+        "maxi": {
+          "name": "Topaz Maxi",
+          "kind": "AUTO_COMPOUNDER",
+          "address": null,
+          "factory": null,
+          "mTokenId": null,
+          "token": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "lockedManagedReward": null,
+          "freeManagedReward": null
+        },
+        "converter": {
+          "name": "Topaz Compound + USDC",
+          "kind": "COMPOUND_CONVERTER",
+          "address": null,
+          "factory": null,
+          "mTokenId": null,
+          "token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "lockedManagedReward": null,
+          "freeManagedReward": null
+        }
+      },
+      "zapRoutes": []
+    },
+    {
+      "chainId": 1,
+      "network": "ethereum",
+      "stage": "staged",
+      "stageNote": "Deploy once xTOPAZ has a Topaz Slipstream pool with liquidity on this chain (no WETH/xTOPAZ or USDC/xTOPAZ pool yet); add its route to routes before deploying.",
+      "status": "pending",
+      "deployBlock": null,
+      "protocol": {
+        "vault": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
+        "voter": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
+        "xTopaz": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+        "swapRouter": "0x2e7395A6E0De6eE1f390bEcE891069Cd18Ff8572",
+        "weth": "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
+        "stable": {
+          "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "symbol": "USDC",
+          "decimals": 6
+        }
+      },
+      "contracts": {
+        "ManagedEscrow": null,
+        "RelayEntryZap": null,
+        "AutoCompounderFactory": null,
+        "CompoundConverterFactory": null,
+        "ManagedRewardsFactory": null,
+        "Optimizer": null,
+        "OptimizerRegistry": null,
+        "KeeperRegistry": null,
+        "RelayFactoryRegistry": null
+      },
+      "relays": {
+        "maxi": {
+          "name": "Topaz Maxi",
+          "kind": "AUTO_COMPOUNDER",
+          "address": null,
+          "factory": null,
+          "mTokenId": null,
+          "token": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
+          "lockedManagedReward": null,
+          "freeManagedReward": null
+        },
+        "converter": {
+          "name": "Topaz Compound + USDC",
+          "kind": "COMPOUND_CONVERTER",
+          "address": null,
+          "factory": null,
+          "mTokenId": null,
+          "token": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+          "lockedManagedReward": null,
+          "freeManagedReward": null
+        }
+      },
+      "zapRoutes": []
+    }
+  ]
+}

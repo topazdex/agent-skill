@@ -2,9 +2,9 @@
 
 TypeScript + ethers v6 helpers for Topaz on BNB Chain (56), Robinhood Chain (4663), Base (8453), Ethereum (1) and Arc (5042). `config/deployments.ts` and `lib/multichain.ts` supply chain-bound contracts and ABIs; see [multichain integration](../developers/multichain-integration.md).
 
-**Selecting a chain.** Every read/write helper and builder takes an optional `chainId` (args field or trailing parameter, default 56) — except the BNB-only modules `read/locks`, `read/relays`, `read/apr`, `lib/pricing`, `write/lock`, `write/relay` and `lib/relayBuilders` — and resolves that chain's contracts from `references/deployments.json` — a contract missing on a chain throws rather than falling back to BNB. The CLIs take `--chain <id|name>` (`bnb`, `robinhood`, `base`, `ethereum`, `arc`) and confirm `eth_chainId` before doing anything. Per-chain RPCs: for BNB `BSC_RPC_URL`, then `TOPAZ_RPC_56`; elsewhere `TOPAZ_RPC_<chainId>`; otherwise the catalog's public RPC (the same precedence for the CLIs, helpers and `verify:deployments`). Library write helpers do not re-check the RPC's chain; call `verifyChain(chainId)` first when you use them directly. Pointing `BSC_RPC_URL` at another network does **not** switch chains.
+**Selecting a chain.** Every read/write helper and builder takes an optional `chainId` (args field or trailing parameter, default 56) — except the BNB-only modules `read/locks`, `read/apr`, `lib/pricing`, `write/lock` and `write/relay`, and the veTOPAZ halves of `read/relays` and `lib/relayBuilders` (their xTOPAZ spoke relay functions take `chainId`) — and resolves that chain's contracts from `references/deployments.json` — a contract missing on a chain throws rather than falling back to BNB. The CLIs take `--chain <id|name>` (`bnb`, `robinhood`, `base`, `ethereum`, `arc`) and confirm `eth_chainId` before doing anything. Per-chain RPCs: for BNB `BSC_RPC_URL`, then `TOPAZ_RPC_56`; elsewhere `TOPAZ_RPC_<chainId>`; otherwise the catalog's public RPC (the same precedence for the CLIs, helpers and `verify:deployments`). Library write helpers do not re-check the RPC's chain; call `verifyChain(chainId)` first when you use them directly. Pointing `BSC_RPC_URL` at another network does **not** switch chains.
 
-**What differs on a spoke.** Voting power is xTOPAZ staked in the local `XTopazVotingVault`: position ids replace veNFT ids in `vote.ts` / `claim.ts` / `stats.ts vote|claimable`, and `position.ts` opens, extends, withdraws and merges them. Gauge emissions are xTOPAZ. There are no veTOPAZ locks, relays or rebases (`lock.ts`, `relay.ts`, `claim.ts rebase` refuse), and on-chain APR (`stats.ts apr`) is BNB-only — use `stats.ts v1 /pools --chainIds <id>`. Arc has no wrapped native: trade the USDC ERC20 and never attach native value to DEX calls.
+**What differs on a spoke.** Voting power is xTOPAZ staked in the local `XTopazVotingVault`: position ids replace veNFT ids in `vote.ts` / `claim.ts` / `stats.ts vote|claimable`, and `position.ts` opens, extends, withdraws and merges them. Gauge emissions are xTOPAZ. There are no veTOPAZ locks, veTOPAZ relays or rebases (`lock.ts`, `claim.ts rebase` refuse; `relay.ts --chain <spoke>` runs the xTOPAZ spoke relays instead), and on-chain APR (`stats.ts apr`) is BNB-only — use `stats.ts v1 /pools --chainIds <id>`. Arc has no wrapped native: trade the USDC ERC20 and never attach native value to DEX calls.
 
 Read-only five-chain verification: `yarn verify:deployments` (optionally followed by chain IDs). Override RPCs with `TOPAZ_RPC_<chainId>`. No private key is used.
 
@@ -41,6 +41,8 @@ src/
 │   ├── statsApi.ts     # DEPRECATED client for the legacy BNB-only /api/stats reports
 │   ├── zeroX.ts        # validated 0x swap legs for the zaps (Topaz website proxy) + split sizing
 │   ├── autoManageBuilders.ts # Auto Manage deposit / redeem / claim / zap-in / zap-out calldata
+│   ├── relayBuilders.ts # veTOPAZ relay calldata (BNB) + xTOPAZ spoke relay deposit / zap / exit / claims
+│   ├── spokeRelayManifest.ts # folds an xtopaz-relay broadcast manifest into spoke-relays.json
 │   └── epoch.ts        # WEEK / epochStart / vote window helpers
 ├── read/               # No-signer reads (RPC + subgraph)
 │   ├── pools.ts        # v2/v3 unified pool info
@@ -50,6 +52,7 @@ src/
 │   ├── votes.ts        # current vote per veNFT / spoke position
 │   ├── spokePositions.ts # XTopazVotingVault positions and vault state
 │   ├── autoManage.ts   # Auto Manage vaults via the lens, a wallet's shares and rewards
+│   ├── relays.ts       # BNB relay state + xTOPAZ spoke relay state and deposit positions
 │   ├── claimable.ts    # gauge, fee, bribe (+ BNB rebase) rewards
 │   ├── apr.ts          # gauge / fee / voting / rebase APR
 │   ├── quotes.ts       # v2 / v3 / mixed quoting + best-route search
@@ -74,7 +77,7 @@ src/
     ├── bribe.ts
     ├── position.ts     # spoke xTOPAZ positions (XTopazVotingVault)
     ├── autoManage.ts   # Auto Manage vaults on BNB, Robinhood and Arc
-    └── relay.ts        # BNB relays (managed veTOPAZ)
+    └── relay.ts        # BNB relays (managed veTOPAZ) and xTOPAZ spoke relays (--chain <spoke>)
 ```
 
 ## CLIs
@@ -172,6 +175,9 @@ yarn tsx src/cli/position.ts vault --chain ethereum
 yarn tsx src/cli/position.ts list  --chain base --address 0xYOUR_WALLET
 yarn tsx src/cli/autoManage.ts vaults    --chain robinhood
 yarn tsx src/cli/autoManage.ts zap-in    --chain bnb --vault 0xVAULT --token USDT --amount 200 --from 0xYOUR_WALLET   # builds + simulates; --execute sends
+yarn tsx src/cli/relay.ts list                                       # BNB relays, then every xTOPAZ spoke relay (pending ones say "not yet deployed")
+yarn tsx src/cli/relay.ts zap      --chain robinhood --relay maxi --token native --amount 0.05 --from 0xYOUR_WALLET   # builds + simulates; --execute sends
+yarn sync:spoke-relays ../../xtopaz-relay                            # after a broadcast: fill references/spoke-relays.json
 
 # Writes — PRIVATE_KEY required; the wallet pays gas in that chain's native asset
 yarn tsx src/cli/position.ts stake   --chain base --amount 100 [--pool 0xPOOL --weight 100]

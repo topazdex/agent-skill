@@ -1,7 +1,9 @@
 // Read-only deployment checks. No signer, approvals, or financial transactions.
 import { ZeroAddress, keccak256, zeroPadValue } from "ethers";
 import { DEPLOYMENTS, deployedContract } from "../config/deployments.js";
+import { isDeployedSpokeRelay, spokeRelaysOnChain } from "../config/relays.js";
 import { chainProvider, contractOnChain, assertChain } from "../lib/multichain.js";
+import { spokeRelayContract } from "../read/relays.js";
 
 const ids = process.argv.slice(2).map(Number);
 for (const id of ids) if (!DEPLOYMENTS.some((c) => c.chainId === id)) throw new Error(`Unknown chain ${id}`);
@@ -89,6 +91,36 @@ for (const chain of DEPLOYMENTS.filter((c) => !ids.length || ids.includes(c.chai
           if (!(await readWithRetry(() => registry.isVault(vault, { blockTag: block })))) issues.push(`AutoManageFactory.isVault(${vault}) is false`);
         }
       } catch (error) { issues.push(`AutoManageLens.getVaults: ${String(error)}`); }
+    }
+    // Spoke relays are checked only once references/spoke-relays.json records a broadcast.
+    for (const relay of spokeRelaysOnChain(chain.chainId).filter(isDeployedSpokeRelay)) {
+      const expectRead = async (label: string, read: () => Promise<unknown>, expected: string | boolean) => {
+        try {
+          const actual = String(await readWithRetry(read));
+          if (actual.toLowerCase() !== String(expected).toLowerCase()) issues.push(`${relay.displayName} ${label}: ${actual}, expected ${expected}`);
+        } catch (error) { issues.push(`${relay.displayName} ${label}: ${String(error)}`); }
+      };
+      const at = { blockTag: block };
+      const id = BigInt(relay.mTokenId);
+      const escrow = spokeRelayContract(chain.chainId, "ManagedEscrow", relay.escrow, provider);
+      const contract = spokeRelayContract(chain.chainId, relay.contractKind, relay.address, provider);
+      await expectRead("escrow.vault", () => escrow.vault(at), relay.vault);
+      await expectRead("escrow.token", () => escrow.token(at), relay.xTopaz);
+      await expectRead("escrow.managedToLocked", () => escrow.managedToLocked(id, at), relay.lockedManagedReward);
+      await expectRead("escrow.managedToFree", () => escrow.managedToFree(id, at), relay.freeManagedReward);
+      await expectRead("relay.mTokenId", () => contract.mTokenId(at), String(relay.mTokenId));
+      await expectRead("relay.ve", () => contract.ve(at), relay.escrow);
+      await expectRead("relay.token", () => contract.token(at), relay.payoutToken);
+      if (relay.factory) {
+        const factory = spokeRelayContract(chain.chainId, `${relay.contractKind}Factory`, relay.factory, provider);
+        await expectRead("factory.isRelay", () => factory.isRelay(relay.address, at), true);
+      }
+      if (relay.zap) {
+        const zap = spokeRelayContract(chain.chainId, "RelayEntryZap", relay.zap, provider);
+        await expectRead("zap.escrow", () => zap.escrow(at), relay.escrow);
+        await expectRead("zap.weth", () => zap.weth(at), chain.wrappedNative ?? ZeroAddress);
+        await expectRead("escrow.approvedZappers(zap)", () => escrow.approvedZappers(relay.zap, at), true);
+      }
     }
     await assertChain(provider, chain.chainId);
     failures += issues.length;
