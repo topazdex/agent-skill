@@ -13,6 +13,7 @@ const {
   RELAYS,
   SPOKE_RELAYS,
   SPOKE_RELAY_MANIFEST,
+  resolveRelay,
   resolveSpokeRelay,
   spokeRelayUnavailable,
 } = await import("../config/relays.js");
@@ -52,13 +53,18 @@ describe("spoke relay registry", () => {
     expect(SPOKE_RELAYS.find((r) => r.chainId === 5042 && r.type === "converter")?.payoutDecimals).toBe(6);
   });
 
-  it("reports every relay as not yet deployed, with the staged reason on Base and Ethereum", () => {
-    for (const relay of SPOKE_RELAYS) {
+  it("has the broadcast relays on Robinhood and Arc, and Base and Ethereum staged", () => {
+    for (const relay of SPOKE_RELAYS.filter((r) => r.chainId === 4663 || r.chainId === 5042)) {
+      expect(relay.address).not.toBeNull();
+      expect(spokeRelayUnavailable(relay)).toBeNull();
+    }
+    expect(SPOKE_RELAYS.find((r) => r.chainId === 4663 && r.type === "maxi")?.address).toBe("0x90AE9E7cC506fFDEd79d85797EDD7417285c1a16");
+    expect(SPOKE_RELAYS.find((r) => r.chainId === 5042 && r.type === "converter")?.address).toBe("0x396C5AD5BfA69eAE32c7Af6b109819A06C3cb61a");
+    for (const relay of SPOKE_RELAYS.filter((r) => r.chainId === 8453 || r.chainId === 1)) {
       expect(relay.address).toBeNull();
       expect(spokeRelayUnavailable(relay)).toMatch(/is not yet deployed/);
+      expect(spokeRelayUnavailable(relay)).toMatch(/staged: .*xTOPAZ/);
     }
-    const base = SPOKE_RELAYS.find((r) => r.chainId === 8453)!;
-    expect(spokeRelayUnavailable(base)).toMatch(/staged: .*xTOPAZ/);
   });
 
   it("offers a native zap on Robinhood only through WETH and never on Arc", () => {
@@ -77,10 +83,12 @@ describe("spoke relay registry", () => {
     expect(resolveSpokeRelay("Topaz Compound + USDC", 5042)?.type).toBe("converter");
     expect(resolveSpokeRelay("reward-distribute", 4663)).toBeUndefined();
     expect(resolveSpokeRelay("maxi", 56)).toBeUndefined();
+    expect(resolveRelay("Topaz Maxi")?.type).toBe("maxi");
+    expect(resolveRelay("Topaz Compound + USDT")?.type).toBe("reward-distribute");
   });
 
   it("returns pending state without any RPC call", async () => {
-    const states = await getSpokeRelays(4663);
+    const states = await getSpokeRelays(8453);
     expect(states.map((s) => s.deployed)).toEqual([false, false]);
     expect(states[0].managedBalance).toBeNull();
   });

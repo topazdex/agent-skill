@@ -41,8 +41,8 @@
       "chainId": 4663,
       "network": "robinhood",
       "stage": "launch",
-      "status": "pending",
-      "deployBlock": null,
+      "status": "deployed",
+      "deployBlock": 95400253,
       "protocol": {
         "vault": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
         "voter": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
@@ -56,36 +56,36 @@
         }
       },
       "contracts": {
-        "ManagedEscrow": null,
-        "RelayEntryZap": null,
-        "AutoCompounderFactory": null,
-        "CompoundConverterFactory": null,
-        "ManagedRewardsFactory": null,
-        "Optimizer": null,
-        "OptimizerRegistry": null,
-        "KeeperRegistry": null,
-        "RelayFactoryRegistry": null
+        "ManagedEscrow": "0x06A62d9D13ef7080A9582feB11FB68A67ae260B5",
+        "RelayEntryZap": "0x438a5432Bae64feb54634F3D5290E76d88b481ae",
+        "AutoCompounderFactory": "0xe6EF9CB33eeE48B48Dd1D0d99c30bd38cfeb90Ed",
+        "CompoundConverterFactory": "0x66c1e63193149FA4DF2E19DCc5950c165D7eb43E",
+        "ManagedRewardsFactory": "0xC17b9737F4790D9c30295dBff1813c25988E2116",
+        "Optimizer": "0xD67B18297769524F72366E1E7cFc40AFb2B39E14",
+        "OptimizerRegistry": "0x5FeFF87F2B9359dB2C26005Cb04120706492B1D8",
+        "KeeperRegistry": "0x9868563bfc8B670D8bBDAF6c658822771dB7b334",
+        "RelayFactoryRegistry": "0x28186B18c6d899Df3f32f39464f5ED2c6ec8f479"
       },
       "relays": {
         "maxi": {
           "name": "Topaz Maxi",
           "kind": "AUTO_COMPOUNDER",
-          "address": null,
-          "factory": null,
-          "mTokenId": null,
+          "address": "0x90AE9E7cC506fFDEd79d85797EDD7417285c1a16",
+          "factory": "0xe6EF9CB33eeE48B48Dd1D0d99c30bd38cfeb90Ed",
+          "mTokenId": 1,
           "token": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
-          "lockedManagedReward": null,
-          "freeManagedReward": null
+          "lockedManagedReward": "0xAEe852f05c812a12d886669fA7eA86fe26DE4764",
+          "freeManagedReward": "0xF7163d463e3558C6A1f69A0Ec0D0979f08E9C1f9"
         },
         "converter": {
           "name": "Topaz Compound + USDG",
           "kind": "COMPOUND_CONVERTER",
-          "address": null,
-          "factory": null,
-          "mTokenId": null,
+          "address": "0x1c6f2EB38910174b3a0B1038A8C921dcF98b0B5c",
+          "factory": "0x66c1e63193149FA4DF2E19DCc5950c165D7eb43E",
+          "mTokenId": 2,
           "token": "0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168",
-          "lockedManagedReward": null,
-          "freeManagedReward": null
+          "lockedManagedReward": "0x4286Ba3B23052dc7F9eb43c1fc405560574CDFbD",
+          "freeManagedReward": "0xC3a6826cBEF2Ab3cAcc146Af2D482B85937c65c8"
         }
       },
       "zapRoutes": [
@@ -133,8 +133,8 @@
       "chainId": 5042,
       "network": "arc",
       "stage": "launch",
-      "status": "pending",
-      "deployBlock": null,
+      "status": "deployed",
+      "deployBlock": 27342776,
       "protocol": {
         "vault": "0x35D7Ac512f465F48D2bCb4C7322dd34c7BB7c777",
         "voter": "0xb509071a8a33fC2184B169dfc029B3dE3CF5172B",
@@ -148,36 +148,36 @@
         }
       },
       "contracts": {
-        "ManagedEscrow": null,
-        "RelayEntryZap": null,
-        "AutoCompounderFactory": null,
-        "CompoundConverterFactory": null,
-        "ManagedRewardsFactory": null,
-        "Optimizer": null,
-        "OptimizerRegistry": null,
-        "KeeperRegistry": null,
-        "RelayFactoryRegistry": null
+        "ManagedEscrow": "0x51848a39a4D34159b99395fb6C83c69972ad94b0",
+        "RelayEntryZap": "0xDdE6731415d38FeA28Bf125d0fD33CBA612Edacb",
+        "AutoCompounderFactory": "0xB1793287EA5C1b7015C6C5579fc6c2f04A115c81",
+        "CompoundConverterFactory": "0x8D4acFbB5d5f8384C73F371B63d9Fa10BB51262b",
+        "ManagedRewardsFactory": "0x1a7EA5fF96b87E4f376Ef625F5E8D87a33b41259",
+        "Optimizer": "0xF21094c8ECEb56106A0DC7ecEf207d79A459d47A",
+        "OptimizerRegistry": "0xc8E5Fee29A79a1E10b6F5d27E564dbeD01058bD7",
+        "KeeperRegistry": "0xe44bcf0D6650a81363546195A317f810CF8Fcc27",
+        "RelayFactoryRegistry": "0x2a7fF737E0674299Edd40B68309d358CcA4db0B6"
       },
       "relays": {
         "maxi": {
           "name": "Topaz Maxi",
           "kind": "AUTO_COMPOUNDER",
-          "address": null,
-          "factory": null,
-          "mTokenId": null,
+          "address": "0x41d107eB88b33cABa4bfb83D6a1B45093b1629Ce",
+          "factory": "0xB1793287EA5C1b7015C6C5579fc6c2f04A115c81",
+          "mTokenId": 1,
           "token": "0x1aA89C4Ab9884Cb65B759A3Cc3A1690744d687a6",
-          "lockedManagedReward": null,
-          "freeManagedReward": null
+          "lockedManagedReward": "0x9793280440e1AFb600A5993CfFF1Df40a2d55dDb",
+          "freeManagedReward": "0x69E1F3fa19ba8EC8Fb9584a26CC63CF1c7077306"
         },
         "converter": {
           "name": "Topaz Compound + USDC",
           "kind": "COMPOUND_CONVERTER",
-          "address": null,
-          "factory": null,
-          "mTokenId": null,
+          "address": "0x396C5AD5BfA69eAE32c7Af6b109819A06C3cb61a",
+          "factory": "0x8D4acFbB5d5f8384C73F371B63d9Fa10BB51262b",
+          "mTokenId": 2,
           "token": "0x3600000000000000000000000000000000000000",
-          "lockedManagedReward": null,
-          "freeManagedReward": null
+          "lockedManagedReward": "0xA786BBd12B503bEdaFBD50D0767B5A4eE39f6ba7",
+          "freeManagedReward": "0x1772D58590E52fd7A6e016f88858d22deeA28e1B"
         }
       },
       "zapRoutes": [
