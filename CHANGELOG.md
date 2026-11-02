@@ -12,6 +12,9 @@ Version semantics for this skill:
 
 ## [Unreleased]
 
+
+## [3.6.0] — 2026-11-02
+
 - xTOPAZ spoke relays. `references/spoke-relays.json` catalogs Topaz Maxi and Topaz Compound + USDG/USDC on Robinhood and Arc (live, synced from the 2026-10-22 broadcast manifests) and Base and Ethereum (staged), with the payout stable, zap routes and deployment fields. Base and Ethereum stay `null` with `status: "pending"`, and readers, builders and the CLI answer "not yet deployed" without touching the RPC. Spoke `--execute` pads gas by 30%, since an under-gassed escrow call reverts `InsufficientGas()`; `references/relays.md` points listings at `GET /v1/relays` and depositor rows at `spoke-managed-position`. The `ManagedEscrow`, `RelayEntryZap`, `AutoCompounder`, `CompoundConverter`, both factories, `LockedManagedReward` and `FreeManagedReward` ABIs are vendored from xtopaz-relay under `abis/deployed/`, with pinned digests.
 - `config/relays.ts` adds the chain-aware `SPOKE_RELAYS` registry and `resolveSpokeRelay`. The BNB `RELAYS` entries are unchanged. `read/relays.ts` adds `getSpokeRelays` (managed balance, deferred total, lots, epoch compounding) and `getSpokeRelayPositions` (deposit id, weight, `unlockAt`, compounded xTOPAZ, deferred, claimable stable). `lib/relayBuilders.ts` adds deposit (approve xTOPAZ + `depositManaged`), zap (`zapInETH`, refused on Arc; `zapInToken` with a QuoterV2 minimum), `withdrawManaged`, `claimDeferred` and `FreeManagedReward.getReward` builders. They enforce the Thu 00:00–01:00 and Wed 23:00–Thu 00:00 UTC deposit windows and `unlockAt` against chain time. As on BNB there is no deposit minimum, and an `isApprovedForAll` operator can build an exit for the owner.
 - `relay.ts list` prints the BNB relays and then every spoke relay. With `--chain <spoke>`, `relay.ts` runs `position`, `deposit`, `zap`, `withdraw`, `claim-deferred` and `claim` (build and simulate; `--execute` sends). `yarn sync:spoke-relays <xtopaz-relay>` fills the catalog from broadcast manifests (never `dry-run/`), checking them against the vault, voter, xTOPAZ and stable. `verify:deployments` checks spoke relay wiring on Robinhood and Arc. `relays.md` documents the spoke mechanics: windows, the N+2 unlock, exit to liquid xTOPAZ, and deferred payouts.
@@ -618,7 +621,8 @@ First public release. Foundational quality work complete; safe to install, pin, 
 
 - `getTickAtSqrtRatio`'s MSB binary search wrote `(r > mask ? 1 : 0) << bit` where `bit ∈ {128, 64, 32}`; JS bitwise shift truncates to 32 bits, so `1 << 128 = 1`. Fixed in `scripts/src/lib/tickMath.ts` (caught by unit tests).
 
-[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.5.0...HEAD
+[Unreleased]: https://github.com/topazdex/agent-skill/compare/v3.6.0...HEAD
+[3.6.0]: https://github.com/topazdex/agent-skill/compare/v3.5.0...v3.6.0
 [3.5.0]: https://github.com/topazdex/agent-skill/compare/v3.4.1...v3.5.0
 [3.4.1]: https://github.com/topazdex/agent-skill/compare/v3.4.0...v3.4.1
 [3.4.0]: https://github.com/topazdex/agent-skill/compare/v3.3.0...v3.4.0
